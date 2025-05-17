@@ -13,6 +13,7 @@
     "autoprefixer": "^10.4.16",
     "axios": "^1.9.0",
     "chart.js": "^4.4.9",
+    "comlink": "^4.4.1",
     "file-saver": "^2.0.5",
     "postcss": "^8.4.31",
     "qrcode.react": "^4.2.0",
