@@ -11,9 +11,6 @@ const RegistrationForm = () => {
     confirmPassword: '',
   });
 
-  // Password custom field ID from GoHighLevel
-  const PASSWORD_CUSTOM_FIELD_ID = "7GbpQNKTkpS3Od2U0xEl";
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -21,51 +18,60 @@ const RegistrationForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!");
+      alert("Passwords don't match!"); // Replace with a proper notification later
       return;
     }
-    registerUser(formData);
+    // TODO: Implement GoHighLevel API call for registration
+    console.log('Registration attempt with:', formData);
+    upsertGHLContact(formData); // Call the GHL upsert contact function
   };
 
-  const registerUser = async (userData) => {
-    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
-    const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
-    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
+  // Function to handle GHL API call for upserting a contact
+  const upsertGHLContact = async (userData) => {
+    // IMPORTANT: Replace with your actual GHL API details if different
+    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com'; // Or your specific GHL API URL
+    // Consistent API token usage from environment variables
+    const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY; 
+    const GHL_API_VERSION = '2021-07-28'; // Replace with the API version you are using
+    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY'; // The locationId you provided
+
+    const apiEndpoint = `${GHL_API_BASE_URL}/contacts/upsert`; // Changed to upsert endpoint
+
+    const contactData = {
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email: userData.email,
+      locationId: GHL_LOCATION_ID, // Added locationId
+      // Add other relevant fields from UpsertContactDto as needed
+      // e.g., phone: userData.phone, source: 'Website Registration', etc.
+      // Password is not sent as it's usually not part of a GHL contact record.
+    };
 
     try {
-      // Use the upsert endpoint to create/update the contact with password
-      const response = await fetch(`${GHL_API_BASE_URL}/contacts/upsert`, {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${GHL_API_TOKEN}`,
-          'Version': '2021-07-28',
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GHL_API_TOKEN}`,
+          'Version': GHL_API_VERSION,
         },
-        body: JSON.stringify({
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
-          locationId: GHL_LOCATION_ID,
-          customFields: [
-            {
-              id: PASSWORD_CUSTOM_FIELD_ID,
-              value: userData.password
-            }
-          ]
-        }),
+        body: JSON.stringify(contactData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to register user');
+      if (response.ok) {
+        const result = await response.json();
+        console.log('GHL Contact upserted successfully:', result);
+        navigate('/login');
+      } else {
+        const errorResult = await response.json();
+        console.error('GHL API Error (Upsert):', response.status, errorResult);
+        alert(`Registration failed: ${errorResult.message || 'Unknown error'}`); // Replace with a proper notification
+        // TODO: Handle API error (e.g., show error message to user)
       }
-
-      const data = await response.json();
-      console.log('Registration successful:', data);
-      navigate('/login');
     } catch (error) {
-      console.error('Registration error:', error);
-      alert('Failed to register. Please try again.');
+      console.error('Error during GHL API call (Upsert):', error);
+      alert('Registration failed: An unexpected error occurred.'); // Replace with a proper notification
+      // TODO: Handle network or other unexpected errors
     }
   };
 
