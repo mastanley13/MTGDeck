@@ -27,110 +27,41 @@ const RegistrationForm = () => {
     registerUser(formData);
   };
 
-  // Function to get contact by email
-  const getContactByEmail = async (email, headers) => {
+  const registerUser = async (userData) => {
     const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
+    const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
     const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
 
     try {
-      const response = await fetch(`${GHL_API_BASE_URL}/contacts/search`, {
+      // Use the upsert endpoint to create/update the contact with password
+      const response = await fetch(`${GHL_API_BASE_URL}/contacts/upsert`, {
         method: 'POST',
-        headers,
-        body: JSON.stringify({
-          locationId: GHL_LOCATION_ID,
-          email: email,
-          limit: 1
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to search for contact');
-      }
-
-      const data = await response.json();
-      return data.contacts?.[0] || null;
-    } catch (error) {
-      console.error('Error searching for contact:', error);
-      return null;
-    }
-  };
-
-  // Function to update contact's password
-  const updateContactPassword = async (contactId, password, headers) => {
-    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
-    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
-
-    try {
-      const response = await fetch(`${GHL_API_BASE_URL}/contacts/${contactId}/custom-field/${PASSWORD_CUSTOM_FIELD_ID}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          value: password,
-          locationId: GHL_LOCATION_ID
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update password');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating password:', error);
-      throw error;
-    }
-  };
-
-  // Function to create new contact
-  const createContact = async (userData, headers) => {
-    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
-    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
-
-    try {
-      const response = await fetch(`${GHL_API_BASE_URL}/contacts`, {
-        method: 'POST',
-        headers,
+        headers: {
+          'Authorization': `Bearer ${GHL_API_TOKEN}`,
+          'Version': '2021-07-28',
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           firstName: userData.firstName,
           lastName: userData.lastName,
           email: userData.email,
-          locationId: GHL_LOCATION_ID
+          locationId: GHL_LOCATION_ID,
+          customFields: [
+            {
+              id: PASSWORD_CUSTOM_FIELD_ID,
+              value: userData.password
+            }
+          ]
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create contact');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to register user');
       }
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating contact:', error);
-      throw error;
-    }
-  };
-
-  // Main registration function
-  const registerUser = async (userData) => {
-    const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
-    const headers = {
-      'Authorization': `Bearer ${GHL_API_TOKEN}`,
-      'Version': '2021-07-28',
-      'Content-Type': 'application/json',
-    };
-
-    try {
-      // First, check if contact exists
-      let contact = await getContactByEmail(userData.email, headers);
-      
-      // If contact doesn't exist, create it
-      if (!contact) {
-        contact = await createContact(userData, headers);
-      }
-
-      // Now update the password custom field
-      await updateContactPassword(contact.id, userData.password, headers);
-
-      console.log('Registration successful');
+      const data = await response.json();
+      console.log('Registration successful:', data);
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
