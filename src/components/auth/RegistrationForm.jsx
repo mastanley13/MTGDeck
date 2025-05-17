@@ -11,6 +11,9 @@ const RegistrationForm = () => {
     confirmPassword: '',
   });
 
+  // Password custom field ID from GoHighLevel
+  const PASSWORD_CUSTOM_FIELD_ID = "7GbpQNKTkpS3Od2U0xEl";
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -28,50 +31,81 @@ const RegistrationForm = () => {
 
   // Function to handle GHL API call for upserting a contact
   const upsertGHLContact = async (userData) => {
-    // IMPORTANT: Replace with your actual GHL API details if different
-    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com'; // Or your specific GHL API URL
-    // Consistent API token usage from environment variables
-    const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY; 
-    const GHL_API_VERSION = '2021-07-28'; // Replace with the API version you are using
-    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY'; // The locationId you provided
+    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
+    const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
+    const GHL_API_VERSION = '2021-07-28';
+    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
 
-    const apiEndpoint = `${GHL_API_BASE_URL}/contacts/upsert`; // Changed to upsert endpoint
-
-    const contactData = {
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      email: userData.email,
-      locationId: GHL_LOCATION_ID, // Added locationId
-      // Add other relevant fields from UpsertContactDto as needed
-      // e.g., phone: userData.phone, source: 'Website Registration', etc.
-      // Password is not sent as it's usually not part of a GHL contact record.
-    };
-
+    // First, verify if the password custom field exists
     try {
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
+      const customFieldResponse = await fetch(`${GHL_API_BASE_URL}/custom-fields/${PASSWORD_CUSTOM_FIELD_ID}`, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${GHL_API_TOKEN}`,
           'Version': GHL_API_VERSION,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      // If custom field doesn't exist, create it
+      if (!customFieldResponse.ok) {
+        const createFieldResponse = await fetch(`${GHL_API_BASE_URL}/custom-fields`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GHL_API_TOKEN}`,
+            'Version': GHL_API_VERSION,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            locationId: GHL_LOCATION_ID,
+            name: 'Password',
+            fieldKey: 'password',
+            dataType: 'TEXT',
+            showInForms: false,
+            objectKey: 'contact'
+          })
+        });
+
+        if (!createFieldResponse.ok) {
+          throw new Error('Failed to create password field');
+        }
+      }
+
+      // Now proceed with contact creation/update
+      const contactData = {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        email: userData.email,
+        locationId: GHL_LOCATION_ID,
+        customFields: [
+          {
+            id: PASSWORD_CUSTOM_FIELD_ID,
+            field_value: userData.password
+          }
+        ]
+      };
+
+      const response = await fetch(`${GHL_API_BASE_URL}/contacts/upsert`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GHL_API_TOKEN}`,
+          'Version': GHL_API_VERSION,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(contactData),
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('GHL Contact upserted successfully:', result);
-        navigate('/login');
-      } else {
-        const errorResult = await response.json();
-        console.error('GHL API Error (Upsert):', response.status, errorResult);
-        alert(`Registration failed: ${errorResult.message || 'Unknown error'}`); // Replace with a proper notification
-        // TODO: Handle API error (e.g., show error message to user)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to register user');
       }
+
+      const data = await response.json();
+      console.log('Registration successful:', data);
+      navigate('/login');
     } catch (error) {
-      console.error('Error during GHL API call (Upsert):', error);
-      alert('Registration failed: An unexpected error occurred.'); // Replace with a proper notification
-      // TODO: Handle network or other unexpected errors
+      console.error('Registration error:', error);
+      alert('Failed to register. Please try again.');
     }
   };
 
