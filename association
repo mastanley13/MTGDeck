@@ -1,0 +1,16 @@
+{
+  "associations": [
+    {
+      "id": "6826283c413da0c2068739e9",
+      "associationType": "USER_DEFINED",
+      "firstObjectLabel": "Owner",
+      "firstObjectKey": "contact",
+      "secondObjectLabel": "Owner",
+      "secondObjectKey": "custom_objects.decks",
+      "key": "owner",
+      "locationId": "zKZ8Zy6VvGR1m7lNfRkY"
+    }
+  ],
+  "total": 1,
+  "traceId": "089356e3-ba2a-4853-862f-66046c134985"
+}
