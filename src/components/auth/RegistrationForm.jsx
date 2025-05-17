@@ -42,9 +42,14 @@ const RegistrationForm = () => {
       lastName: userData.lastName,
       email: userData.email,
       locationId: GHL_LOCATION_ID, // Added locationId
+      customFields: [
+        {
+          id: "7GbpQNKTkpS3Od2U0xEl", // ID for the 'Password' custom field
+          value: userData.password,
+        },
+      ],
       // Add other relevant fields from UpsertContactDto as needed
       // e.g., phone: userData.phone, source: 'Website Registration', etc.
-      // Password is not sent as it's usually not part of a GHL contact record.
     };
 
     try {
