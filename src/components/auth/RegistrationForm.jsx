@@ -21,87 +21,116 @@ const RegistrationForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!"); // Replace with a proper notification later
+      alert("Passwords don't match!");
       return;
     }
-    // TODO: Implement GoHighLevel API call for registration
-    console.log('Registration attempt with:', formData);
-    upsertGHLContact(formData); // Call the GHL upsert contact function
+    registerUser(formData);
   };
 
-  // Function to handle GHL API call for upserting a contact
-  const upsertGHLContact = async (userData) => {
+  // Function to get contact by email
+  const getContactByEmail = async (email, headers) => {
     const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
-    const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
-    const GHL_API_VERSION = '2021-07-28';
     const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
 
-    // First, verify if the password custom field exists
     try {
-      const customFieldResponse = await fetch(`${GHL_API_BASE_URL}/custom-fields/${PASSWORD_CUSTOM_FIELD_ID}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${GHL_API_TOKEN}`,
-          'Version': GHL_API_VERSION,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      // If custom field doesn't exist, create it
-      if (!customFieldResponse.ok) {
-        const createFieldResponse = await fetch(`${GHL_API_BASE_URL}/custom-fields`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${GHL_API_TOKEN}`,
-            'Version': GHL_API_VERSION,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            locationId: GHL_LOCATION_ID,
-            name: 'Password',
-            fieldKey: 'password',
-            dataType: 'TEXT',
-            showInForms: false,
-            objectKey: 'contact'
-          })
-        });
-
-        if (!createFieldResponse.ok) {
-          throw new Error('Failed to create password field');
-        }
-      }
-
-      // Now proceed with contact creation/update
-      const contactData = {
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-        locationId: GHL_LOCATION_ID,
-        customFields: [
-          {
-            id: PASSWORD_CUSTOM_FIELD_ID,
-            field_value: userData.password
-          }
-        ]
-      };
-
-      const response = await fetch(`${GHL_API_BASE_URL}/contacts/upsert`, {
+      const response = await fetch(`${GHL_API_BASE_URL}/contacts/search`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GHL_API_TOKEN}`,
-          'Version': GHL_API_VERSION,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(contactData),
+        headers,
+        body: JSON.stringify({
+          locationId: GHL_LOCATION_ID,
+          email: email,
+          limit: 1
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to register user');
+        throw new Error('Failed to search for contact');
       }
 
       const data = await response.json();
-      console.log('Registration successful:', data);
+      return data.contacts?.[0] || null;
+    } catch (error) {
+      console.error('Error searching for contact:', error);
+      return null;
+    }
+  };
+
+  // Function to update contact's password
+  const updateContactPassword = async (contactId, password, headers) => {
+    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
+    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
+
+    try {
+      const response = await fetch(`${GHL_API_BASE_URL}/contacts/${contactId}/custom-field/${PASSWORD_CUSTOM_FIELD_ID}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          value: password,
+          locationId: GHL_LOCATION_ID
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update password');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating password:', error);
+      throw error;
+    }
+  };
+
+  // Function to create new contact
+  const createContact = async (userData, headers) => {
+    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
+    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
+
+    try {
+      const response = await fetch(`${GHL_API_BASE_URL}/contacts`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
+          locationId: GHL_LOCATION_ID
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create contact');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating contact:', error);
+      throw error;
+    }
+  };
+
+  // Main registration function
+  const registerUser = async (userData) => {
+    const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
+    const headers = {
+      'Authorization': `Bearer ${GHL_API_TOKEN}`,
+      'Version': '2021-07-28',
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      // First, check if contact exists
+      let contact = await getContactByEmail(userData.email, headers);
+      
+      // If contact doesn't exist, create it
+      if (!contact) {
+        contact = await createContact(userData, headers);
+      }
+
+      // Now update the password custom field
+      await updateContactPassword(contact.id, userData.password, headers);
+
+      console.log('Registration successful');
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
