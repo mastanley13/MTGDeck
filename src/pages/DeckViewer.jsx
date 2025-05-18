@@ -6,6 +6,7 @@ import { getCardImageUris } from '../utils/scryfallAPI';
 import DeckAnalytics from '../components/deck/DeckAnalytics';
 import DeckExporter from '../components/deck/DeckExporter';
 import DeckShare from '../components/deck/DeckShare';
+import CardDetailModal from '../components/ui/CardDetailModal.jsx';
 
 const DeckViewer = () => {
   const { deckId } = useParams();
@@ -14,6 +15,8 @@ const DeckViewer = () => {
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [activeTab, setActiveTab] = useState('cards'); // 'cards', 'analytics', 'export', 'share'
   const [hasFetchedDecks, setHasFetchedDecks] = useState(false);
+  const [isCardDetailModalOpen, setIsCardDetailModalOpen] = useState(false);
+  const [selectedCardForModal, setSelectedCardForModal] = useState(null);
 
   useEffect(() => {
     // Fetch all decks for the user if no specific deckId is in URL and not already fetched
@@ -41,6 +44,23 @@ const DeckViewer = () => {
       }
     }
   }, [deckId, savedDecks, loadDeck]);
+
+  // Handler to open the card detail modal
+  const handleOpenCardDetailModal = (card) => {
+    // The card object from selectedDeck.cards might be minimal.
+    // We need to ensure it has all the fields CardDetailModal expects,
+    // especially image_uris and oracle_text.
+    // If not, we might need to fetch full card data here or ensure selectedDeck.cards has it.
+    // For now, assuming `card` has enough details or CardDetailModal can handle missing fields.
+    setSelectedCardForModal(card);
+    setIsCardDetailModalOpen(true);
+  };
+
+  // Handler to close the card detail modal
+  const handleCloseCardDetailModal = () => {
+    setIsCardDetailModalOpen(false);
+    setSelectedCardForModal(null);
+  };
 
   // Handle loading states
   if (loadingAuth || deckLoading) {
@@ -88,19 +108,37 @@ const DeckViewer = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {selectedDeck.cards.map(card => {
                 const imageUris = getCardImageUris(card);
+                // Add a conditional class for game changers
+                const cardItemClasses = [
+                  "card-item",
+                  "cursor-pointer",
+                  "relative", // Needed for potential future badges/icons positioned absolutely
+                  card.game_changer ? "ring-4 ring-yellow-400 ring-offset-2 ring-offset-gray-800 rounded-lg" : ""
+                ].join(" ").trim();
+
                 return (
-                  <div key={card.id} className="card-item">
+                  <div 
+                    key={card.id} 
+                    className={cardItemClasses} // Updated className
+                    onClick={() => handleOpenCardDetailModal(card)}
+                  >
                     {imageUris ? (
                       <img
                         src={imageUris.small}
                         alt={card.name}
-                        className="rounded-lg shadow-md w-full"
+                        className="rounded-lg shadow-md w-full block" // Ensure image is a block and rounded
                       />
                     ) : (
                       <div className="bg-gray-200 rounded-lg shadow-md w-full aspect-[63/88] flex items-center justify-center p-2">
                         <span>{card.name}</span>
                       </div>
                     )}
+                    {/* Optional: Add a specific badge/icon for game_changer here if preferred over border */}
+                    {/* Example badge:
+                    {card.game_changer && (
+                      <span className="absolute top-1 right-1 bg-yellow-400 text-black text-xs font-bold px-1.5 py-0.5 rounded-full shadow-md">GC</span>
+                    )}
+                    */}
                     <div className="mt-1 flex justify-between">
                       <div className="text-xs truncate">{card.name}</div>
                       <div className="text-xs font-bold">{card.quantity || 1}x</div>
@@ -241,6 +279,14 @@ const DeckViewer = () => {
             </div>
           </Link>
         </div>
+      )}
+
+      {/* Render CardDetailModal */}
+      {isCardDetailModalOpen && selectedCardForModal && (
+        <CardDetailModal 
+          card={selectedCardForModal} 
+          onClose={handleCloseCardDetailModal} 
+        />
       )}
     </div>
   );

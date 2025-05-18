@@ -7,6 +7,33 @@ const CardDetailModal = ({ card, onClose }) => {
   const mainImageUrl = card.imageUrl || (card.image_uris ? (card.image_uris.art_crop || card.image_uris.normal || card.image_uris.large) : null);
   const cardText = card.oracle_text || card.description; // Prefer oracle_text if available from full card data
 
+  const formatsToShow = [
+    { key: 'standard', name: 'Standard' },
+    { key: 'pioneer', name: 'Pioneer' },
+    { key: 'modern', name: 'Modern' },
+    { key: 'legacy', name: 'Legacy' },
+    { key: 'commander', name: 'Commander (EDH)' },
+    { key: 'duel', name: 'Duel Commander' },
+    { key: 'brawl', name: 'Brawl' },
+    { key: 'historic', name: 'Historic' },
+    { key: 'pauper', name: 'Pauper' },
+  ];
+
+  const getLegalityClass = (status) => {
+    switch (status) {
+      case 'legal':
+        return 'text-green-400';
+      case 'not_legal':
+        return 'text-red-400';
+      case 'banned':
+        return 'text-red-600 font-semibold';
+      case 'restricted':
+        return 'text-yellow-400';
+      default:
+        return 'text-gray-400';
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-gray-800 p-6 rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col md:flex-row gap-6 relative text-white">
@@ -59,6 +86,42 @@ const CardDetailModal = ({ card, onClose }) => {
           
           {card.loyalty && (
             <p className="text-lg mb-2 text-gray-300">Loyalty: {card.loyalty}</p>
+          )}
+
+          {/* EDHREC Rank and Game Changer status */}
+          {(card.edhrec_rank || card.game_changer) && (
+            <div className="mt-3 mb-2 py-2 border-t border-b border-gray-700">
+              {card.edhrec_rank && (
+                <p className="text-sm text-gray-300">
+                  EDHREC Rank: <span className="font-semibold text-gray-100">{card.edhrec_rank.toLocaleString()}</span>
+                </p>
+              )}
+              {card.game_changer && (
+                <p className="text-sm text-green-400 font-semibold mt-1">
+                  ★ Game Changer (Commander)
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Format Legalities Section */}
+          {card.legalities && (
+            <div className="mt-4 pt-3 border-t border-gray-700">
+              <h4 className="text-lg font-semibold mb-2 text-gray-200">Format Legalities:</h4>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                {formatsToShow.map(format => {
+                  const status = card.legalities[format.key];
+                  return (
+                    <div key={format.key} className="flex justify-between">
+                      <span className="text-gray-300">{format.name}:</span>
+                      <span className={`${getLegalityClass(status)} capitalize`}>
+                        {status ? status.replace('_', ' ') : 'Unknown'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           <p className="text-xs text-gray-500 mt-auto pt-2">
