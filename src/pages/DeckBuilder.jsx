@@ -17,6 +17,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { validateColorIdentity, validateFormatLegality, isDeckValid } from '../utils/deckValidator';
 import AlertModal from '../components/ui/AlertModal.jsx';
 import InputModal from '../components/ui/InputModal.jsx';
+import CardDetailModal from '../components/ui/CardDetailModal.jsx';
 
 const DeckBuilderPage = () => {
   const [activeTab, setActiveTab] = useState('deck'); // 'search', 'deck', 'stats'
@@ -45,6 +46,10 @@ const DeckBuilderPage = () => {
     confirmText: 'Submit',
   });
 
+  // State for CardDetailModal
+  const [isCardDetailModalOpen, setIsCardDetailModalOpen] = useState(false);
+  const [selectedCardForDetailModal, setSelectedCardForDetailModal] = useState(null);
+
   const { currentUser } = useAuth();
 
   const {
@@ -66,6 +71,18 @@ const DeckBuilderPage = () => {
   const cardSearch = useCardSearch({
     order: 'edhrec', // Default sort by popularity
   });
+
+  // Handler to open the card detail modal
+  const handleOpenCardDetailModal = (card) => {
+    setSelectedCardForDetailModal(card);
+    setIsCardDetailModalOpen(true);
+  };
+
+  // Handler to close the card detail modal
+  const handleCloseCardDetailModal = () => {
+    setIsCardDetailModalOpen(false);
+    setSelectedCardForDetailModal(null);
+  };
 
   // Handle clicking a card in the search results
   const handleCardClick = (card) => {
@@ -339,6 +356,14 @@ const DeckBuilderPage = () => {
           confirmText={inputModalConfig.confirmText}
         />
 
+        {/* Render CardDetailModal */}
+        {isCardDetailModalOpen && selectedCardForDetailModal && (
+          <CardDetailModal 
+            card={selectedCardForDetailModal} 
+            onClose={handleCloseCardDetailModal} 
+          />
+        )}
+
         {commander ? (
           <>
             {/* Deck Info Header - Title, Card Count, and potentially Change Commander button */}
@@ -437,7 +462,10 @@ const DeckBuilderPage = () => {
                       {deckContextLoading ? 'Saving...' : 'Save Deck to Cloud'}
                     </button>
                   </div>
-                  <DeckBuilder deckSaveControls={null} /> {/* deckSaveControls prop might no longer be needed if handled here */}
+                  <DeckBuilder 
+                    deckSaveControls={null} 
+                    onViewCardDetails={handleOpenCardDetailModal}
+                  />
                 </>
               )}
               

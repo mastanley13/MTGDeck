@@ -33,6 +33,26 @@ export const AuthProvider = ({ children }) => {
     // navigate('/login'); 
   };
 
+  const updateCurrentUserData = (updatedData) => {
+    // Merges updatedData with currentUser. Ensure customFields are handled correctly.
+    const newUserData = { ...currentUser, ...updatedData };
+    
+    // If updatedData specifically includes customFields, we need to merge them carefully
+    if (updatedData.customFields && currentUser.customFields) {
+        const existingCustomFields = currentUser.customFields.filter(
+            updatedField => !updatedData.customFields.some(newField => newField.id === updatedField.id)
+        );
+        newUserData.customFields = [...existingCustomFields, ...updatedData.customFields];
+    } else if (updatedData.customFields) {
+        newUserData.customFields = updatedData.customFields;
+    }
+    // If only one custom field is updated (e.g. profile picture URL)
+    // We assume `updatedData` might look like { customFields: [{id: 'fieldId', value: 'newValue'}] } when passed from UserProfilePage
+
+    localStorage.setItem('ghlLoggedInUser', JSON.stringify(newUserData));
+    setCurrentUser(newUserData);
+  };
+
   const isAuthenticated = !!currentUser;
 
   const value = {
@@ -40,6 +60,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     login,
     logout,
+    updateCurrentUserData,
     loadingAuth: loading // Renamed to avoid conflict if consuming component also has 'loading'
   };
 

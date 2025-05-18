@@ -6,6 +6,9 @@ import DeckBuilderPage from './pages/DeckBuilder.jsx';
 import DeckViewer from './pages/DeckViewer.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
+import UserProfilePage from './pages/UserProfilePage.jsx';
+import CommanderAiPage from './pages/CommanderAiPage.jsx';
+import DeckCompletionAiPage from './pages/DeckCompletionAiPage.jsx';
 import { DeckProvider } from './context/DeckContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/ui/Navbar.jsx';
@@ -24,10 +27,14 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
+                <Route path="/commander-ai" element={<CommanderAiPage />} />
+                <Route path="/deck-completion-ai" element={<DeckCompletionAiPage />} />
+
                 <Route element={<ProtectedRoute />}>
                   <Route path="/builder" element={<DeckBuilderPage />} />
                   <Route path="/decks" element={<DeckViewer />} />
                   <Route path="/decks/:deckId" element={<DeckViewer />} />
+                  <Route path="/profile" element={<UserProfilePage />} />
                 </Route>
 
                 <Route path="*" element={<HomePage />} />

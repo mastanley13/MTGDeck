@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
+// Placeholder - replace with the same ID used in UserProfilePage.jsx
+const PROFILE_PIC_CUSTOM_FIELD_ID = "hPIWnTEsvK1pVbATGLS5";
+
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -87,6 +90,26 @@ const Navbar = () => {
                   My Decks
                 </Link>
               )}
+              <Link 
+                to="/commander-ai" 
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  isActive('/commander-ai') 
+                    ? 'border-primary-600 text-gray-900' 
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Commander AI
+              </Link>
+              <Link 
+                to="/deck-completion-ai" 
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  isActive('/deck-completion-ai') 
+                    ? 'border-primary-600 text-gray-900' 
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Deck Completion AI
+              </Link>
             </div>
           </div>
           
@@ -94,6 +117,31 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 {currentUser && <span className="text-sm text-gray-700 mr-4">Welcome, {currentUser.firstName || currentUser.email}!</span>}
+                
+                {(() => {
+                  const profilePicUrl = currentUser?.customFields?.find(cf => cf.id === PROFILE_PIC_CUSTOM_FIELD_ID)?.value;
+                  if (profilePicUrl) {
+                    return (
+                      <Link to="/profile" className="mr-3">
+                        <img 
+                          src={profilePicUrl} 
+                          alt="Profile" 
+                          className="h-8 w-8 rounded-full object-cover border-2 border-primary-500 hover:opacity-80 transition-opacity"
+                        />
+                      </Link>
+                    );
+                  } else {
+                    // Generic User Icon as fallback, linking to profile
+                    return (
+                      <Link to="/profile" className="mr-3 p-1 rounded-full hover:bg-gray-200 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-gray-600">
+                          <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" />
+                        </svg>
+                      </Link>
+                    );
+                  }
+                })()}
+
                 <Link 
                   to="/builder"
                   className="bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
@@ -192,10 +240,63 @@ const Navbar = () => {
                 My Decks
               </Link>
             )}
+            <Link
+              to="/commander-ai"
+              onClick={() => setIsMenuOpen(false)}
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                isActive('/commander-ai')
+                  ? 'bg-primary-50 border-primary-600 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+              }`}
+            >
+              Commander AI
+            </Link>
+            <Link
+              to="/deck-completion-ai"
+              onClick={() => setIsMenuOpen(false)}
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                isActive('/deck-completion-ai')
+                  ? 'bg-primary-50 border-primary-600 text-primary-700'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
+              }`}
+            >
+              Deck Completion AI
+            </Link>
             <div className="mt-4 pt-4 border-t border-gray-200">
               {isAuthenticated ? (
                 <>
-                  {currentUser && <span className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700">Hi, {currentUser.firstName || currentUser.email}!</span>}
+                  <div className="flex items-center pl-3 pr-4 py-2">
+                    {(() => {
+                      const profilePicUrl = currentUser?.customFields?.find(cf => cf.id === PROFILE_PIC_CUSTOM_FIELD_ID)?.value;
+                      if (profilePicUrl) {
+                        return (
+                          <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="mr-3 flex-shrink-0">
+                            <img 
+                              src={profilePicUrl} 
+                              alt="Profile" 
+                              className="h-10 w-10 rounded-full object-cover border-2 border-primary-500"
+                            />
+                          </Link>
+                        );
+                      } else {
+                        return (
+                          <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="mr-3 p-1 rounded-full hover:bg-gray-200 transition-colors flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-gray-600">
+                              <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" />
+                            </svg>
+                          </Link>
+                        );
+                      }
+                    })()}
+                    <span className="block text-base font-medium text-gray-700">Hi, {currentUser.firstName || currentUser.email}!</span>
+                  </div>
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block w-full text-left pl-3 pr-4 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+                  >
+                    View Profile
+                  </Link>
                   <button 
                     onClick={handleLogout}
                     className="block w-full text-left pl-3 pr-4 py-2 text-base font-medium text-red-600 hover:bg-red-50 hover:text-red-700"

@@ -11,6 +11,7 @@ import { getCardImageUris } from '../../utils/scryfallAPI';
  * @param {boolean} props.hasMore - Whether there are more results
  * @param {Function} props.loadMore - Function to load more results
  * @param {Function} props.onCardClick - Function called when a card is clicked
+ * @param {Function} props.onViewDetailsClick - Function called when the "View Details" button is clicked
  */
 const SearchResults = ({
   results = [],
@@ -19,6 +20,7 @@ const SearchResults = ({
   hasMore,
   loadMore,
   onCardClick,
+  onViewDetailsClick,
   totalCards = 0
 }) => {
   const observer = useRef();
@@ -43,9 +45,16 @@ const SearchResults = ({
   }, [isLoading, hasMore, loadMore]);
 
   // Handle card click
-  const handleCardClick = (card) => {
+  const handlePrimaryCardClick = (card) => {
     if (onCardClick) {
       onCardClick(card);
+    }
+  };
+
+  const handleViewDetails = (e, card) => {
+    e.stopPropagation(); // Prevent triggering onCardClick when details icon is clicked
+    if (onViewDetailsClick) {
+      onViewDetailsClick(card);
     }
   };
 
@@ -121,7 +130,10 @@ const SearchResults = ({
               key={card.id || index}
               ref={isLastCard ? lastCardRef : null}
               className="magic-card group transform transition duration-200 hover:scale-105 hover:rotate-1 hover:z-10 cursor-pointer"
-              onClick={() => handleCardClick(card)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePrimaryCardClick(card);
+              }}
             >
               <div className="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover">
                 {imageUris ? (
@@ -137,6 +149,19 @@ const SearchResults = ({
                   </div>
                 )}
                 
+                {/* Details button - positioned over the card image */}
+                {onViewDetailsClick && (
+                    <button 
+                        onClick={(e) => handleViewDetails(e, card)}
+                        className="absolute top-1.5 right-1.5 p-1.5 bg-black bg-opacity-40 hover:bg-opacity-60 rounded-full text-white transition-colors duration-150 z-20"
+                        aria-label="View card details"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+                )}
+                
                 {/* Hover overlay with card info */}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex flex-col justify-end">
                   <div className="p-2 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
@@ -148,7 +173,7 @@ const SearchResults = ({
               
               {/* Card rarity indicator */}
               {card.rarity && (
-                <div className={`absolute top-1 right-1 h-2 w-2 rounded-full 
+                <div className={`absolute top-1.5 left-1.5 h-2 w-2 rounded-full 
                   ${card.rarity === 'mythic' ? 'bg-orange-500' : 
                     card.rarity === 'rare' ? 'bg-yellow-400' : 
                     card.rarity === 'uncommon' ? 'bg-gray-300' : 

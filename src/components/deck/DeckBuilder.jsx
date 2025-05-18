@@ -65,7 +65,7 @@ const parseOracleText = (text) => {
   });
 };
 
-const DeckBuilder = ({ deckSaveControls }) => {
+const DeckBuilder = ({ deckSaveControls, onViewCardDetails }) => {
   const { 
     commander, 
     cards, 
@@ -168,6 +168,7 @@ const DeckBuilder = ({ deckSaveControls }) => {
             cards={typeCards}
             onCardMove={handleCardMove}
             forceOpenState={allCategoriesOpen}
+            onViewCardDetails={onViewCardDetails}
           />
         ))}
         

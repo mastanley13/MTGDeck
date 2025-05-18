@@ -65,6 +65,7 @@ const LoginForm = () => {
             id: contact.id,
             email: contact.email,
             firstName: contact.firstNameLowerCase,
+            customFields: contact.customFields || [],
           };
           login(userData);
           setLoading(false);
