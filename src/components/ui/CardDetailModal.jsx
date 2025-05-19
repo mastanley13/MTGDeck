@@ -22,24 +22,24 @@ const CardDetailModal = ({ card, onClose }) => {
   const getLegalityClass = (status) => {
     switch (status) {
       case 'legal':
-        return 'text-green-400';
+        return 'text-logoScheme-green';
       case 'not_legal':
-        return 'text-red-400';
+        return 'text-logoScheme-red';
       case 'banned':
-        return 'text-red-600 font-semibold';
+        return 'text-logoScheme-red font-semibold';
       case 'restricted':
         return 'text-yellow-400';
       default:
-        return 'text-gray-400';
+        return 'text-gray-500';
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-gray-800 p-6 rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col md:flex-row gap-6 relative text-white">
+      <div className="bg-logoScheme-darkGray p-6 rounded-lg shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col md:flex-row gap-6 relative text-gray-200 border border-logoScheme-brown">
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors z-10"
+          className="absolute top-3 right-3 text-gray-400 hover:text-logoScheme-gold transition-colors z-10"
           aria-label="Close modal"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -53,18 +53,18 @@ const CardDetailModal = ({ card, onClose }) => {
             <img 
               src={mainImageUrl} 
               alt={`Art for ${card.name}`} 
-              className="rounded-lg max-w-full max-h-[80vh] object-contain shadow-lg border-2 border-gray-600"
+              className="rounded-lg max-w-full max-h-[80vh] object-contain shadow-lg border-2 border-logoScheme-brown"
             />
           ) : (
-            <div className="w-full h-96 bg-gray-700 flex items-center justify-center text-gray-500 rounded-lg">
+            <div className="w-full h-96 bg-gray-700 flex items-center justify-center text-gray-400 rounded-lg">
               No Image Available
             </div>
           )}
         </div>
 
         {/* Card Info Section */} 
-        <div className="md:w-1/2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-700 pr-2">
-          <h2 className="text-3xl font-bold mb-3 text-primary-300">{card.name}</h2>
+        <div className="md:w-1/2 flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 pr-2">
+          <h2 className="text-3xl font-bold mb-3 text-logoScheme-gold">{card.name}</h2>
           <div className="flex justify-between items-center mb-2 text-lg">
             <span className="text-gray-300">{card.type_line || card.type}</span>
             <span className="text-yellow-400 font-mono">{card.mana_cost}</span>
@@ -90,14 +90,14 @@ const CardDetailModal = ({ card, onClose }) => {
 
           {/* EDHREC Rank and Game Changer status */}
           {(card.edhrec_rank || card.game_changer) && (
-            <div className="mt-3 mb-2 py-2 border-t border-b border-gray-700">
+            <div className="mt-3 mb-2 py-2 border-t border-b border-logoScheme-brown">
               {card.edhrec_rank && (
                 <p className="text-sm text-gray-300">
                   EDHREC Rank: <span className="font-semibold text-gray-100">{card.edhrec_rank.toLocaleString()}</span>
                 </p>
               )}
               {card.game_changer && (
-                <p className="text-sm text-green-400 font-semibold mt-1">
+                <p className="text-sm text-logoScheme-green font-semibold mt-1">
                   ★ Game Changer (Commander)
                 </p>
               )}
@@ -106,7 +106,7 @@ const CardDetailModal = ({ card, onClose }) => {
 
           {/* Format Legalities Section */}
           {card.legalities && (
-            <div className="mt-4 pt-3 border-t border-gray-700">
+            <div className="mt-4 pt-3 border-t border-logoScheme-brown">
               <h4 className="text-lg font-semibold mb-2 text-gray-200">Format Legalities:</h4>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                 {formatsToShow.map(format => {
@@ -124,7 +124,7 @@ const CardDetailModal = ({ card, onClose }) => {
             </div>
           )}
 
-          <p className="text-xs text-gray-500 mt-auto pt-2">
+          <p className="text-xs text-gray-400 mt-auto pt-2">
             Set: {card.set_name ? `${card.set_name} (${card.set?.toUpperCase()})` : 'N/A'} - Collector #: {card.collector_number || 'N/A'}
           </p>
         </div>

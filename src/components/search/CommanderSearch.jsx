@@ -193,17 +193,17 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100] p-4">
-      <div className="commander-search bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-800">
+      <div className="commander-search bg-logoScheme-darkGray rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col border border-logoScheme-brown">
+        <div className="flex justify-between items-center mb-4 pb-4 border-b border-logoScheme-brown">
+            <h2 className="text-2xl font-bold text-logoScheme-gold">
                 {modalSelectedCommander ? 'Selected Commander' : 'Select a Commander'}
             </h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            <button onClick={onClose} className="text-gray-300 hover:text-logoScheme-gold text-3xl">&times;</button>
         </div>
         
-        <div className="overflow-y-auto flex-grow">
+        <div className="overflow-y-auto flex-grow text-gray-300">
           {modalSelectedCommander ? (
-            <div className="commander-showcase rounded-xl overflow-hidden bg-gradient-to-r from-primary-50 to-primary-100">
+            <div className="commander-showcase rounded-xl overflow-hidden bg-gradient-to-r from-logoScheme-brown to-logoScheme-darkGray">
                 <div className="flex flex-col md:flex-row items-center">
                     <div className="w-full md:w-1/3 relative p-4">
                         {modalSelectedCommander.image_uris?.normal && (
@@ -211,20 +211,20 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
                                 <img 
                                     src={modalSelectedCommander.image_uris.normal} 
                                     alt={modalSelectedCommander.name}
-                                    className="rounded-xl shadow-lg w-full h-auto"
+                                    className="rounded-xl shadow-lg w-full h-auto border border-logoScheme-gold"
                                 />
                             </div>
                         )}
                     </div>
                     <div className="p-4 md:p-6 flex-1">
                         <div className="flex items-center mb-2 space-x-2">
-                            <h3 className="text-2xl font-bold text-gray-900">{modalSelectedCommander.name}</h3>
+                            <h3 className="text-2xl font-bold text-logoScheme-gold">{modalSelectedCommander.name}</h3>
                             <div className="flex space-x-1">
                                 {renderColorIdentity(modalSelectedCommander.color_identity)}
                             </div>
                         </div>
-                        <div className="text-sm text-gray-600 mb-3">{modalSelectedCommander.type_line}</div>
-                        <div className="bg-white bg-opacity-70 p-3 rounded-lg shadow-sm mb-4 prose prose-sm max-w-none overflow-y-auto max-h-40">
+                        <div className="text-sm text-gray-300 mb-3">{modalSelectedCommander.type_line}</div>
+                        <div className="bg-gray-700 bg-opacity-80 p-3 rounded-lg shadow-sm mb-4 prose prose-sm max-w-none overflow-y-auto max-h-40 text-gray-200">
                             <p className="whitespace-pre-line">{modalSelectedCommander.oracle_text}</p>
                             {modalSelectedCommander.power && modalSelectedCommander.toughness && (
                                 <div className="mt-2 font-semibold">
@@ -238,12 +238,12 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
                             )}
                         </div>
                         <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-400">
                                 {modalSelectedCommander.set_name} ({modalSelectedCommander.set.toUpperCase()})
                             </div>
                             <button
                                 onClick={handleChangeCommander}
-                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                className="btn-danger px-4 py-2 text-sm"
                             >
                                 Change Commander
                             </button>
@@ -253,7 +253,7 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
             </div>
           ) : (
             <>
-              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <div className="bg-logoScheme-brown p-4 rounded-lg mb-6">
                 <SearchBar 
                   query={currentQuery}
                   setQuery={handleInputChange}
@@ -279,12 +279,12 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
               />
               
               {!searchQuery && !isLoading && searchResults.length === 0 && (
-                <div className="text-center p-8 bg-gray-50 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="text-center p-8 bg-logoScheme-brown rounded-lg mt-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  <p className="text-lg font-medium text-gray-700 mb-2">Search for a commander to get started</p>
-                  <p className="text-sm text-gray-500 max-w-md mx-auto">
+                  <p className="text-lg font-medium text-gray-200 mb-2">Search for a commander to get started</p>
+                  <p className="text-sm text-gray-400 max-w-md mx-auto">
                     Try searching for popular commanders like "Atraxa", "Korvold", "Muldrotha" or use advanced filters
                   </p>
                 </div>

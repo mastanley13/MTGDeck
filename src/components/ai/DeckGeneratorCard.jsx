@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useDeckGenerator } from '../../hooks/useDeckGenerator';
 import { useDeck } from '../../context/DeckContext';
+import "@saeris/typeface-beleren-bold";
 
 /**
  * Component for automatically building a core 99-card deck with AI
@@ -38,8 +39,8 @@ const DeckGeneratorCard = ({ onDraftComplete }) => {
   const nonCommanderCardCount = commander ? totalCardCount - 1 : 0;
 
   return (
-    <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-lg shadow-md overflow-hidden">
-      <div className="p-4 text-white">
+    <div className="font-beleren bg-gradient-to-r from-purple-600 to-indigo-700 rounded-lg shadow-md overflow-hidden">
+      <div className="p-4 text-white font-beleren">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold">Commander Deck Generator</h2>
           {commander && (

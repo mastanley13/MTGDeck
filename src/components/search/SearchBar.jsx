@@ -170,7 +170,7 @@ const SearchBar = ({
         <div className="flex items-center">
           <div className="relative flex-grow">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -181,7 +181,7 @@ const SearchBar = ({
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="Search for cards..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-l-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 text-gray-900"
+              className="w-full pl-10 pr-4 py-3 border border-gray-500 rounded-l-lg shadow-sm focus:ring-logoScheme-gold focus:border-logoScheme-gold bg-gray-700 text-gray-100 placeholder-gray-400"
               onFocus={() => inputValue.length >= minCharsForSuggestions && setShowSuggestions(true)}
               autoComplete="off"
               aria-autocomplete="list"
@@ -191,11 +191,11 @@ const SearchBar = ({
           </div>
           <button
             type="submit"
-            className="bg-primary-600 text-white px-5 py-3 rounded-r-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors"
+            className="bg-logoScheme-gold text-logoScheme-darkGray px-5 py-3 rounded-r-lg hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray transition-colors"
             disabled={isLoading}
           >
             {isLoading ? (
-              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-5 w-5 text-logoScheme-darkGray" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -209,14 +209,14 @@ const SearchBar = ({
         {showSuggestions && suggestions.length > 0 && (
           <div 
             ref={suggestionsRef}
-            className="absolute z-50 w-full bg-white mt-1 border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+            className="absolute z-50 w-full bg-logoScheme-darkGray mt-1 border border-logoScheme-brown rounded-md shadow-lg max-h-60 overflow-y-auto"
             style={{ top: '100%' }}
           >
             <ul 
               ref={suggestionListRef}
               id="suggestion-list" 
               role="listbox"
-              className="py-1 divide-y divide-gray-100"
+              className="py-1 divide-y divide-logoScheme-brown text-gray-200"
             >
               {suggestions.map((suggestion, index) => (
                 <li
@@ -224,13 +224,13 @@ const SearchBar = ({
                   role="option"
                   aria-selected={index === activeSuggestionIndex}
                   className={`px-4 py-2 cursor-pointer transition-colors ${
-                    index === activeSuggestionIndex ? 'bg-primary-50 text-primary-700' : 'hover:bg-gray-50'
+                    index === activeSuggestionIndex ? 'bg-logoScheme-brown text-logoScheme-gold' : 'hover:bg-gray-700'
                   }`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   onMouseEnter={() => setActiveSuggestionIndex(index)}
                 >
                   <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     {suggestion}
@@ -245,19 +245,19 @@ const SearchBar = ({
           <button
             type="button"
             onClick={handleAdvancedToggle}
-            className="text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors focus:outline-none focus:underline"
+            className="text-sm font-medium text-logoScheme-gold hover:text-yellow-400 transition-colors focus:outline-none focus:underline"
           >
             {advancedMode ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
           </button>
         </div>
         
         {advancedMode && (
-          <div className="mt-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Advanced Filters</h3>
+          <div className="mt-3 p-4 bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-sm text-gray-300">
+            <h3 className="text-lg font-medium text-logoScheme-gold mb-3">Advanced Filters</h3>
             
             {/* Color filters */}
             <div className="mb-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Color Identity</p>
+              <p className="text-sm font-medium text-gray-300 mb-2">Color Identity</p>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(colorMap).map(([code, { name, bgClass, textClass }]) => {
                   const isActive = (searchOptions.colors || []).includes(code);
@@ -267,10 +267,10 @@ const SearchBar = ({
                       key={code}
                       type="button"
                       onClick={() => handleColorFilterChange(code)}
-                      className={`flex items-center px-3 py-1.5 rounded-md transition-all ${
+                      className={`flex items-center px-3 py-1.5 rounded-md transition-all text-sm ${
                         isActive 
                           ? `${bgClass} ${textClass} shadow-sm` 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
                       }`}
                     >
                       {isActive && (
@@ -285,7 +285,7 @@ const SearchBar = ({
                 <button
                   type="button"
                   onClick={() => updateSearchOptions({ colors: [] })}
-                  className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                  className="px-3 py-1.5 bg-gray-700 text-gray-200 text-sm rounded-md hover:bg-gray-600 transition-colors"
                 >
                   Clear
                 </button>
@@ -294,14 +294,14 @@ const SearchBar = ({
             
             {/* Card type filter */}
             <div className="mb-4">
-              <label htmlFor="cardType" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="cardType" className="block text-sm font-medium text-gray-300 mb-2">
                 Card Type
               </label>
               <select
                 id="cardType"
                 value={searchOptions.type || ''}
                 onChange={handleCardTypeChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm focus:ring-logoScheme-gold focus:border-logoScheme-gold bg-gray-700 text-gray-100 placeholder-gray-400"
               >
                 <option value="">Any Type</option>
                 <option value="creature">Creature</option>
@@ -316,7 +316,7 @@ const SearchBar = ({
             
             {/* Sort order */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Sort By
               </label>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -325,8 +325,8 @@ const SearchBar = ({
                   onClick={() => updateSearchOptions({ order: 'name' })}
                   className={`px-3 py-2 rounded-md text-sm text-center transition-colors ${
                     searchOptions.order === 'name'
-                      ? 'bg-primary-100 border border-primary-300 text-primary-800'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                      ? 'bg-logoScheme-brown border border-logoScheme-gold text-logoScheme-gold'
+                      : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
                   }`}
                 >
                   Name
@@ -336,8 +336,8 @@ const SearchBar = ({
                   onClick={() => updateSearchOptions({ order: 'cmc' })}
                   className={`px-3 py-2 rounded-md text-sm text-center transition-colors ${
                     searchOptions.order === 'cmc'
-                      ? 'bg-primary-100 border border-primary-300 text-primary-800'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                      ? 'bg-logoScheme-brown border border-logoScheme-gold text-logoScheme-gold'
+                      : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
                   }`}
                 >
                   Mana Value
@@ -347,8 +347,8 @@ const SearchBar = ({
                   onClick={() => updateSearchOptions({ order: 'edhrec' })}
                   className={`px-3 py-2 rounded-md text-sm text-center transition-colors ${
                     searchOptions.order === 'edhrec' || !searchOptions.order
-                      ? 'bg-primary-100 border border-primary-300 text-primary-800'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                      ? 'bg-logoScheme-brown border border-logoScheme-gold text-logoScheme-gold'
+                      : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
                   }`}
                 >
                   Popularity
@@ -358,8 +358,8 @@ const SearchBar = ({
                   onClick={() => updateSearchOptions({ order: 'released' })}
                   className={`px-3 py-2 rounded-md text-sm text-center transition-colors ${
                     searchOptions.order === 'released'
-                      ? 'bg-primary-100 border border-primary-300 text-primary-800'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                      ? 'bg-logoScheme-brown border border-logoScheme-gold text-logoScheme-gold'
+                      : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
                   }`}
                 >
                   Release Date

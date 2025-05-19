@@ -37,15 +37,15 @@ const CardDisplay: React.FC<CardDisplayProps> = ({
       <img 
         src={card.imageUrl} 
         alt={card.name} 
-        className={`rounded-lg shadow-sm ${sizeClasses[size]} object-cover`}
+        className={`rounded-lg shadow-sm ${sizeClasses[size]} object-cover border border-logoScheme-brown`}
       />
       
       {showDetails && (
         <div className="mt-2">
-          <h3 className="font-medium text-sm">{card.name}</h3>
-          <p className="text-xs text-gray-600">{card.type}</p>
+          <h3 className="font-medium text-sm text-gray-100">{card.name}</h3>
+          <p className="text-xs text-gray-400">{card.type}</p>
           {card.text && (
-            <p className="text-xs mt-1 text-gray-700">{card.text}</p>
+            <p className="text-xs mt-1 text-gray-300">{card.text}</p>
           )}
         </div>
       )}

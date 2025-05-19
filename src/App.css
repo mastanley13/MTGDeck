@@ -3,11 +3,11 @@
 /* Base styles */
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background-color: #f8f9fa;
-  background-image: 
+  /* background-color: #f8f9fa; */ /* Removed to use Tailwind class from index.html */
+  /* background-image: 
     linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  background-attachment: fixed;
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); */ /* Removed */
+  /* background-attachment: fixed; */ /* Removed */
 }
 
 #root {
@@ -34,19 +34,19 @@ body {
 
 /* Button styles */
 .btn-primary {
-  @apply px-4 py-2 bg-primary-600 text-white rounded-md shadow-sm hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+  @apply px-4 py-2 bg-logoScheme-gold text-logoScheme-darkGray rounded-md shadow-sm hover:bg-yellow-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-gold;
 }
 
 .btn-secondary {
-  @apply px-4 py-2 bg-secondary-600 text-white rounded-md shadow-sm hover:bg-secondary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-500;
+  @apply px-4 py-2 bg-logoScheme-darkGray text-logoScheme-gold rounded-md shadow-sm hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-darkGray;
 }
 
 .btn-danger {
-  @apply px-4 py-2 bg-red-600 text-white rounded-md shadow-sm hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500;
+  @apply px-4 py-2 bg-logoScheme-red text-white rounded-md shadow-sm hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-red;
 }
 
 .btn-outline {
-  @apply px-4 py-2 border border-gray-300 text-gray-700 rounded-md shadow-sm hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+  @apply px-4 py-2 border border-logoScheme-gold text-logoScheme-gold rounded-md shadow-sm hover:bg-logoScheme-gold hover:text-logoScheme-darkGray transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-gold;
 }
 
 /* Card styling */
@@ -78,25 +78,25 @@ body {
 }
 
 .tab-nav button.active {
-  @apply border-primary-600 text-primary-700;
+  @apply border-logoScheme-gold text-logoScheme-gold;
 }
 
 .tab-nav button:not(.active) {
-  @apply text-gray-500 hover:text-gray-700 hover:border-gray-300;
+  @apply text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold;
 }
 
 /* Loading animations */
 .loading-spinner {
-  @apply animate-spin h-8 w-8 text-primary-600;
+  @apply animate-spin h-8 w-8 text-logoScheme-gold;
 }
 
 /* Section headers */
 .section-header {
-  @apply flex justify-between items-center mb-4 pb-2 border-b border-gray-200;
+  @apply flex justify-between items-center mb-4 pb-2 border-b border-logoScheme-darkGray;
 }
 
 .section-header h2 {
-  @apply text-2xl font-bold text-gray-800;
+  @apply text-2xl font-bold text-logoScheme-gold;
 }
 
 /* Page transitions */
@@ -147,7 +147,7 @@ body {
 
 /* Commander showcase */
 .commander-showcase {
-  @apply bg-gradient-to-r from-primary-50 to-primary-100 rounded-xl p-4 shadow-md;
+  @apply bg-gradient-to-r from-logoScheme-brown to-logoScheme-darkGray rounded-xl p-4 shadow-md;
   background-size: 400% 400%;
   animation: gradient 5s ease infinite;
 }

@@ -89,9 +89,9 @@ const DeckStatsIndex = () => {
   }, [cards, commander, numSimulations, targetLandCount, isSimulating]); // comlinkApiRef is stable and not needed in deps
 
   const renderManaSourceItem = (label, value) => (
-    <li className="flex justify-between py-1 px-2 hover:bg-slate-600 rounded">
-      <span className="text-slate-300">{label}:</span>
-      <span className="font-semibold text-sky-300">{value}</span>
+    <li className="flex justify-between py-1 px-2 hover:bg-gray-600 rounded">
+      <span className="text-gray-300">{label}:</span>
+      <span className="font-semibold text-logoScheme-gold">{value}</span>
     </li>
   );
   
@@ -103,8 +103,8 @@ const DeckStatsIndex = () => {
   }, [simulationResults]);
 
   return (
-    <div className="p-4 bg-slate-800 rounded-lg shadow-xl">
-      <div className="mb-4 border-b border-slate-700">
+    <div className="p-4 bg-logoScheme-darkGray rounded-lg shadow-xl">
+      <div className="mb-4 border-b border-logoScheme-brown">
         <nav className="flex space-x-2 md:space-x-4 overflow-x-auto pb-1" aria-label="Tabs">
           {[
             { name: 'Overview', tabKey: 'overview' },
@@ -117,8 +117,8 @@ const DeckStatsIndex = () => {
               onClick={() => setActiveTab(tab.tabKey)}
               className={`${ 
                 activeTab === tab.tabKey
-                  ? 'border-sky-500 text-sky-400 bg-slate-700'
-                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                  ? 'border-logoScheme-gold text-logoScheme-gold bg-logoScheme-brown'
+                  : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400'
               } whitespace-nowrap py-2 px-3 text-xs sm:text-sm font-medium focus:outline-none transition-all rounded-t-md border-b-2`}
             >
               {tab.name}
@@ -130,20 +130,20 @@ const DeckStatsIndex = () => {
       <div>
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-slate-700/50 p-4 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-sky-400 mb-3">Mana Color Pie</h3>
+            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-logoScheme-gold mb-3">Mana Color Pie</h3>
               <ColorPie />
             </div>
-            <div className="bg-slate-700/50 p-4 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-sky-400 mb-3">Mana Curve</h3>
+            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-logoScheme-gold mb-3">Mana Curve</h3>
               <ManaCurve />
             </div>
-            <div className="bg-slate-700/50 p-4 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-sky-400 mb-3">Card Type Distribution</h3>
+            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-logoScheme-gold mb-3">Card Type Distribution</h3>
               <TypeBar />
             </div>
-            <div className="bg-slate-700/50 p-4 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-sky-400 mb-3">Functional Roles</h3>
+            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-logoScheme-gold mb-3">Functional Roles</h3>
               {Object.keys(functionalBuckets).length > 0 ? (
                 <ul className="space-y-1 text-sm">
                   {renderManaSourceItem('Ramp', functionalBuckets.Ramp || 0)}
@@ -151,7 +151,7 @@ const DeckStatsIndex = () => {
                   {/* Add other buckets as they are implemented */}
                 </ul>
               ) : (
-                <p className="text-slate-400 text-sm">No functional roles calculated yet.</p>
+                <p className="text-gray-400 text-sm">No functional roles calculated yet.</p>
               )}
             </div>
           </div>
@@ -159,8 +159,8 @@ const DeckStatsIndex = () => {
 
         {activeTab === 'mana' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-slate-700/50 p-4 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-sky-400 mb-3">Mana Sources</h3>
+            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-logoScheme-gold mb-3">Mana Sources</h3>
               {Object.keys(manaSources).length > 0 ? (
                 <ul className="space-y-1 text-sm">
                   {renderManaSourceItem('White (W)', manaSources.W || 0)}
@@ -172,11 +172,11 @@ const DeckStatsIndex = () => {
                   {renderManaSourceItem('Multi-color', manaSources.Multi || 0)}
                 </ul>
               ) : (
-                <p className="text-slate-400 text-sm">No mana sources calculated yet.</p>
+                <p className="text-gray-400 text-sm">No mana sources calculated yet.</p>
               )}
             </div>
-            <div className="bg-slate-700/50 p-4 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-sky-400 mb-3">Colored Pip Requirements</h3>
+            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-logoScheme-gold mb-3">Colored Pip Requirements</h3>
               {Object.keys(pipRequirements).length > 0 ? (
                 <ul className="space-y-1 text-sm">
                   {renderManaSourceItem('White Pips', pipRequirements.W || 0)}
@@ -186,52 +186,52 @@ const DeckStatsIndex = () => {
                   {renderManaSourceItem('Green Pips', pipRequirements.G || 0)}
                 </ul>
               ) : (
-                <p className="text-slate-400 text-sm">No pip requirements calculated yet.</p>
+                <p className="text-gray-400 text-sm">No pip requirements calculated yet.</p>
               )}
-              <p className='text-slate-500 text-xs mt-3 italic'>Note: Hybrid/Phyrexian pips are counted towards each of their colored components.</p>
-              <p className='text-slate-400 text-sm mt-4 font-semibold'>Karsten-style land health check (coming soon).</p>
+              <p className='text-gray-500 text-xs mt-3 italic'>Note: Hybrid/Phyrexian pips are counted towards each of their colored components.</p>
+              <p className='text-gray-400 text-sm mt-4 font-semibold'>Karsten-style land health check (coming soon).</p>
             </div>
           </div>
         )}
 
         {activeTab === 'curve' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-slate-700/50 p-4 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-sky-400 mb-3">Detailed Mana Curve</h3>
+            <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-logoScheme-gold mb-3">Detailed Mana Curve</h3>
               <ManaCurve />
             </div>
-             <div className="bg-slate-700/50 p-4 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-sky-400 mb-3">Detailed Card Types</h3>
+             <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow-md">
+              <h3 className="text-lg font-semibold text-logoScheme-gold mb-3">Detailed Card Types</h3>
               <TypeBar />
             </div>
           </div>
         )}
 
         {activeTab === 'simulation' && (
-          <div className="bg-slate-700/50 p-4 rounded-lg shadow-md space-y-6">
-            <h3 className="text-xl font-semibold text-sky-300 mb-2">Mulligan Simulator (Opening Hand)</h3>
+          <div className="bg-gray-700 bg-opacity-50 p-4 rounded-lg shadow-md space-y-6">
+            <h3 className="text-xl font-semibold text-logoScheme-gold mb-2">Mulligan Simulator (Opening Hand)</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
               <div>
-                <label htmlFor="numSimulations" className="block text-sm font-medium text-slate-300 mb-1">Number of Simulations:</label>
+                <label htmlFor="numSimulations" className="block text-sm font-medium text-gray-300 mb-1">Number of Simulations:</label>
                 <input 
                   type="number" 
                   id="numSimulations" 
                   value={numSimulations}
                   onChange={(e) => setNumSimulations(Math.max(100, parseInt(e.target.value, 10) || 10000))}
-                  className="w-full px-3 py-2 rounded-md bg-slate-800 border border-slate-600 text-slate-100 focus:ring-sky-500 focus:border-sky-500 text-sm"
+                  className="w-full px-3 py-2 rounded-md bg-gray-700 border border-gray-500 text-gray-100 focus:ring-logoScheme-gold focus:border-logoScheme-gold text-sm placeholder-gray-400"
                   min="100"
                   step="100"
                 />
               </div>
               <div>
-                <label htmlFor="targetLandCount" className="block text-sm font-medium text-slate-300 mb-1">Target Minimum Lands in Hand (7 cards):</label>
+                <label htmlFor="targetLandCount" className="block text-sm font-medium text-gray-300 mb-1">Target Minimum Lands in Hand (7 cards):</label>
                 <input 
                   type="number" 
                   id="targetLandCount" 
                   value={targetLandCount}
                   onChange={(e) => setTargetLandCount(Math.max(0, Math.min(7, parseInt(e.target.value, 10) || 3)))}
-                  className="w-full px-3 py-2 rounded-md bg-slate-800 border border-slate-600 text-slate-100 focus:ring-sky-500 focus:border-sky-500 text-sm"
+                  className="w-full px-3 py-2 rounded-md bg-gray-700 border border-gray-500 text-gray-100 focus:ring-logoScheme-gold focus:border-logoScheme-gold text-sm placeholder-gray-400"
                   min="0"
                   max="7"
                 />
@@ -241,13 +241,13 @@ const DeckStatsIndex = () => {
             <button 
               onClick={handleRunSimulation}
               disabled={isSimulating || !comlinkApiRef.current} // Check comlinkApiRef.current
-              className="w-full sm:w-auto px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto px-6 py-2.5 bg-logoScheme-gold hover:bg-yellow-400 text-logoScheme-darkGray font-semibold rounded-lg shadow-md transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSimulating ? 'Simulating...' : 'Run Simulation'}
             </button>
 
             {simulationError && (
-              <div className="mt-4 p-3 bg-red-800/50 border border-red-700 text-red-200 rounded-md text-sm">
+              <div className="mt-4 p-3 bg-red-900 bg-opacity-50 border border-logoScheme-red text-red-300 rounded-md text-sm">
                 <p className="font-semibold">Error:</p>
                 <p>{simulationError}</p>
               </div>
@@ -255,26 +255,26 @@ const DeckStatsIndex = () => {
 
             {simulationResults && !simulationError && (
               <div className="mt-4 space-y-4">
-                <h4 className="text-lg font-semibold text-sky-400">Simulation Results:</h4>
-                <p className="text-sm text-slate-300">
-                  Probability of having at least <span className="font-bold text-sky-300">{simulationResults.targetLandCount}</span> lands 
+                <h4 className="text-lg font-semibold text-logoScheme-gold">Simulation Results:</h4>
+                <p className="text-sm text-gray-300">
+                  Probability of having at least <span className="font-bold text-logoScheme-gold">{simulationResults.targetLandCount}</span> lands 
                   in an opening hand of 7 cards (after {simulationResults.numSimulations} simulations): 
-                  <span className="font-bold text-2xl text-green-400 ml-2">{simulationResults.successRate}%</span>
+                  <span className="font-bold text-2xl text-logoScheme-green ml-2">{simulationResults.successRate}%</span>
                 </p>
                 
                 <div>
-                  <h5 className="text-md font-semibold text-sky-400 mb-2">Probability Distribution of Land Counts (7 cards):</h5>
+                  <h5 className="text-md font-semibold text-logoScheme-gold mb-2">Probability Distribution of Land Counts (7 cards):</h5>
                    {landProbDataForChart.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={landProbDataForChart} margin={{ top: 5, right: 20, left: -20, bottom: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#4A5568" />
-                            <XAxis dataKey="name" tick={{ fill: '#A0AEC0' }} />
-                            <YAxis unit="%" allowDecimals={false} domain={[0, 100]} tick={{ fill: '#A0AEC0' }} />
+                            <XAxis dataKey="name" tick={{ fill: '#9ca3af' }} />
+                            <YAxis unit="%" allowDecimals={false} domain={[0, 100]} tick={{ fill: '#9ca3af' }} />
                             <Tooltip 
                                 formatter={(value) => `${parseFloat(value).toFixed(2)}%`}
-                                contentStyle={{ backgroundColor: '#2d3748', border: '1px solid #4a5568', borderRadius: '0.375rem' }}
-                                itemStyle={{ color: '#cbd5e0' }}
-                                cursor={{ fill: 'rgba(74, 85, 104, 0.5)' }}
+                                contentStyle={{ backgroundColor: '#37474F', border: '1px solid #795548', borderRadius: '0.375rem' }}
+                                itemStyle={{ color: '#e5e7eb' }}
+                                cursor={{ fill: 'rgba(121, 85, 72, 0.5)' }}
                             />
                             <Bar dataKey="probability" name="Probability">
                                 {landProbDataForChart.map((entry, index) => (
@@ -284,7 +284,7 @@ const DeckStatsIndex = () => {
                         </BarChart>
                     </ResponsiveContainer>
                     ) : (
-                        <p className="text-slate-400 text-sm">No land probability data to display.</p>
+                        <p className="text-gray-400 text-sm">No land probability data to display.</p>
                     )}
                 </div>
               </div>

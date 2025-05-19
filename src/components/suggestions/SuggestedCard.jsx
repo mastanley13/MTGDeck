@@ -26,21 +26,21 @@ const SuggestedCard = ({ suggestion }) => {
     const categoryColors = {
       'Card Draw': 'bg-mtg-blue',
       'Ramp': 'bg-mtg-green',
-      'Removal': 'bg-amber-800',
+      'Removal': 'bg-logoScheme-red',
       'Combo Piece': 'bg-mtg-red',
-      'Control': 'bg-blue-900',
-      'Utility': 'bg-gray-700',
+      'Control': 'bg-logoScheme-blue',
+      'Utility': 'bg-gray-600',
       'Finisher': 'bg-mtg-red',
       'Protection': 'bg-mtg-white text-black',
       'Recursion': 'bg-mtg-black',
-      'Tutor': 'bg-purple-900',
+      'Tutor': 'bg-purple-700',
       'Lands': 'bg-mtg-green',
-      'Synergy': 'bg-indigo-700',
-      'Creature Pump': 'bg-orange-700',
+      'Synergy': 'bg-teal-700',
+      'Creature Pump': 'bg-orange-600',
       'Aggro': 'bg-mtg-red',
     };
     
-    return categoryColors[category] || 'bg-gray-700';
+    return categoryColors[category] || 'bg-gray-600';
   };
   
   // Get card type line for display
@@ -58,7 +58,7 @@ const SuggestedCard = ({ suggestion }) => {
       </div>
       
       {/* Card Image */}
-      <div className="w-full aspect-[63/88] relative bg-gray-100 border-b border-gray-200">
+      <div className="w-full aspect-[63/88] relative bg-gray-700 border-b border-logoScheme-brown">
         {imageUris ? (
           <img 
             src={imageUris.normal || imageUris.small} 
@@ -66,18 +66,18 @@ const SuggestedCard = ({ suggestion }) => {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 text-sm p-2 text-center">
+          <div className="w-full h-full flex items-center justify-center bg-gray-600 text-gray-300 text-sm p-2 text-center">
             {name || 'Card image not available'}
           </div>
         )}
       </div>
       
       {/* Card Details */}
-      <div className="bg-white p-3 flex-1 flex flex-col">
-        <h3 className="font-bold text-sm truncate text-gray-900">{name}</h3>
-        <div className="text-xs text-gray-600 italic mb-2">{getCardType()}</div>
+      <div className="bg-logoScheme-darkGray p-3 flex-1 flex flex-col">
+        <h3 className="font-bold text-sm truncate text-logoScheme-gold">{name}</h3>
+        <div className="text-xs text-gray-400 italic mb-2">{getCardType()}</div>
         
-        <p className="text-xs text-gray-700 mb-3 flex-grow">
+        <p className="text-xs text-gray-300 mb-3 flex-grow">
           {reason}
         </p>
         
@@ -86,8 +86,8 @@ const SuggestedCard = ({ suggestion }) => {
           disabled={!card}
           className={`text-xs w-full py-1.5 px-3 rounded ${
             card 
-              ? 'bg-green-600 text-white hover:bg-green-700 transition-colors' 
-              : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              ? 'bg-logoScheme-green text-white hover:bg-green-700 transition-colors' 
+              : 'bg-gray-600 text-gray-400 cursor-not-allowed'
           }`}
         >
           {card ? 'Add to Deck' : 'Card Not Found'}

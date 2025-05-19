@@ -96,7 +96,7 @@ const RegistrationForm = () => {
               required
               value={formData.firstName}
               onChange={handleChange}
-              className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-gray-700 text-white"
+              className="appearance-none block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100"
             />
           </div>
         </div>
@@ -114,7 +114,7 @@ const RegistrationForm = () => {
               required
               value={formData.lastName}
               onChange={handleChange}
-              className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-gray-700 text-white"
+              className="appearance-none block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100"
             />
           </div>
         </div>
@@ -133,7 +133,7 @@ const RegistrationForm = () => {
             required
             value={formData.email}
             onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-gray-700 text-white"
+            className="appearance-none block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100"
           />
         </div>
       </div>
@@ -151,7 +151,7 @@ const RegistrationForm = () => {
             required
             value={formData.password}
             onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-gray-700 text-white"
+            className="appearance-none block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100"
           />
         </div>
       </div>
@@ -169,7 +169,7 @@ const RegistrationForm = () => {
             required
             value={formData.confirmPassword}
             onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm bg-gray-700 text-white"
+            className="appearance-none block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100"
           />
         </div>
       </div>
@@ -177,7 +177,7 @@ const RegistrationForm = () => {
       <div>
         <button
           type="submit"
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-primary-500 transition-colors"
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-logoScheme-darkGray bg-logoScheme-gold hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray focus:ring-logoScheme-gold transition-colors"
         >
           Create account
         </button>

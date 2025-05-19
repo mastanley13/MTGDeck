@@ -3,6 +3,13 @@ import { useDeck } from '../context/DeckContext'; // Assuming path to DeckContex
 import { useAuth } from '../context/AuthContext';   // Assuming path to AuthContext
 import CardDetailModal from '../components/ui/CardDetailModal'; // Import the modal
 
+// Checkmark Icon Component (can be moved to a shared UI components file)
+const CheckIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
+    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+  </svg>
+);
+
 const DeckCompletionAiPage = () => {
   const [currentDecklist, setCurrentDecklist] = useState('');
   const [selectedDeckId, setSelectedDeckId] = useState('');
@@ -77,55 +84,121 @@ const DeckCompletionAiPage = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!currentDecklist.trim()) return;
-    // if (!OPENAI_API_KEY) { // This check will be active when OpenAI is wired
-    //   setError('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-    //   return;
-    // }
+    if (!OPENAI_API_KEY) { 
+      setError('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
+      return;
+    }
 
     setIsLoading(true);
     setSuggestedCards([]);
     setError(null);
 
-    // TODO: Replace with actual OpenAI API call
-    // The prompt should ask for ~30 card suggestions based on currentDecklist.
-    // Example: The AI should provide name, type, mana_cost, quantity, and a reason/description.
-    console.log('Decklist for AI (aiming for 30 suggestions):', currentDecklist);
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate longer network delay for more cards
+    const prompt = `
+      You are an expert Magic: The Gathering deck completion AI.
+      A user has provided the following partial decklist:
+      """
+      ${currentDecklist}
+      """
+      Based on this list, please suggest approximately 30 cards to help complete a 99-card Commander deck (plus the commander if it's mentioned in the list or inferable).
+      The suggestions should aim to improve the deck's synergy, power level, and address potential weaknesses (like ramp, card draw, removal, mana fixing, win conditions) based on the provided cards.
+      For each suggested card, provide:
+      1. name: The full name of the card.
+      2. quantity: The number of copies to suggest (typically 1 for Commander, unless it's a basic land or a card that explicitly allows multiple copies like Seven Dwarves).
+      3. type: The card's primary type (e.g., Creature, Instant, Sorcery, Artifact, Enchantment, Land, Planeswalker).
+      4. mana_cost: The mana cost of the card (e.g., {1}{W}{U}).
+      5. description: A brief explanation (1-2 sentences) of why this card is a good suggestion for THIS deck, considering the existing cards and potential strategy. This reason is important.
 
-    // Expanded mock suggestions (not 30, but more than before to test layout)
-    const mockSuggestionsData = [
-      { name: 'Sol Ring', type: 'Artifact', mana_cost: '{1}', description: 'Mana ramp.', quantity: 1 },
-      { name: 'Arcane Signet', type: 'Artifact', mana_cost: '{2}', description: 'Fixes mana.', quantity: 1 },
-      { name: 'Command Tower', type: 'Land', mana_cost: '', description: 'Essential land.', quantity: 1 },
-      { name: 'Path to Exile', type: 'Instant', mana_cost: '{W}', description: 'Exile removal.', quantity: 1 },
-      { name: 'Counterspell', type: 'Instant', mana_cost: '{U}{U}', description: 'Classic counter.', quantity: 1 },
-      { name: 'Demonic Tutor', type: 'Sorcery', mana_cost: '{1}{B}', description: 'Powerful tutor.', quantity: 1 },
-      { name: 'Lightning Bolt', type: 'Instant', mana_cost: '{R}', description: 'Efficient burn.', quantity: 1 },
-      { name: 'Birds of Paradise', type: 'Creature', mana_cost: '{G}', description: 'Mana dork.', quantity: 1 }, 
-      { name: 'Cyclonic Rift', type: 'Instant', mana_cost: '{1}{U}', description: 'Board clear.', quantity: 1 },
-      { name: 'Rhystic Study', type: 'Enchantment', mana_cost: '{2}{U}', description: 'Card draw.', quantity: 1 },
-      { name: 'Smothering Tithe', type: 'Enchantment', mana_cost: '{3}{W}', description: 'Treasure generation.', quantity: 1 },
-      { name: 'Vampiric Tutor', type: 'Instant', mana_cost: '{B}', description: 'Instant speed tutor.', quantity: 1 },
-    ];
+      Return your response as a valid JSON array of objects, like this example:
+      [
+        {
+          "name": "Sol Ring",
+          "quantity": 1,
+          "type": "Artifact",
+          "mana_cost": "{1}",
+          "description": "Provides excellent mana ramp, crucial for any Commander deck."
+        },
+        {
+          "name": "Swords to Plowshares",
+          "quantity": 1,
+          "type": "Instant",
+          "mana_cost": "{W}",
+          "description": "Efficient single-target removal for problematic creatures."
+        }
+        // ... more card suggestions (around 30 total)
+      ]
+      Ensure the JSON is well-formed and contains only the JSON array. Do not include any other text or explanations outside the JSON structure.
+    `;
 
-    // Simulate fetching images for mock suggestions
-    const suggestionsWithFullData = await Promise.all(
-        mockSuggestionsData.map(async (cardStub) => {
-            const fullCardData = await fetchScryfallImage(cardStub.name);
-            if (fullCardData) {
-              return {
-                ...cardStub, // Keep original data like quantity, AI description
-                ...fullCardData, // Add full Scryfall data
-                imageUrl: fullCardData.image_uris?.art_crop || fullCardData.image_uris?.normal || null, // Explicitly set imageUrl for grid
-                // AI might provide a specific description/reason, so keep that too if different from oracle_text
-                description: cardStub.description || fullCardData.oracle_text, 
-              };
-            }
-            return { ...cardStub, imageUrl: null }; // Fallback if Scryfall fetch fails
-        })
-    );
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo', // Consider gpt-4 for potentially better suggestions if available/budget allows
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+          max_tokens: 3000, // Increased max_tokens to accommodate ~30 card suggestions with details
+        }),
+      });
 
-    setSuggestedCards(suggestionsWithFullData);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('OpenAI API Error:', errorData);
+        throw new Error(errorData.error?.message || 'Failed to fetch suggestions from OpenAI.');
+      }
+
+      const data = await response.json();
+      const aiResponse = data.choices[0]?.message?.content;
+
+      if (aiResponse) {
+        let parsedAiSuggestions = [];
+        try {
+          // Remove potential markdown formatting and ensure it's valid JSON
+          const cleanedJsonResponse = aiResponse.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+          parsedAiSuggestions = JSON.parse(cleanedJsonResponse);
+        } catch (parseError) {
+          console.error('Failed to parse AI response:', parseError, "Raw response:", aiResponse);
+          setError('Received an invalid format from AI. Please try again. The AI might have provided text instead of pure JSON.');
+          setIsLoading(false);
+          return;
+        }
+
+        // Simulate fetching images for mock suggestions
+        const suggestionsWithFullData = await Promise.all(
+            parsedAiSuggestions.map(async (cardStub) => {
+                const fullCardData = await fetchScryfallImage(cardStub.name);
+                if (fullCardData) {
+                  return {
+                    ...cardStub, // Keep AI-provided data like quantity, AI description
+                    ...fullCardData, // Add full Scryfall data
+                    imageUrl: fullCardData.image_uris?.art_crop || fullCardData.image_uris?.normal || null, 
+                    // Use AI's description if provided, otherwise fallback to Scryfall's oracle_text
+                    description: cardStub.description || fullCardData.oracle_text, 
+                    // Ensure mana_cost and type from AI are used if Scryfall's format differs or is missing
+                    mana_cost: cardStub.mana_cost || fullCardData.mana_cost,
+                    type: cardStub.type || fullCardData.type_line,
+                  };
+                }
+                // Fallback if Scryfall fetch fails but AI provided a card
+                return { 
+                    ...cardStub, 
+                    name: cardStub.name, 
+                    imageUrl: null, 
+                    description: cardStub.description || "No Scryfall data found for this card, AI reason provided."
+                }; 
+            })
+        );
+        setSuggestedCards(suggestionsWithFullData);
+      } else {
+        setError('Received no response content from AI.');
+      }
+    } catch (apiError) {
+      console.error('API call failed:', apiError);
+      setError(apiError.message || 'An unexpected error occurred while fetching suggestions.');
+    }
     setIsLoading(false);
   };
 
@@ -140,124 +213,153 @@ const DeckCompletionAiPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">Deck Completion AI</h1>
-      <p className="text-lg text-center mb-6 text-gray-600">
-        Select one of your saved decks or manually enter card names (one per line) below.
-      </p>
-      <p className="text-sm text-center mb-10 text-gray-500">
-        The AI will suggest up to 30 cards to help you round out your deck!
-      </p>
+    <div className="min-h-screen bg-stone-700 py-12 px-4 text-slate-200 flex flex-col items-center">
+      <div className="w-full max-w-3xl mx-auto bg-slate-700 border-2 border-logoScheme-gold rounded-xl p-6 md:p-8 shadow-2xl">
 
-      {!OPENAI_API_KEY && (
-        <div className="max-w-xl mx-auto bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md shadow-md" role="alert">
-          <p className="font-bold">OpenAI API Key Not Yet In Use</p>
-          <p>This page is currently using placeholder data. Ensure your VITE_OPENAI_API_KEY is set in <code>.env</code> for when AI integration is live.</p>
+        <div className="flex justify-between items-center mb-3">
+          <h1 className="text-3xl font-bold text-logoScheme-gold">
+            Deck Completion A.I.
+          </h1>
         </div>
-      )}
 
-      <div className="max-w-xl mx-auto mb-8">
-        <label htmlFor="deckSelect" className="block text-sm font-medium text-gray-700 mb-2">
-          Select a Saved Deck:
-        </label>
-        <select
-          id="deckSelect"
-          name="deckSelect"
-          className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out bg-white"
-          value={selectedDeckId}
-          onChange={handleDeckSelectChange}
-          disabled={decksLoading || isLoading}
-        >
-          <option value="">-- Select a Deck --</option>
-          {decksLoading && <option value="" disabled>Loading decks...</option>}
-          {!decksLoading && savedDecks && savedDecks.map(deck => (
-            <option key={deck.id} value={deck.id}>
-              {deck.name} (Commander: {deck.commander ? deck.commander.name : 'N/A'})
-            </option>
-          ))}
-        </select>
-        {decksError && <p className="text-xs text-red-600 mt-1">Error loading decks: {typeof decksError === 'string' ? decksError : decksError.message}</p>}
-        {!decksLoading && savedDecks.length === 0 && !decksError && currentUser && <p className="text-xs text-gray-500 mt-1">No saved decks found for your account.</p>}
-        {!currentUser && <p className="text-xs text-gray-500 mt-1">Login to see your saved decks.</p>}
-      </div>
-
-      <form onSubmit={handleSubmit} className="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-xl mb-12">
-        <div className="mb-4">
-            <p className="text-center text-gray-500 text-sm mb-2">--- OR ---</p>
+        <div className="text-center mb-6">
+          <span className="bg-logoScheme-gold text-slate-800 px-4 py-1.5 rounded-full text-sm font-semibold shadow-md">
+            Refine Your Masterpiece
+          </span>
         </div>
-        <div className="mb-6">
-          <label htmlFor="decklist" className="block text-sm font-medium text-gray-700 mb-2">
-            Manually Enter Card List (one card per line, include commander):
+
+        <p className="text-slate-300 text-center mb-4">
+          Select a saved deck or enter card names below. The AI will suggest up to 30 cards to round out your deck!
+        </p>
+        
+        {!OPENAI_API_KEY && (
+          <div className="mx-auto bg-yellow-900 bg-opacity-50 border-l-4 border-yellow-500 text-yellow-300 p-4 mb-6 rounded-md shadow-md" role="alert">
+            <p className="font-bold">OpenAI API Key Not Yet In Use</p>
+            <p className="text-sm">This page currently uses placeholder data. Ensure your VITE_OPENAI_API_KEY is set for full AI integration.</p>
+          </div>
+        )}
+
+        <div className="mb-8">
+          <label htmlFor="deckSelect" className="block text-sm font-medium text-slate-200 mb-2">
+            Select a Saved Deck:
           </label>
-          <textarea
-            id="decklist"
-            name="decklist"
-            rows="10"
-            className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition duration-150 ease-in-out"
-            placeholder="e.g.,\nAtraxa, Praetors\' Voice (Commander)\n1x Sol Ring\n1x Command Tower\n..."
-            value={currentDecklist}
-            onChange={handleInputChange}
-            disabled={isLoading || decksLoading}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={isLoading || decksLoading || !currentDecklist.trim() || !OPENAI_API_KEY } // Added OPENAI_API_KEY check for submit
-          className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-        >
-          {isLoading ? 'Analyzing Deck...' : 'Get Card Suggestions'}
-        </button>
-      </form>
-
-      {isLoading && (
-        <div className="text-center py-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Finding up to 30 card suggestions for you...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="max-w-xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl relative mb-6 shadow-md" role="alert">
-          <strong className="font-bold">Oops! </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
-
-      {suggestedCards.length > 0 && !isLoading && (
-        <div>
-          <h2 className="text-3xl font-semibold text-center mb-8 text-gray-700">Suggested Cards ({suggestedCards.length} shown):</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {suggestedCards.map((card, index) => (
-              <div 
-                key={`${card.name}-${index}`}
-                className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300 ease-in-out cursor-pointer"
-                onClick={() => handleOpenModal(card)} // Attach click handler
-              >
-                {card.imageUrl ? (
-                  <img src={card.imageUrl} alt={`Art for ${card.name}`} className="w-full h-48 object-cover object-top" />
-                ) : (
-                  <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-400 relative">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span className="absolute text-xs bottom-2 left-2 p-1 bg-gray-700 bg-opacity-50 text-white rounded">No Image</span>
-                  </div>
-                )}
-                <div className="p-4">
-                  <h3 className="text-md font-semibold text-gray-800 mb-1 truncate">{card.name}</h3>
-                  <p className="text-xs text-gray-500 mb-1">{card.type_line || card.type} - {card.mana_cost}</p>
-                  <p className="text-xs text-gray-600 leading-tight mb-2">Qty: {card.quantity}</p>
-                  <p className="text-xs text-gray-600 leading-tight h-16 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">{card.description}</p>
-                </div>
-              </div>
+          <select
+            id="deckSelect"
+            name="deckSelect"
+            className="w-full p-3 border border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-logoScheme-gold focus:border-logoScheme-gold transition duration-150 ease-in-out bg-slate-800 text-slate-100 placeholder-slate-400"
+            value={selectedDeckId}
+            onChange={handleDeckSelectChange}
+            disabled={decksLoading || isLoading}
+          >
+            <option value="">-- Select a Deck --</option>
+            {decksLoading && <option value="" disabled>Loading decks...</option>}
+            {!decksLoading && savedDecks && savedDecks.map(deck => (
+              <option key={deck.id} value={deck.id}>
+                {deck.name} (Commander: {deck.commander ? deck.commander.name : 'N/A'})
+              </option>
             ))}
+          </select>
+          {decksError && <p className="text-xs text-logoScheme-red mt-1">Error loading decks: {typeof decksError === 'string' ? decksError : decksError.message}</p>}
+          {!decksLoading && savedDecks.length === 0 && !decksError && currentUser && <p className="text-xs text-slate-400 mt-1">No saved decks found.</p>}
+          {!currentUser && <p className="text-xs text-slate-400 mt-1">Login to see your saved decks.</p>}
+        </div>
+
+        <form onSubmit={handleSubmit} className="mb-10">
+          <div className="relative flex py-5 items-center mb-4">
+            <div className="flex-grow border-t border-slate-600"></div>
+            <span className="flex-shrink mx-4 text-slate-400 text-sm uppercase">Or</span>
+            <div className="flex-grow border-t border-slate-600"></div>
+          </div>
+      
+          <div className="mb-6">
+            <label htmlFor="decklist" className="block text-sm font-medium text-slate-200 mb-2">
+              Manually Enter Card List (one card per line, include commander):
+            </label>
+            <textarea
+              id="decklist"
+              name="decklist"
+              rows="8" // Reduced rows slightly
+              className="w-full p-3 border border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-logoScheme-gold focus:border-logoScheme-gold transition duration-150 ease-in-out bg-slate-800 text-slate-100 placeholder-slate-400"
+              placeholder="e.g.,\nAtraxa, Praetors' Voice (Commander)\n1x Sol Ring\n1x Command Tower\n..."
+              value={currentDecklist}
+              onChange={handleInputChange}
+              disabled={isLoading || decksLoading}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading || decksLoading || !currentDecklist.trim() || !OPENAI_API_KEY } 
+            className="w-full bg-logoScheme-gold hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:ring-offset-2 focus:ring-offset-slate-700"
+          >
+            {isLoading ? 'Analyzing Deck...' : 'Get Card Suggestions'}
+          </button>
+        </form>
+
+        <div className="space-y-3 text-slate-300 mb-10 text-sm">
+          <div className="flex items-start">
+            <CheckIcon className="h-5 w-5 text-logoScheme-gold mr-2 mt-0.5 flex-shrink-0" />
+            <span>AI-powered suggestions to complement your existing deck strategy.</span>
+          </div>
+          <div className="flex items-start">
+            <CheckIcon className="h-5 w-5 text-logoScheme-gold mr-2 mt-0.5 flex-shrink-0" />
+            <span>Optimized for Commander format, aiming for around 30 card ideas.</span>
+          </div>
+          <div className="flex items-start">
+            <CheckIcon className="h-5 w-5 text-logoScheme-gold mr-2 mt-0.5 flex-shrink-0" />
+            <span>Quickly view card details and art with Scryfall integration.</span>
           </div>
         </div>
-      )}
 
-      {isModalOpen && selectedCardForModal && (
-        <CardDetailModal card={selectedCardForModal} onClose={handleCloseModal} />
-      )}
+        {isLoading && (
+          <div className="text-center py-10">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-logoScheme-gold mx-auto"></div>
+            <p className="mt-4 text-slate-300">Finding up to 30 card suggestions for you...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="mx-auto bg-red-900 bg-opacity-50 border border-logoScheme-red text-red-300 px-4 py-3 rounded-xl relative mb-6 shadow-md" role="alert">
+            <strong className="font-bold">Oops! </strong>
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+
+        {suggestedCards.length > 0 && !isLoading && (
+          <div>
+            <h2 className="text-2xl font-semibold text-center mb-8 text-logoScheme-gold">Suggested Cards ({suggestedCards.length} shown):</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {suggestedCards.map((card, index) => (
+                <div 
+                  key={`${card.name}-${index}`}
+                  className="bg-slate-800 border border-slate-600 rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300 ease-in-out cursor-pointer flex flex-col"
+                  onClick={() => handleOpenModal(card)}
+                >
+                  {card.imageUrl ? (
+                    <img src={card.imageUrl} alt={`Art for ${card.name}`} className="w-full h-60 object-cover object-top" />
+                  ) : (
+                    <div className="w-full h-60 bg-slate-700 flex items-center justify-center text-slate-500 relative">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="absolute text-xs bottom-2 left-2 p-1 bg-slate-800 bg-opacity-70 text-slate-200 rounded">No Image</span>
+                    </div>
+                  )}
+                  <div className="p-4 flex flex-col flex-grow">
+                    <h3 className="text-md font-semibold text-logoScheme-gold mb-1 truncate min-h-[3em]">{card.name}</h3>
+                    <p className="text-xs text-slate-400 mb-1">{card.type_line || card.type} - {card.mana_cost}</p>
+                    <p className="text-xs text-slate-300 leading-snug mb-2">Qty: {card.quantity}</p>
+                    <p className="text-xs text-slate-300 leading-snug flex-grow h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-700">{card.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isModalOpen && selectedCardForModal && (
+          <CardDetailModal card={selectedCardForModal} onClose={handleCloseModal} />
+        )}
+      </div>
     </div>
   );
 };

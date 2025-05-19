@@ -19,6 +19,14 @@ export default {
           artifact: '#B3CFDD', // Artifacts
           land: '#A3C095',  // Lands
         },
+        logoScheme: {
+          brown: '#795548',
+          gold: '#FFC107',
+          darkGray: '#37474F',
+          green: '#4CAF50',
+          red: '#F44336',
+          blue: '#2196F3',
+        },
         primary: {
           50: '#f0f9ff',
           100: '#e0f2fe',
@@ -55,6 +63,7 @@ export default {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       },
       fontFamily: {
+        'beleren': ['Beleren Bold', 'sans-serif'],
         'magic': ['Beleren', 'Planewalker', 'serif'],
         'body': ['Inter', 'system-ui', 'sans-serif'],
       },

@@ -81,15 +81,15 @@ const SuggestionPanel = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+    <div className="bg-logoScheme-darkGray rounded-lg border border-logoScheme-brown p-4 shadow-sm text-gray-300">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-medium text-gray-900">AI Card Suggestions</h2>
+        <h2 className="text-lg font-medium text-logoScheme-gold">AI Card Suggestions</h2>
         
         {/* Clear Results Button */}
         {suggestions.length > 0 && (
           <button
             onClick={clearSuggestions}
-            className="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-md"
+            className="text-sm px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-md"
           >
             Clear Results
           </button>
@@ -97,13 +97,13 @@ const SuggestionPanel = () => {
       </div>
       
       {/* Options Panel (Always Visible) */}
-      <div className="mb-4 bg-blue-50 rounded-md border border-blue-100 p-4">
+      <div className="mb-4 bg-logoScheme-brown border border-logoScheme-gold/50 rounded-md p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Left Column */}
           <div>
             {/* Theme/Strategy Input */}
             <div className="mb-3">
-              <label htmlFor="deckTheme" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="deckTheme" className="block text-sm font-medium text-gray-200 mb-1">
                 Deck Theme/Strategy
               </label>
               <input
@@ -112,13 +112,13 @@ const SuggestionPanel = () => {
                 value={deckTheme}
                 onChange={handleThemeChange}
                 placeholder="e.g., Tokens, Aristocrats, Spellslinger, Blink..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-500 rounded-md text-sm focus:ring-logoScheme-gold focus:border-logoScheme-gold bg-gray-700 text-gray-100 placeholder-gray-400"
               />
             </div>
             
             {/* Number of Suggestions Slider */}
             <div>
-              <label htmlFor="suggestionCount" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="suggestionCount" className="block text-sm font-medium text-gray-200 mb-1">
                 Number of Suggestions: {suggestionCount}
               </label>
               <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ const SuggestionPanel = () => {
                   step="1"
                   value={suggestionCount}
                   onChange={handleSuggestionCountChange}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                  className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-logoScheme-gold"
                 />
                 <input
                   type="number"
@@ -138,7 +138,7 @@ const SuggestionPanel = () => {
                   max="100"
                   value={suggestionCount}
                   onChange={handleSuggestionCountChange}
-                  className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
+                  className="w-16 px-2 py-1 border border-gray-500 rounded text-sm bg-gray-700 text-gray-100 focus:ring-logoScheme-gold focus:border-logoScheme-gold"
                 />
               </div>
             </div>
@@ -148,7 +148,7 @@ const SuggestionPanel = () => {
           <div>
             {/* Category Filter */}
             <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Focus on categories:</h3>
+              <h3 className="text-sm font-medium text-gray-200 mb-2">Focus on categories:</h3>
               <div className="flex flex-wrap gap-2">
                 {categoryOptions.map(category => (
                   <button
@@ -156,8 +156,8 @@ const SuggestionPanel = () => {
                     onClick={() => handleCategoryChange(category)}
                     className={`text-xs px-2 py-1 rounded-full ${
                       selectedCategories.includes(category)
-                        ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-                        : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                        ? 'bg-logoScheme-gold text-logoScheme-darkGray border border-yellow-400'
+                        : 'bg-gray-700 text-gray-200 border border-gray-600 hover:bg-gray-600'
                     }`}
                   >
                     {category}
@@ -173,23 +173,23 @@ const SuggestionPanel = () => {
           <button
             onClick={handleGetSuggestions}
             disabled={!commander || isLoading}
-            className={`w-full py-2 rounded-md text-white text-sm font-medium ${
+            className={`w-full py-2 rounded-md text-sm font-medium transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray ${
               !commander || isLoading
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                : 'bg-logoScheme-gold hover:bg-yellow-400 text-logoScheme-darkGray focus:ring-logoScheme-gold'
             }`}
           >
             {isLoading ? 'Getting Suggestions...' : `Get ${suggestionCount} AI Suggestions`}
           </button>
           
           {!commander && (
-            <p className="text-xs text-orange-600 mt-1">
+            <p className="text-xs text-yellow-400 mt-1">
               Select a commander first to get suggestions
             </p>
           )}
           
           {error && (
-            <p className="text-xs text-red-600 mt-1">
+            <p className="text-xs text-logoScheme-red mt-1">
               {error}
             </p>
           )}
@@ -199,7 +199,7 @@ const SuggestionPanel = () => {
       {/* Suggestions Grid */}
       {suggestions.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">
+          <h3 className="text-sm font-medium text-gray-200 mb-3">
             Suggested Cards: {suggestions.length}
           </h3>
           <div className={`${suggestions.length > 30 ? 'max-h-[700px] overflow-y-auto pr-2' : ''}`}>
@@ -215,13 +215,13 @@ const SuggestionPanel = () => {
       {/* Loading State */}
       {isLoading && (
         <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-logoScheme-gold"></div>
         </div>
       )}
       
       {/* Empty State */}
       {!isLoading && suggestions.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-gray-400">
           <p>No suggestions yet. Click "Get AI Suggestions" to receive personalized card recommendations.</p>
         </div>
       )}

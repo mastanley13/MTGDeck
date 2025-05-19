@@ -10,8 +10,8 @@ const StickyCommanderHeader = ({ commander }) => {
   const commanderName = commander.name;
 
   return (
-    <div className="sticky top-0 bg-gray-800 text-white p-2 shadow-md z-50 flex items-center">
-      <img src={imageUrl} alt={commanderName} className="h-10 w-auto rounded-sm mr-3" />
+    <div className="sticky top-0 bg-logoScheme-darkGray text-logoScheme-gold p-2 shadow-md z-50 flex items-center border-b border-logoScheme-brown">
+      <img src={imageUrl} alt={commanderName} className="h-10 w-auto rounded-sm mr-3 border border-logoScheme-gold" />
       <h3 className="text-lg font-semibold">{commanderName}</h3>
     </div>
   );

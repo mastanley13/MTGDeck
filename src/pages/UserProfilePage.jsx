@@ -187,30 +187,30 @@ const UserProfilePage = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">User Profile</h1>
+      <h1 className="text-3xl font-bold mb-6 text-logoScheme-gold">User Profile</h1>
       
-      <div className="mb-8 p-6 border border-gray-200 rounded-lg shadow-md bg-white">
-        <h2 className="text-2xl font-semibold mb-3 text-gray-700">Account Information</h2>
+      <div className="mb-8 p-6 border border-logoScheme-brown rounded-lg shadow-md bg-logoScheme-darkGray">
+        <h2 className="text-2xl font-semibold mb-3 text-logoScheme-gold">Account Information</h2>
         <div className="flex items-center space-x-4">
             {selectedProfilePic && (
-                <img src={selectedProfilePic} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-indigo-500" />
+                <img src={selectedProfilePic} alt="Profile" className="w-20 h-20 rounded-full object-cover border-2 border-logoScheme-gold" />
             )}
-            <p className="text-gray-600">Email: <span className="font-medium text-gray-800">{currentUser.email || 'N/A'}</span></p>
+            <p className="text-gray-300">Email: <span className="font-medium text-gray-100">{currentUser.email || 'N/A'}</span></p>
         </div>
       </div>
 
-      <div className="mb-8 p-6 border border-gray-200 rounded-lg shadow-md bg-white">
-        <h2 className="text-2xl font-semibold mb-3 text-gray-700">Profile Picture</h2>
+      <div className="mb-8 p-6 border border-logoScheme-brown rounded-lg shadow-md bg-logoScheme-darkGray">
+        <h2 className="text-2xl font-semibold mb-3 text-logoScheme-gold">Profile Picture</h2>
         
         {selectedProfilePic && (
           <div className="mb-4">
-            <h3 className="text-lg font-medium text-gray-700 mb-2">Current Picture:</h3>
-            <img src={selectedProfilePic} alt="Selected Profile" className="w-32 h-32 rounded-md object-cover border shadow" />
+            <h3 className="text-lg font-medium text-gray-300 mb-2">Current Picture:</h3>
+            <img src={selectedProfilePic} alt="Selected Profile" className="w-32 h-32 rounded-md object-cover border border-logoScheme-brown shadow" />
           </div>
         )}
-        {profilePicUpdateLoading && <p className="text-sm text-indigo-600">Updating profile picture...</p>}
-        {profilePicUpdateSuccess && <p className="text-sm text-green-600 bg-green-100 p-3 rounded-md">{profilePicUpdateSuccess}</p>}
-        {profilePicUpdateError && <p className="text-sm text-red-600 bg-red-100 p-3 rounded-md">{profilePicUpdateError}</p>}
+        {profilePicUpdateLoading && <p className="text-sm text-logoScheme-blue">Updating profile picture...</p>}
+        {profilePicUpdateSuccess && <p className="text-sm text-green-300 bg-logoScheme-darkGray border border-green-500 p-3 rounded-md">{profilePicUpdateSuccess}</p>}
+        {profilePicUpdateError && <p className="text-sm text-red-300 bg-logoScheme-darkGray border border-red-500 p-3 rounded-md">{profilePicUpdateError}</p>}
 
         <form onSubmit={handleScryfallSearch} className="mb-4 flex space-x-2">
           <input 
@@ -218,24 +218,24 @@ const UserProfilePage = () => {
             value={scryfallQuery}
             onChange={(e) => setScryfallQuery(e.target.value)}
             placeholder="Search Scryfall for card art (e.g., 'Sol Ring')"
-            className="flex-grow mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            className="flex-grow mt-1 block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100 placeholder-gray-400"
             disabled={scryfallLoading || profilePicUpdateLoading}
           />
           <button 
             type="submit"
-            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-logoScheme-darkGray bg-logoScheme-gold hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray focus:ring-logoScheme-gold disabled:opacity-50"
             disabled={scryfallLoading || profilePicUpdateLoading}
           >
             {scryfallLoading ? 'Searching...' : 'Search Art'}
           </button>
         </form>
 
-        {scryfallError && <p className="text-sm text-red-500">{scryfallError}</p>}
+        {scryfallError && <p className="text-sm text-logoScheme-red">{scryfallError}</p>}
 
         {scryfallResults.length > 0 && (
           <div className="mt-4">
-            <h3 className="text-lg font-medium text-gray-700 mb-2">Select an Image:</h3>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-96 overflow-y-auto p-2 border rounded">
+            <h3 className="text-lg font-medium text-gray-300 mb-2">Select an Image:</h3>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-96 overflow-y-auto p-2 border border-logoScheme-brown rounded bg-gray-700">
               {scryfallResults.map(card => (
                 card.image_uris && card.image_uris.art_crop ? (
                   <img 
@@ -243,7 +243,7 @@ const UserProfilePage = () => {
                     src={card.image_uris.art_crop}
                     alt={card.name}
                     title={`Select ${card.name} art`}
-                    className={`w-full h-auto object-cover rounded-md cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all ${selectedProfilePic === card.image_uris.art_crop ? 'ring-4 ring-green-500' : ''}`}
+                    className={`w-full h-auto object-cover rounded-md cursor-pointer hover:ring-2 hover:ring-logoScheme-gold transition-all ${selectedProfilePic === card.image_uris.art_crop ? 'ring-4 ring-logoScheme-green' : ''}`}
                     onClick={() => !profilePicUpdateLoading && handleSelectProfilePic(card.image_uris.art_crop)}
                   />
                 ) : null
@@ -253,46 +253,46 @@ const UserProfilePage = () => {
         )}
       </div>
 
-      <div className="p-6 border border-gray-200 rounded-lg shadow-md bg-white">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-700">Change Password</h2>
+      <div className="p-6 border border-logoScheme-brown rounded-lg shadow-md bg-logoScheme-darkGray">
+        <h2 className="text-2xl font-semibold mb-4 text-logoScheme-gold">Change Password</h2>
         <form onSubmit={handlePasswordChangeSubmit} className="space-y-4">
           <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">New Password</label>
+            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-300">New Password</label>
             <input 
               type="password" 
               id="newPassword" 
               value={newPassword} 
               onChange={(e) => setNewPassword(e.target.value)} 
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100 placeholder-gray-400"
               required 
               disabled={passwordChangeLoading}
               placeholder="Enter your new password (min. 6 characters)"
             />
           </div>
           <div>
-            <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700">Confirm New Password</label>
+            <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-300">Confirm New Password</label>
             <input 
               type="password" 
               id="confirmNewPassword" 
               value={confirmNewPassword} 
               onChange={(e) => setConfirmNewPassword(e.target.value)} 
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100 placeholder-gray-400"
               required 
               disabled={passwordChangeLoading}
               placeholder="Confirm your new password"
             />
           </div>
 
-          {passwordChangeError && <p className="text-sm text-red-600 bg-red-100 p-3 rounded-md">{passwordChangeError}</p>}
-          {passwordChangeSuccess && <p className="text-sm text-green-600 bg-green-100 p-3 rounded-md">{passwordChangeSuccess}</p>}
+          {passwordChangeError && <p className="text-sm text-red-300 bg-logoScheme-darkGray border border-red-500 p-3 rounded-md">{passwordChangeError}</p>}
+          {passwordChangeSuccess && <p className="text-sm text-green-300 bg-logoScheme-darkGray border border-green-500 p-3 rounded-md">{passwordChangeSuccess}</p>}
 
           <button 
             type="submit" 
-            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors duration-150 ease-in-out"
+            className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-logoScheme-darkGray bg-logoScheme-gold hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray focus:ring-logoScheme-gold disabled:opacity-50 transition-colors duration-150 ease-in-out"
             disabled={passwordChangeLoading}
           >
             {passwordChangeLoading ? (
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-logoScheme-darkGray inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>

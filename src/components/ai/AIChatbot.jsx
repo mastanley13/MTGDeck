@@ -100,8 +100,8 @@ const AIChatbot = () => {
   };
   
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
-      <div className="p-3 bg-blue-600 text-white font-medium flex items-center">
+    <div className="bg-logoScheme-darkGray rounded-lg border border-logoScheme-brown shadow-sm overflow-hidden flex flex-col h-full text-gray-300">
+      <div className="p-3 bg-logoScheme-darkGray text-logoScheme-gold font-medium flex items-center border-b border-logoScheme-brown">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
         </svg>
@@ -109,17 +109,17 @@ const AIChatbot = () => {
       </div>
       
       {/* Messages Container */}
-      <div className="flex-1 p-4 overflow-y-auto bg-gray-50" style={{ maxHeight: '350px' }}>
+      <div className="flex-1 p-4 overflow-y-auto bg-gray-800" style={{ maxHeight: '350px' }}>
         {messages.map((message, index) => (
           <div 
             key={index} 
             className={`mb-3 ${message.role === 'user' ? 'ml-auto max-w-[75%]' : 'mr-auto max-w-[75%]'}`}
           >
             <div 
-              className={`p-3 rounded-lg ${
+              className={`p-3 rounded-lg shadow ${
                 message.role === 'user' 
-                  ? 'bg-blue-100 text-gray-800' 
-                  : 'bg-white border border-gray-200 text-gray-700'
+                  ? 'bg-logoScheme-blue text-white' 
+                  : 'bg-gray-700 border border-gray-600 text-gray-100'
               }`}
             >
               {message.content}
@@ -128,31 +128,31 @@ const AIChatbot = () => {
         ))}
         {isLoading && (
           <div className="flex items-center text-gray-500 mb-3">
-            <div className="w-2 h-2 bg-gray-400 rounded-full mr-1 animate-bounce"></div>
-            <div className="w-2 h-2 bg-gray-400 rounded-full mr-1 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+            <div className="w-2 h-2 bg-gray-500 rounded-full mr-1 animate-bounce"></div>
+            <div className="w-2 h-2 bg-gray-500 rounded-full mr-1 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
       
       {/* Input Form */}
-      <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-200 flex">
+      <form onSubmit={handleSendMessage} className="p-3 border-t border-logoScheme-brown flex">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about deck building, card suggestions, or strategies..."
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md text-sm focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Ask about deck building..."
+          className="flex-1 px-3 py-2 border border-gray-500 rounded-l-md text-sm focus:ring-logoScheme-gold focus:border-logoScheme-gold bg-gray-700 text-gray-100 placeholder-gray-400"
           disabled={isLoading}
         />
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className={`px-4 py-2 rounded-r-md text-white ${
+          className={`px-4 py-2 rounded-r-md transition-colors ${
             isLoading || !input.trim() 
-              ? 'bg-gray-400' 
-              : 'bg-blue-600 hover:bg-blue-700'
+              ? 'bg-gray-600 text-gray-400' 
+              : 'bg-logoScheme-gold hover:bg-yellow-400 text-logoScheme-darkGray'
           }`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

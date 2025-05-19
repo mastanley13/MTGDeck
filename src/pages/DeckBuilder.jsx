@@ -297,17 +297,17 @@ const DeckBuilderPage = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 text-gray-300">
         {/* Button to open Commander Search Modal - replaces inline search */}
         {!commander && (
-          <div className="w-full mb-6 text-center p-8 bg-gray-100 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-2">No Commander Selected</h2>
-            <p className="text-gray-600 mb-4">
+          <div className="w-full mb-6 text-center p-8 bg-logoScheme-darkGray rounded-lg shadow border border-logoScheme-brown">
+            <h2 className="text-xl font-bold mb-2 text-logoScheme-gold">No Commander Selected</h2>
+            <p className="text-gray-300 mb-4">
                 Start by selecting your commander to build your deck.
             </p>
             <button 
                 onClick={openCommanderSearchModal}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-150 ease-in-out"
+                className="btn-primary px-6 py-3"
             >
                 Select Commander
             </button>
@@ -371,7 +371,7 @@ const DeckBuilderPage = () => {
 
               <button 
                 onClick={openCommanderSearchModal} 
-                className="text-base font-medium text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 py-2.5 px-5 rounded-lg shadow-md transition-colors duration-150"
+                className="btn-secondary px-5 py-2.5"
               >
                 Change Commander
               </button>
@@ -379,8 +379,8 @@ const DeckBuilderPage = () => {
             
             {/* AI Features Section - Now includes Auto Deck Builder */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-              {/* Auto Deck Builder - Added prominently */}
-              <div className="lg:col-span-4 flex flex-col">
+              {/* Auto Deck Builder - Added prominently */} 
+              <div className="lg:col-span-6 lg:col-start-4 flex flex-col">
                 <AutoDeckBuilder />
               </div>
               
@@ -400,15 +400,15 @@ const DeckBuilderPage = () => {
             </div>
             
             {/* Main Tabs and Content */}
-            <div className="border-b border-gray-200 mb-4" ref={deckViewRef}>
+            <div className="border-b border-logoScheme-brown mb-4" ref={deckViewRef}>
               <nav className="flex -mb-px justify-around md:justify-start">
                 {/* View Deck Tab */}
                 <button
                   onClick={() => setActiveTab('deck')}
                   className={`pb-2 pt-1 px-2 md:px-4 md:py-2 font-medium text-xs md:text-sm focus:outline-none transition-colors duration-150 ${
                     activeTab === 'deck'
-                      ? 'border-b-2 border-indigo-500 text-indigo-600 active:bg-indigo-100'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300 active:bg-gray-100'
+                      ? 'border-b-2 border-logoScheme-gold text-logoScheme-gold active:bg-logoScheme-brown'
+                      : 'text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400 active:bg-logoScheme-brown'
                   }`}
                 >
                   <div className="md:hidden flex flex-col items-center">
@@ -425,8 +425,8 @@ const DeckBuilderPage = () => {
                   onClick={() => setActiveTab('stats')}
                   className={`pb-2 pt-1 px-2 md:px-4 md:py-2 font-medium text-xs md:text-sm focus:outline-none transition-colors duration-150 ${
                     activeTab === 'stats'
-                      ? 'border-b-2 border-indigo-500 text-indigo-600 active:bg-indigo-100'
-                      : 'text-gray-500 hover:text-gray-700 hover:border-gray-300 active:bg-gray-100'
+                      ? 'border-b-2 border-logoScheme-gold text-logoScheme-gold active:bg-logoScheme-brown'
+                      : 'text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400 active:bg-logoScheme-brown'
                   }`}
                 >
                   <div className="md:hidden flex flex-col items-center">
@@ -450,14 +450,14 @@ const DeckBuilderPage = () => {
                       type="text"
                       value={currentDeckName}
                       onChange={(e) => setDeckName(e.target.value)}
-                      className="flex-grow px-4 py-3 rounded-lg text-sm bg-slate-700 border border-slate-600 text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 placeholder-slate-400 shadow-sm w-full sm:w-auto"
+                      className="flex-grow px-4 py-3 rounded-lg text-sm bg-gray-700 border border-gray-500 text-gray-100 focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:border-logoScheme-gold placeholder-gray-400 shadow-sm w-full sm:w-auto"
                       placeholder="Enter Local Deck Name (e.g., Eris Roars)"
                       disabled={deckContextLoading} // Disable input while saving
                     />
                     <button
                       onClick={() => handleSaveDeck(false)}
                       disabled={deckContextLoading || !commander} // Disable if loading or no commander
-                      className="px-6 py-3 rounded-lg text-white text-base sm:text-sm font-semibold flex items-center justify-center bg-sky-600 hover:bg-sky-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 w-full sm:w-auto whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="btn-primary px-6 py-3 w-full sm:w-auto whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {deckContextLoading ? 'Saving...' : 'Save Deck to Cloud'}
                     </button>
@@ -478,9 +478,9 @@ const DeckBuilderPage = () => {
             </div>
           </>
         ) : (
-          <div className="text-center p-8 bg-gray-100 rounded-lg shadow mt-6">
-            <h2 className="text-xl font-bold mb-2">Start by Selecting a Commander</h2>
-            <p className="text-gray-600">
+          <div className="text-center p-8 bg-logoScheme-darkGray rounded-lg shadow mt-6 border border-logoScheme-brown">
+            <h2 className="text-xl font-bold mb-2 text-logoScheme-gold">Start by Selecting a Commander</h2>
+            <p className="text-gray-300">
               Use the commander search above to select your commander and begin building your deck.
             </p>
           </div>

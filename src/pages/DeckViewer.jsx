@@ -65,7 +65,7 @@ const DeckViewer = () => {
   // Handle loading states
   if (loadingAuth || deckLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
+      <div className="container mx-auto px-4 py-8 text-center text-gray-300">
         <p className="text-xl">Loading decks...</p>
         {/* You might want to add a spinner component here */}
       </div>
@@ -75,7 +75,7 @@ const DeckViewer = () => {
   // Handle error state
   if (deckError) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center text-red-500">
+      <div className="container mx-auto px-4 py-8 text-center text-logoScheme-red">
         <p className="text-xl">Error loading decks: {deckError}</p>
       </div>
     );
@@ -84,10 +84,10 @@ const DeckViewer = () => {
   if (!deckId && savedDecks.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Your Decks</h1>
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <p className="text-xl mb-4">You haven't saved any decks yet.</p>
-          <Link to="/builder" className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+        <h1 className="text-3xl font-bold mb-6 text-logoScheme-gold">Your Decks</h1>
+        <div className="bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-md p-8 text-center">
+          <p className="text-xl mb-4 text-gray-100">You haven't saved any decks yet.</p>
+          <Link to="/builder" className="btn-primary px-6 py-3">
             Start Building
           </Link>
         </div>
@@ -102,7 +102,7 @@ const DeckViewer = () => {
       case 'cards':
         return (
           <div className="mt-6">
-            <h3 className="text-2xl font-bold mb-4">Cards ({selectedDeck.cards.length})</h3>
+            <h3 className="text-2xl font-bold mb-4 text-logoScheme-gold">Cards ({selectedDeck.cards.length})</h3>
             
             {/* Group cards by type and show them */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -113,7 +113,7 @@ const DeckViewer = () => {
                   "card-item",
                   "cursor-pointer",
                   "relative", // Needed for potential future badges/icons positioned absolutely
-                  card.game_changer ? "ring-4 ring-yellow-400 ring-offset-2 ring-offset-gray-800 rounded-lg" : ""
+                  card.game_changer ? `ring-4 ring-logoScheme-gold ring-offset-2 ring-offset-logoScheme-darkGray rounded-lg` : ""
                 ].join(" ").trim();
 
                 return (
@@ -129,8 +129,8 @@ const DeckViewer = () => {
                         className="rounded-lg shadow-md w-full block" // Ensure image is a block and rounded
                       />
                     ) : (
-                      <div className="bg-gray-200 rounded-lg shadow-md w-full aspect-[63/88] flex items-center justify-center p-2">
-                        <span>{card.name}</span>
+                      <div className="bg-gray-700 rounded-lg shadow-md w-full aspect-[63/88] flex items-center justify-center p-2">
+                        <span className="text-gray-200">{card.name}</span>
                       </div>
                     )}
                     {/* Optional: Add a specific badge/icon for game_changer here if preferred over border */}
@@ -139,7 +139,7 @@ const DeckViewer = () => {
                       <span className="absolute top-1 right-1 bg-yellow-400 text-black text-xs font-bold px-1.5 py-0.5 rounded-full shadow-md">GC</span>
                     )}
                     */}
-                    <div className="mt-1 flex justify-between">
+                    <div className="mt-1 flex justify-between text-gray-300">
                       <div className="text-xs truncate">{card.name}</div>
                       <div className="text-xs font-bold">{card.quantity || 1}x</div>
                     </div>
@@ -161,33 +161,33 @@ const DeckViewer = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Your Decks</h1>
+    <div className="container mx-auto px-4 py-8 text-gray-300">
+      <h1 className="text-3xl font-bold mb-6 text-logoScheme-gold">Your Decks</h1>
       
       {deckId ? (
         // Single deck view
         selectedDeck ? (
           <div>
-            <Link to="/decks" className="text-indigo-600 mb-4 inline-block hover:underline">
+            <Link to="/decks" className="text-logoScheme-blue mb-4 inline-block hover:underline">
               ← Back to All Decks
             </Link>
             
-            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-md p-6 mb-6">
               <div className="flex items-start">
                 {selectedDeck.commander && selectedDeck.commander.image_uris && (
                   <img
                     src={selectedDeck.commander.image_uris.art_crop}
                     alt={selectedDeck.commander.name}
-                    className="w-32 h-auto mr-6 rounded-lg"
+                    className="w-32 h-auto mr-6 rounded-lg border border-logoScheme-brown"
                   />
                 )}
                 <div>
-                  <h2 className="text-2xl font-bold">{selectedDeck.name}</h2>
-                  <div className="text-gray-600 mb-2">Commander: {selectedDeck.commander ? selectedDeck.commander.name : 'Unknown'}</div>
+                  <h2 className="text-2xl font-bold text-logoScheme-gold">{selectedDeck.name}</h2>
+                  <div className="text-gray-300 mb-2">Commander: {selectedDeck.commander ? selectedDeck.commander.name : 'Unknown'}</div>
                   {selectedDeck.description && (
-                    <p className="text-gray-700">{selectedDeck.description}</p>
+                    <p className="text-gray-300">{selectedDeck.description}</p>
                   )}
-                  <div className="text-sm text-gray-500 mt-2">
+                  <div className="text-sm text-gray-400 mt-2">
                     Last updated: {new Date(selectedDeck.lastUpdated).toLocaleDateString()}
                   </div>
                 </div>
@@ -195,28 +195,28 @@ const DeckViewer = () => {
             </div>
             
             {/* Tab navigation */}
-            <div className="border-b border-gray-200 mb-6">
+            <div className="border-b border-logoScheme-brown mb-6">
               <nav className="flex space-x-8">
                 <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'cards' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'cards' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400'}`}
                   onClick={() => setActiveTab('cards')}
                 >
                   Cards
                 </button>
                 <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'analytics' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'analytics' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400'}`}
                   onClick={() => setActiveTab('analytics')}
                 >
                   Analytics
                 </button>
                 <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'export' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'export' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400'}`}
                   onClick={() => setActiveTab('export')}
                 >
                   Export
                 </button>
                 <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'share' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'share' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400'}`}
                   onClick={() => setActiveTab('share')}
                 >
                   Share
@@ -228,15 +228,15 @@ const DeckViewer = () => {
             {renderTabContent()}
             
             <div className="mt-8 flex space-x-4">
-              <Link to={`/builder?deck=${selectedDeck.id}`} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+              <Link to={`/builder?deck=${selectedDeck.id}`} className="btn-secondary px-4 py-2">
                 Edit Deck
               </Link>
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-md p-8 text-center">
-            <p className="text-xl mb-4">Deck not found.</p>
-            <Link to="/decks" className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+          <div className="bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-md p-8 text-center">
+            <p className="text-xl mb-4 text-gray-100">Deck not found.</p>
+            <Link to="/decks" className="btn-primary px-6 py-3">
               View All Decks
             </Link>
           </div>
@@ -248,20 +248,20 @@ const DeckViewer = () => {
             <Link 
               key={deck.id} 
               to={`/decks/${deck.id}`}
-              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+              className="bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-md p-6 hover:border-logoScheme-gold hover:shadow-lg transition-shadow"
             >
               <div className="flex items-center">
                 {deck.commander && deck.commander.image_uris && (
                   <img
                     src={deck.commander.image_uris.art_crop}
                     alt={deck.commander.name}
-                    className="w-16 h-16 mr-4 rounded-full object-cover"
+                    className="w-16 h-16 mr-4 rounded-full object-cover border border-logoScheme-gold"
                   />
                 )}
                 <div>
-                  <h3 className="text-xl font-bold">{deck.name}</h3>
-                  <div className="text-sm text-gray-600">Commander: {deck.commander ? deck.commander.name : 'Unknown'}</div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <h3 className="text-xl font-bold text-logoScheme-gold">{deck.name}</h3>
+                  <div className="text-sm text-gray-300">Commander: {deck.commander ? deck.commander.name : 'Unknown'}</div>
+                  <div className="text-xs text-gray-400 mt-1">
                     {deck.cards.length} cards • Last updated: {new Date(deck.lastUpdated).toLocaleDateString()}
                   </div>
                 </div>
@@ -271,11 +271,11 @@ const DeckViewer = () => {
           
           <Link 
             to="/builder"
-            className="bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 p-6 flex items-center justify-center hover:bg-gray-200 transition-colors"
+            className="bg-gray-700 rounded-lg border-2 border-dashed border-logoScheme-brown p-6 flex items-center justify-center hover:bg-gray-600 transition-colors"
           >
             <div className="text-center">
               <div className="text-4xl font-light text-gray-400 mb-2">+</div>
-              <div className="text-gray-600 font-medium">Create New Deck</div>
+              <div className="text-gray-300 font-medium">Create New Deck</div>
             </div>
           </Link>
         </div>

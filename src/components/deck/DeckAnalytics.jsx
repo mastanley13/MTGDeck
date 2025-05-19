@@ -25,12 +25,12 @@ ChartJS.register(
 
 // Color constants for the charts
 const CHART_COLORS = {
-  W: 'rgb(248, 231, 185)', // White
-  U: 'rgb(14, 104, 171)',  // Blue
-  B: 'rgb(21, 11, 0)',     // Black
-  R: 'rgb(211, 32, 42)',   // Red
-  G: 'rgb(0, 115, 62)',    // Green
-  Colorless: 'rgb(155, 155, 155)',
+  W: '#F8E7B9', // White from mtg palette
+  U: '#0E68AB',  // Blue from mtg palette
+  B: '#150B00',     // Black from mtg palette
+  R: '#D3202A',   // Red from mtg palette
+  G: '#00733E',    // Green from mtg palette
+  Colorless: '#BFAFB2', // Colorless from mtg palette
   // Card types
   Creature: 'rgb(224, 93, 38)',
   Instant: 'rgb(46, 117, 182)',
@@ -51,8 +51,8 @@ const ManaCurveChart = ({ manaCurve }) => {
       {
         label: 'Number of Cards',
         data: Object.values(manaCurve),
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(255, 193, 7, 0.6)', // logoScheme.gold with opacity
+        borderColor: 'rgba(255, 193, 7, 1)', // logoScheme.gold
         borderWidth: 1,
       },
     ],
@@ -64,12 +64,31 @@ const ManaCurveChart = ({ manaCurve }) => {
     plugins: {
       legend: {
         display: false,
+        labels: { color: '#D1D5DB' } // gray-300
       },
       title: {
         display: true,
         text: 'Mana Curve',
+        color: '#E5E7EB' // gray-200
       },
+      tooltip: {
+        backgroundColor: '#37474F', // logoScheme.darkGray
+        titleColor: '#E5E7EB',
+        bodyColor: '#D1D5DB',
+        borderColor: '#795548', // logoScheme.brown
+        borderWidth: 1
+      }
     },
+    scales: {
+      x: {
+        ticks: { color: '#9CA3AF' }, // gray-400
+        grid: { color: 'rgba(107, 114, 128, 0.2)' } // gray-500 with opacity
+      },
+      y: {
+        ticks: { color: '#9CA3AF' }, // gray-400
+        grid: { color: 'rgba(107, 114, 128, 0.2)' } // gray-500 with opacity
+      }
+    }
   };
 
   return (
@@ -115,11 +134,20 @@ const ColorDistributionChart = ({ colorDistribution }) => {
     plugins: {
       legend: {
         position: 'right',
+        labels: { color: '#D1D5DB' } // gray-300
       },
       title: {
         display: true,
         text: 'Color Distribution',
+        color: '#E5E7EB' // gray-200
       },
+      tooltip: {
+        backgroundColor: '#37474F', // logoScheme.darkGray
+        titleColor: '#E5E7EB',
+        bodyColor: '#D1D5DB',
+        borderColor: '#795548', // logoScheme.brown
+        borderWidth: 1
+      }
     },
   };
 
@@ -156,11 +184,20 @@ const CardTypeChart = ({ typeBreakdown }) => {
     plugins: {
       legend: {
         position: 'right',
+        labels: { color: '#D1D5DB' } // gray-300
       },
       title: {
         display: true,
         text: 'Card Type Breakdown',
+        color: '#E5E7EB' // gray-200
       },
+      tooltip: {
+        backgroundColor: '#37474F', // logoScheme.darkGray
+        titleColor: '#E5E7EB',
+        bodyColor: '#D1D5DB',
+        borderColor: '#795548', // logoScheme.brown
+        borderWidth: 1
+      }
     },
   };
 
@@ -174,9 +211,9 @@ const CardTypeChart = ({ typeBreakdown }) => {
 const DeckAnalytics = ({ deck }) => {
   if (!deck || !deck.cards || deck.cards.length === 0) {
     return (
-      <div className="p-4 bg-white rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4">Deck Analytics</h2>
-        <p className="text-gray-500">No cards in the deck to analyze.</p>
+      <div className="p-4 bg-logoScheme-darkGray rounded-lg shadow text-gray-300">
+        <h2 className="text-xl font-bold mb-4 text-logoScheme-gold">Deck Analytics</h2>
+        <p className="text-gray-400">No cards in the deck to analyze.</p>
       </div>
     );
   }
@@ -184,41 +221,41 @@ const DeckAnalytics = ({ deck }) => {
   const analysis = analyzeDeck(deck);
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-bold mb-4">Deck Analytics</h2>
+    <div className="p-4 bg-logoScheme-darkGray rounded-lg shadow text-gray-300">
+      <h2 className="text-xl font-bold mb-4 text-logoScheme-gold">Deck Analytics</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gray-50 p-3 rounded">
-          <div className="text-sm text-gray-500">Total Cards</div>
-          <div className="text-2xl font-bold">{analysis.totalCards}</div>
+        <div className="bg-gray-700 p-3 rounded">
+          <div className="text-sm text-gray-400">Total Cards</div>
+          <div className="text-2xl font-bold text-logoScheme-gold">{analysis.totalCards}</div>
         </div>
         
-        <div className="bg-gray-50 p-3 rounded">
-          <div className="text-sm text-gray-500">Commander</div>
-          <div className="text-lg font-bold truncate">{analysis.commander}</div>
+        <div className="bg-gray-700 p-3 rounded">
+          <div className="text-sm text-gray-400">Commander</div>
+          <div className="text-lg font-bold truncate text-gray-100">{analysis.commander}</div>
         </div>
         
-        <div className="bg-gray-50 p-3 rounded">
-          <div className="text-sm text-gray-500">Average CMC</div>
-          <div className="text-2xl font-bold">{analysis.averageCMC}</div>
+        <div className="bg-gray-700 p-3 rounded">
+          <div className="text-sm text-gray-400">Average CMC</div>
+          <div className="text-2xl font-bold text-logoScheme-gold">{analysis.averageCMC}</div>
         </div>
         
-        <div className="bg-gray-50 p-3 rounded">
-          <div className="text-sm text-gray-500">Card Types</div>
-          <div className="text-lg font-bold">{Object.keys(analysis.typeBreakdown).filter(type => analysis.typeBreakdown[type] > 0).length} Types</div>
+        <div className="bg-gray-700 p-3 rounded">
+          <div className="text-sm text-gray-400">Card Types</div>
+          <div className="text-lg font-bold text-gray-100">{Object.keys(analysis.typeBreakdown).filter(type => analysis.typeBreakdown[type] > 0).length} Types</div>
         </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
-        <div className="bg-gray-50 p-4 rounded">
+        <div className="bg-gray-700 p-4 rounded">
           <ManaCurveChart manaCurve={analysis.manaCurve} />
         </div>
         
-        <div className="bg-gray-50 p-4 rounded">
+        <div className="bg-gray-700 p-4 rounded">
           <ColorDistributionChart colorDistribution={analysis.colorDistribution} />
         </div>
         
-        <div className="bg-gray-50 p-4 rounded">
+        <div className="bg-gray-700 p-4 rounded">
           <CardTypeChart typeBreakdown={analysis.typeBreakdown} />
         </div>
       </div>

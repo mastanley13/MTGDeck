@@ -8,7 +8,7 @@ const DeckStats = () => {
   // so it could be passed down or imported directly where needed.
 
   return (
-    <div className="bg-slate-900 p-0 rounded-lg shadow-none"> {/* Adjusted to match new style */}
+    <div className="bg-logoScheme-darkGray p-0 rounded-lg shadow-none"> {/* Adjusted to match new style */}
       {/* The h2 title might be redundant if DeckStatsIndex has its own title/tab system */}
       {/* <h2 className="text-2xl font-bold mb-6 text-slate-100">Deck Statistics</h2> */}
       

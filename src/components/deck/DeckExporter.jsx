@@ -8,9 +8,9 @@ const DeckExporter = ({ deck }) => {
 
   if (!deck || !deck.commander || !deck.cards) {
     return (
-      <div className="p-4 bg-white rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4">Export Deck</h2>
-        <p className="text-gray-500">You need to have a commander and at least one card to export a deck.</p>
+      <div className="p-4 bg-logoScheme-darkGray rounded-lg shadow text-gray-300">
+        <h2 className="text-xl font-bold mb-4 text-logoScheme-gold">Export Deck</h2>
+        <p className="text-gray-400">You need to have a commander and at least one card to export a deck.</p>
       </div>
     );
   }
@@ -32,16 +32,16 @@ const DeckExporter = ({ deck }) => {
   const exportContent = exportFormat === 'moxfield' ? exportToMoxfield(deck) : exportToText(deck);
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-bold mb-4">Export Deck</h2>
+    <div className="p-4 bg-logoScheme-darkGray rounded-lg shadow text-gray-300">
+      <h2 className="text-xl font-bold mb-4 text-logoScheme-gold">Export Deck</h2>
       
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Export Format</label>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Export Format</label>
         <div className="flex space-x-4">
-          <label className="inline-flex items-center">
+          <label className="inline-flex items-center text-gray-200">
             <input
               type="radio"
-              className="form-radio"
+              className="form-radio text-logoScheme-gold focus:ring-logoScheme-gold border-gray-600 bg-gray-700"
               name="exportFormat"
               value="text"
               checked={exportFormat === 'text'}
@@ -49,10 +49,10 @@ const DeckExporter = ({ deck }) => {
             />
             <span className="ml-2">Text Format</span>
           </label>
-          <label className="inline-flex items-center">
+          <label className="inline-flex items-center text-gray-200">
             <input
               type="radio"
-              className="form-radio"
+              className="form-radio text-logoScheme-gold focus:ring-logoScheme-gold border-gray-600 bg-gray-700"
               name="exportFormat"
               value="moxfield"
               checked={exportFormat === 'moxfield'}
@@ -64,8 +64,8 @@ const DeckExporter = ({ deck }) => {
       </div>
       
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Preview</label>
-        <div className="border rounded-md p-3 bg-gray-50 h-64 overflow-auto whitespace-pre-wrap font-mono text-sm">
+        <label className="block text-sm font-medium text-gray-300 mb-1">Preview</label>
+        <div className="border border-logoScheme-brown rounded-md p-3 bg-gray-800 h-64 overflow-auto whitespace-pre-wrap font-mono text-sm text-gray-300">
           {exportContent}
         </div>
       </div>
@@ -73,13 +73,13 @@ const DeckExporter = ({ deck }) => {
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleExport}
-          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+          className="btn-primary px-4 py-2"
         >
           Download as Text File
         </button>
         
         <CopyToClipboard text={exportContent} onCopy={handleCopied}>
-          <button className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors">
+          <button className="px-4 py-2 bg-gray-700 text-gray-100 rounded hover:bg-gray-600 transition-colors">
             {copied ? 'Copied!' : 'Copy to Clipboard'}
           </button>
         </CopyToClipboard>

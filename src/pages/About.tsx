@@ -2,11 +2,11 @@ import React from 'react';
 
 const About: React.FC = () => {
   return (
-    <div className="container mx-auto">
-      <h1 className="text-3xl font-bold mb-6">About MTG Commander Deck Builder</h1>
+    <div className="container mx-auto p-4 text-gray-300">
+      <h1 className="text-3xl font-bold mb-6 text-logoScheme-gold">About MTG Commander Deck Builder</h1>
       
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Our Mission</h2>
+      <div className="bg-logoScheme-darkGray p-6 rounded-lg shadow-md mb-8">
+        <h2 className="text-2xl font-semibold mb-4 text-logoScheme-gold">Our Mission</h2>
         <p className="mb-4">
           MTG Commander Deck Builder combines the power of AI with comprehensive Magic: The Gathering card data 
           to help players create optimized Commander decks. Our tool makes deck building easier, more intuitive, 
@@ -19,8 +19,8 @@ const About: React.FC = () => {
         </p>
       </div>
       
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Features</h2>
+      <div className="bg-logoScheme-darkGray p-6 rounded-lg shadow-md mb-8">
+        <h2 className="text-2xl font-semibold mb-4 text-logoScheme-gold">Features</h2>
         <ul className="list-disc pl-6 space-y-2">
           <li>Intelligent card suggestions powered by AI</li>
           <li>Commander-specific synergy analysis</li>
@@ -32,8 +32,8 @@ const About: React.FC = () => {
         </ul>
       </div>
       
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-4">How It Works</h2>
+      <div className="bg-logoScheme-darkGray p-6 rounded-lg shadow-md mb-8">
+        <h2 className="text-2xl font-semibold mb-4 text-logoScheme-gold">How It Works</h2>
         <ol className="list-decimal pl-6 space-y-4">
           <li>
             <p className="font-semibold">Choose Your Commander</p>
@@ -58,17 +58,17 @@ const About: React.FC = () => {
         </ol>
       </div>
       
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">Credits</h2>
+      <div className="bg-logoScheme-darkGray p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-semibold mb-4 text-logoScheme-gold">Credits</h2>
         <p className="mb-4">
           MTG Commander Deck Builder is powered by the following technologies and data sources:
         </p>
         <ul className="list-disc pl-6 space-y-2">
-          <li>Card data provided by <a href="https://scryfall.com/docs/api" className="text-blue-600 hover:underline">Scryfall API</a></li>
-          <li>AI suggestions powered by <a href="https://openai.com" className="text-blue-600 hover:underline">OpenAI</a></li>
+          <li>Card data provided by <a href="https://scryfall.com/docs/api" className="text-logoScheme-blue hover:text-blue-400 underline">Scryfall API</a></li>
+          <li>AI suggestions powered by <a href="https://openai.com" className="text-logoScheme-blue hover:text-blue-400 underline">OpenAI</a></li>
           <li>Built with React, TailwindCSS, and Node.js</li>
         </ul>
-        <p className="mt-4 text-sm text-gray-600">
+        <p className="mt-4 text-sm text-gray-400">
           Magic: The Gathering and all related properties are owned by Wizards of the Coast. 
           This application is not affiliated with, endorsed, sponsored, or specifically approved by Wizards of the Coast.
         </p>

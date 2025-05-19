@@ -815,6 +815,7 @@ export const DeckProvider = ({ children }) => {
     updateCardQuantity,
     clearDeck,
     resetDeckExceptCommander,
+    clearDeckContents: resetDeckExceptCommander, // Now explicitly provided
     loadDeck,
     saveDeck, 
     saveCurrentDeckToGHL,

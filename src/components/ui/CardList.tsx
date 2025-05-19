@@ -18,7 +18,7 @@ const CardList: React.FC<CardListProps> = ({
 }) => {
   if (cards.length === 0) {
     return (
-      <div className="text-center py-4 text-gray-500">
+      <div className="text-center py-4 text-gray-400">
         {emptyMessage}
       </div>
     );
@@ -44,7 +44,7 @@ const CardList: React.FC<CardListProps> = ({
 
   if (layout === 'grid') {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 text-gray-300">
         {cards.map(card => (
           <div key={card.id} className="hover:shadow-md transition-shadow">
             <CardDisplay 
@@ -64,21 +64,21 @@ const CardList: React.FC<CardListProps> = ({
     const groupedCards = groupCardsByType(cards);
     
     return (
-      <div className="space-y-4">
+      <div className="space-y-4 text-gray-300">
         {Object.entries(groupedCards).map(([type, cardsOfType]) => (
           <div key={type}>
-            <h4 className="text-lg font-medium mb-2">{type} ({cardsOfType.length})</h4>
+            <h4 className="text-lg font-medium mb-2 text-logoScheme-gold">{type} ({cardsOfType.length})</h4>
             <div className="space-y-1">
               {cardsOfType.map(card => (
                 <div 
                   key={card.id} 
-                  className="flex items-center p-2 hover:bg-gray-50 rounded"
+                  className="flex items-center p-2 hover:bg-gray-700 rounded cursor-pointer"
                   onClick={() => onCardClick && onCardClick(card)}
                 >
                   <CardDisplay card={card} size="small" />
                   <div className="ml-3">
-                    <p className="font-medium">{card.name}</p>
-                    <p className="text-xs text-gray-600">{card.type}</p>
+                    <p className="font-medium text-gray-100">{card.name}</p>
+                    <p className="text-xs text-gray-400">{card.type}</p>
                   </div>
                 </div>
               ))}
@@ -91,17 +91,17 @@ const CardList: React.FC<CardListProps> = ({
 
   // Simple list layout
   return (
-    <div className="space-y-1">
+    <div className="space-y-1 text-gray-300">
       {cards.map(card => (
         <div 
           key={card.id} 
-          className="flex items-center p-2 hover:bg-gray-50 rounded"
+          className="flex items-center p-2 hover:bg-gray-700 rounded cursor-pointer"
           onClick={() => onCardClick && onCardClick(card)}
         >
           <CardDisplay card={card} size="small" />
           <div className="ml-3">
-            <p className="font-medium">{card.name}</p>
-            <p className="text-xs text-gray-600">{card.type}</p>
+            <p className="font-medium text-gray-100">{card.name}</p>
+            <p className="text-xs text-gray-400">{card.type}</p>
           </div>
         </div>
       ))}
