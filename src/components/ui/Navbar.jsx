@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -9,10 +9,13 @@ const PROFILE_PIC_CUSTOM_FIELD_ID = "hPIWnTEsvK1pVbATGLS5";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, logout, loadingAuth } = useAuth();
   const { isPremium } = useSubscription();
+  
+  const profileDropdownRef = useRef(null);
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -21,39 +24,43 @@ const Navbar = () => {
   const handleLogout = () => {
     logout();
     setIsMenuOpen(false);
+    setIsProfileDropdownOpen(false);
     navigate('/');
   };
 
-  const handleQuickUpgrade = async () => {
-    if (!currentUser) {
-      navigate('/login');
-      return;
-    }
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
 
-    try {
-      await initiatePremiumCheckout(
-        currentUser.id,
-        currentUser.email,
-        currentUser.id
-      );
-    } catch (error) {
-      console.error('Error starting checkout:', error);
-      navigate('/subscription');
-    }
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   if (loadingAuth) {
     return (
-      <nav className="bg-logoScheme-darkGray shadow-md border-b border-logoScheme-brown">
+      <nav className="bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border-b border-slate-700/40 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
-              <Link to="/" className="flex items-center">
-                <img src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/682a1f02bac5a0c4a0465b4f.png" alt="Logo" className="h-8 w-auto mr-3" />
-                <span className="font-bold text-lg text-logoScheme-gold">Deck Tutor AI</span>
+              <Link to="/" className="flex items-center space-x-3">
+                <img src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/682a1f02bac5a0c4a0465b4f.png" alt="Logo" className="h-10 w-auto" />
+                <span className="font-bold text-xl bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 bg-clip-text text-transparent">
+                  Deck Tutor AI
+                </span>
               </Link>
             </div>
-            <div className="text-sm text-gray-300">Loading...</div>
+            <div className="flex items-center space-x-2">
+              <div className="animate-pulse flex space-x-2">
+                <div className="h-4 bg-slate-700 rounded w-20"></div>
+                <div className="h-4 bg-slate-700 rounded w-16"></div>
+              </div>
+            </div>
           </div>
         </div>
       </nav>
@@ -61,193 +68,300 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="bg-logoScheme-darkGray shadow-md border-b border-logoScheme-brown">
+    <nav className="bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl border-b border-slate-700/40 sticky top-0 z-50 shadow-xl shadow-slate-900/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center">
-              <img src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/682a1f02bac5a0c4a0465b4f.png" alt="Logo" className="h-8 w-auto mr-3" />
-              <span className="font-bold text-lg text-logoScheme-gold">Deck Tutor AI</span>
+          {/* Logo and primary navigation */}
+          <div className="flex items-center space-x-8">
+            <Link to="/" className="flex items-center space-x-3 group">
+              <img 
+                src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/682a1f02bac5a0c4a0465b4f.png" 
+                alt="Logo" 
+                className="h-10 w-auto transition-all duration-300 group-hover:scale-110 drop-shadow-lg" 
+              />
+              <span className="font-bold text-xl bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 bg-clip-text text-transparent">
+                Deck Tutor AI
+              </span>
             </Link>
             
-            <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
+            {/* Primary navigation - hidden on mobile, increased min-width for proper spacing */}
+            <div className="hidden xl:flex items-center space-x-2">
               <Link 
                 to="/" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
                   isActive('/') 
-                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
-                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
+                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
                 }`}
               >
-                Home
+                <span className="relative z-10">Home</span>
+                {!isActive('/') && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                )}
               </Link>
+              
               <Link 
                 to="/builder" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
                   isActive('/builder') 
-                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
-                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
+                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20' 
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
                 }`}
               >
-                Deck Builder AI
+                <span className="relative z-10">Deck Builder</span>
+                {!isActive('/builder') && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                )}
               </Link>
+              
               {isAuthenticated && (
                 <Link 
                   to="/decks" 
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
                     isActive('/decks') 
-                      ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
-                      : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
                   }`}
                 >
-                  My Decks
+                  <span className="relative z-10">My Decks</span>
+                  {!isActive('/decks') && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  )}
                 </Link>
               )}
-              <Link 
-                to="/commander-ai" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/commander-ai') 
-                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
-                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
+              
+              {/* AI Tools - with proper spacing to prevent text wrapping */}
+              <Link
+                to="/commander-ai"
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
+                  isActive('/commander-ai')
+                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
                 }`}
               >
-                Commander AI
+                <span className="relative z-10">Commander AI</span>
+                {!isActive('/commander-ai') && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                )}
               </Link>
-              <Link 
-                to="/tutor-ai" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/tutor-ai') 
-                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
-                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
+              
+              <Link
+                to="/tutor-ai"
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
+                  isActive('/tutor-ai')
+                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
                 }`}
               >
-                Tutor AI
+                <span className="relative z-10">Tutor AI</span>
+                {!isActive('/tutor-ai') && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                )}
               </Link>
-              <Link 
-                to="/card-search" 
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/card-search') 
-                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
-                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
+              
+              <Link
+                to="/card-search"
+                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
+                  isActive('/card-search')
+                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
                 }`}
               >
-                Card Search
+                <span className="relative z-10">Card Search</span>
+                {!isActive('/card-search') && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                )}
               </Link>
             </div>
           </div>
           
-          <div className="hidden sm:flex sm:items-center">
-            {/* Clean subscription badge */}
+          {/* Right side - Actions and user menu */}
+          <div className="hidden xl:flex items-center space-x-6">
+            {/* Ultra-modern My Plan button with site colors */}
             <Link 
               to="/subscription" 
-              className={`mr-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              className={`group relative inline-flex items-center px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 whitespace-nowrap ${
                 isPremium 
-                  ? 'bg-gradient-to-r from-theme-accent-blue to-theme-accent-purple text-white hover:opacity-90'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  ? 'bg-gradient-to-r from-primary-600/90 via-blue-600/90 to-primary-700/90 text-white shadow-xl shadow-primary-500/25 hover:shadow-primary-500/40 border border-primary-400/30 hover:border-primary-300/50' 
+                  : 'bg-gradient-to-r from-slate-700/80 via-slate-600/80 to-slate-700/80 text-slate-100 shadow-lg shadow-slate-900/25 hover:shadow-slate-900/40 border border-slate-500/30 hover:border-slate-400/50 hover:from-slate-600/80 hover:via-slate-500/80 hover:to-slate-600/80'
               }`}
             >
-              {isPremium ? (
-                <>
-                  <span className="mr-1">⭐</span>
-                  Premium
-                </>
-              ) : (
-                <>
-                  <span className="mr-1">🆓</span>
-                  Free Plan
-                </>
+              {/* Animated background overlay */}
+              <div className={`absolute inset-0 rounded-2xl transition-opacity duration-300 ${
+                isPremium 
+                  ? 'bg-gradient-to-r from-primary-500/20 via-blue-500/20 to-primary-600/20 opacity-0 group-hover:opacity-100' 
+                  : 'bg-gradient-to-r from-slate-500/20 via-slate-400/20 to-slate-500/20 opacity-0 group-hover:opacity-100'
+              }`}></div>
+              
+              {/* Content */}
+              <div className="relative flex items-center space-x-2.5">
+                <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  isPremium 
+                    ? 'bg-primary-200 shadow-lg shadow-primary-300/50 group-hover:shadow-primary-200/70' 
+                    : 'bg-slate-400 shadow-lg shadow-slate-500/50 group-hover:shadow-slate-400/70'
+                }`}></div>
+                <span className="font-medium tracking-wide">
+                  {isPremium ? 'Premium Plan' : 'Free Plan'}
+                </span>
+                {isPremium && (
+                  <svg className="w-4 h-4 text-primary-200 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                )}
+              </div>
+              
+              {/* Subtle glow effect for premium */}
+              {isPremium && (
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary-600/20 to-blue-600/20 blur-xl group-hover:blur-2xl transition-all duration-300 opacity-60 group-hover:opacity-80 -z-10"></div>
               )}
             </Link>
 
-            {/* Upgrade button for free users */}
-            {!isPremium && isAuthenticated && (
-              <button
-                onClick={handleQuickUpgrade}
-                className="mr-4 inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-md hover:opacity-90 transition-opacity"
-              >
-                ⚡ Upgrade $3.99
-              </button>
-            )}
-
             {isAuthenticated ? (
-              <>
-                {currentUser && <span className="text-sm text-gray-200 mr-4">Welcome, {currentUser.firstName || currentUser.email}!</span>}
-                
-                {(() => {
-                  const profilePicUrl = currentUser?.customFields?.find(cf => cf.id === PROFILE_PIC_CUSTOM_FIELD_ID)?.value;
-                  if (profilePicUrl) {
-                    return (
-                      <Link to="/profile" className="mr-3">
-                        <img 
-                          src={profilePicUrl} 
-                          alt="Profile" 
-                          className="h-8 w-8 rounded-full object-cover border-2 border-logoScheme-gold hover:opacity-80 transition-opacity"
-                        />
-                      </Link>
-                    );
-                  } else {
-                    // Generic User Icon as fallback, linking to profile
-                    return (
-                      <Link to="/profile" className="mr-3 p-1 rounded-full hover:bg-logoScheme-brown transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-gray-300">
-                          <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" />
-                        </svg>
-                      </Link>
-                    );
-                  }
-                })()}
+              <div className="flex items-center space-x-4">
+                {/* User profile dropdown */}
+                <div className="relative" ref={profileDropdownRef}>
+                  <button
+                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    className="flex items-center space-x-3 p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-300 border border-transparent hover:border-slate-600/50"
+                  >
+                    {(() => {
+                      const profilePicUrl = currentUser?.customFields?.find(cf => cf.id === PROFILE_PIC_CUSTOM_FIELD_ID)?.value;
+                      if (profilePicUrl) {
+                        return (
+                          <img 
+                            src={profilePicUrl} 
+                            alt="Profile" 
+                            className="h-9 w-9 rounded-full object-cover border-2 border-primary-500/50 shadow-lg"
+                          />
+                        );
+                      } else {
+                        return (
+                          <div className="h-9 w-9 rounded-full bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center shadow-lg border border-primary-400/30">
+                            <span className="text-sm font-semibold text-slate-900">
+                              {currentUser?.firstName?.charAt(0) || currentUser?.email?.charAt(0) || 'U'}
+                            </span>
+                          </div>
+                        );
+                      }
+                    })()}
+                    <div className="hidden md:block text-left">
+                      <div className="text-sm font-medium text-white">
+                        {currentUser?.firstName || 'User'}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        {currentUser?.email}
+                      </div>
+                    </div>
+                    <svg 
+                      className={`w-4 h-4 text-slate-400 transition-transform duration-300 ${isProfileDropdownOpen ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
 
-                <Link 
-                  to="/builder"
-                  className="bg-logoScheme-gold text-logoScheme-darkGray px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-gold"
-                >
-                  New Deck
-                </Link>
-                <button 
-                  onClick={handleLogout}
-                  className="ml-3 bg-logoScheme-red text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-red"
-                >
-                  Logout
-                </button>
-              </>
+                  {isProfileDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-64 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-50 animate-in slide-in-from-top-2 duration-200">
+                      <div className="px-4 py-3 border-b border-slate-700/50">
+                        <div className="flex items-center space-x-3">
+                          {(() => {
+                            const profilePicUrl = currentUser?.customFields?.find(cf => cf.id === PROFILE_PIC_CUSTOM_FIELD_ID)?.value;
+                            if (profilePicUrl) {
+                              return (
+                                <img 
+                                  src={profilePicUrl} 
+                                  alt="Profile" 
+                                  className="h-10 w-10 rounded-full object-cover border-2 border-primary-500/50"
+                                />
+                              );
+                            } else {
+                              return (
+                                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center">
+                                  <span className="text-lg font-semibold text-slate-900">
+                                    {currentUser?.firstName?.charAt(0) || currentUser?.email?.charAt(0) || 'U'}
+                                  </span>
+                                </div>
+                              );
+                            }
+                          })()}
+                          <div>
+                            <div className="font-medium text-white">
+                              {currentUser?.firstName || 'User'}
+                            </div>
+                            <div className="text-sm text-slate-400">
+                              {currentUser?.email}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="block w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 rounded-lg mx-2"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span>👤</span>
+                          <span>View Profile</span>
+                        </div>
+                      </Link>
+                      <Link
+                        to="/subscription"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="block w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 rounded-lg mx-2"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span>💳</span>
+                          <span>Subscription</span>
+                        </div>
+                      </Link>
+                      <div className="border-t border-slate-700/50 mt-2 pt-2">
+                        <button 
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 rounded-lg mx-2"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <span>🚪</span>
+                            <span>Sign out</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : (
-              <>
-                <Link 
-                  to="/builder"
-                  className="bg-logoScheme-gold text-logoScheme-darkGray px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-gold"
-                >
-                  New Deck
-                </Link>
+              <div className="flex items-center space-x-4">
                 <Link 
                   to="/login"
-                  className="ml-3 border border-logoScheme-gold text-logoScheme-gold px-4 py-2 rounded-md text-sm font-medium hover:bg-logoScheme-gold hover:text-logoScheme-darkGray focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-gold"
+                  className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-all duration-200"
                 >
-                  Login
+                  Sign in
                 </Link>
                 <Link 
                   to="/register"
-                  className="ml-3 bg-logoScheme-gold text-logoScheme-darkGray px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-gold"
+                  className="px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-500 text-white text-sm font-semibold rounded-xl hover:from-primary-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 border border-primary-400/30"
                 >
-                  Sign Up
+                  Get Started
                 </Link>
-              </>
+              </div>
             )}
           </div>
           
           {/* Mobile menu button */}
-          <div className="flex items-center sm:hidden">
+          <div className="xl:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-gray-100 hover:bg-logoScheme-brown focus:outline-none focus:ring-2 focus:ring-inset focus:ring-logoScheme-gold"
-              aria-expanded="false"
+              className="inline-flex items-center justify-center p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 border border-transparent hover:border-slate-600/50"
             >
               <span className="sr-only">Open main menu</span>
               {isMenuOpen ? (
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               )}
@@ -258,144 +372,191 @@ const Navbar = () => {
       
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="sm:hidden bg-logoScheme-darkGray border-t border-logoScheme-brown">
-          <div className="pt-2 pb-3 space-y-1">
-            {/* Clean subscription link in mobile menu */}
+        <div className="xl:hidden bg-slate-900/95 backdrop-blur-xl border-t border-slate-700/50">
+          <div className="px-4 py-6 space-y-3">
+            {/* User section for mobile */}
+            {isAuthenticated && (
+              <div className="pb-4 mb-4 border-b border-slate-700/50">
+                <div className="flex items-center space-x-3">
+                  {(() => {
+                    const profilePicUrl = currentUser?.customFields?.find(cf => cf.id === PROFILE_PIC_CUSTOM_FIELD_ID)?.value;
+                    if (profilePicUrl) {
+                      return (
+                        <img 
+                          src={profilePicUrl} 
+                          alt="Profile" 
+                          className="h-12 w-12 rounded-full object-cover border-2 border-primary-500/50"
+                        />
+                      );
+                    } else {
+                      return (
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center">
+                          <span className="text-lg font-semibold text-slate-900">
+                            {currentUser?.firstName?.charAt(0) || currentUser?.email?.charAt(0) || 'U'}
+                          </span>
+                        </div>
+                      );
+                    }
+                  })()}
+                  <div>
+                    <div className="font-medium text-white">
+                      {currentUser?.firstName || 'User'}
+                    </div>
+                    <div className="text-sm text-slate-400">
+                      {currentUser?.email}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* My Plan for mobile - modern style with site colors */}
             <Link
               to="/subscription"
               onClick={() => setIsMenuOpen(false)}
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/subscription')
-                  ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
+              className={`flex items-center justify-between w-full p-4 rounded-xl transition-all duration-300 ${
+                isPremium 
+                  ? 'bg-gradient-to-r from-primary-600/20 to-blue-600/20 border border-primary-500/30 shadow-lg shadow-primary-500/10' 
+                  : 'bg-gradient-to-r from-slate-700/40 to-slate-600/40 border border-slate-600/50 shadow-lg shadow-slate-900/20'
               }`}
             >
-              {isPremium ? '⭐ Premium Plan' : '🆓 Free Plan'}
-            </Link>
-
-            {/* Upgrade options for free users in mobile menu */}
-            {!isPremium && isAuthenticated && (
-              <div className="px-3 py-2">
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    handleQuickUpgrade();
-                  }}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                  ⚡ Upgrade to Premium - $3.99/month
-                </button>
+              <div className="flex items-center space-x-3">
+                <div className={`w-3 h-3 rounded-full ${isPremium ? 'bg-primary-400 shadow-lg shadow-primary-400/50' : 'bg-slate-400 shadow-lg shadow-slate-400/50'}`}></div>
+                <span className={`font-semibold ${isPremium ? 'text-primary-300' : 'text-slate-200'}`}>
+                  {isPremium ? 'Premium Plan' : 'Free Plan'}
+                </span>
+                {isPremium && (
+                  <svg className="w-4 h-4 text-primary-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                  </svg>
+                )}
               </div>
-            )}
+              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
             
-            <Link
-              to="/"
-              onClick={() => setIsMenuOpen(false)}
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/')
-                  ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
-              }`}
-            >
-              Home
-            </Link>
-            <Link
-              to="/builder"
-              onClick={() => setIsMenuOpen(false)}
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/builder')
-                  ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
-              }`}
-            >
-              Deck Builder AI
-            </Link>
-            {isAuthenticated && (
+            {/* Navigation links with site colors */}
+            <div className="space-y-2">
               <Link
-                to="/decks"
+                to="/"
                 onClick={() => setIsMenuOpen(false)}
-                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                  isActive('/decks')
-                    ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                    : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
+                className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                  isActive('/')
+                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
                 }`}
               >
-                My Decks
+                <div className="flex items-center space-x-3">
+                  <span>🏠</span>
+                  <span>Home</span>
+                </div>
               </Link>
-            )}
-            <Link
-              to="/commander-ai"
-              onClick={() => setIsMenuOpen(false)}
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/commander-ai')
-                  ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
-              }`}
-            >
-              Commander AI
-            </Link>
-            <Link
-              to="/tutor-ai"
-              onClick={() => setIsMenuOpen(false)}
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/tutor-ai')
-                  ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
-              }`}
-            >
-              Tutor AI
-            </Link>
-            <Link
-              to="/card-search"
-              onClick={() => setIsMenuOpen(false)}
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/card-search')
-                  ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
-              }`}
-            >
-              Card Search
-            </Link>
-            <div className="mt-4 pt-4 border-t border-logoScheme-brown">
+              
+              <Link
+                to="/builder"
+                onClick={() => setIsMenuOpen(false)}
+                className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                  isActive('/builder')
+                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <span>🔨</span>
+                  <span>Deck Builder</span>
+                </div>
+              </Link>
+              
+              {isAuthenticated && (
+                <Link
+                  to="/decks"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/decks')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>📚</span>
+                    <span>My Decks</span>
+                  </div>
+                </Link>
+              )}
+
+              {/* AI Tools section */}
+              <div className="pt-2">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 px-3">
+                  AI Tools
+                </div>
+                <Link
+                  to="/commander-ai"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/commander-ai')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>⚔️</span>
+                    <span>Commander AI</span>
+                  </div>
+                </Link>
+                <Link
+                  to="/tutor-ai"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/tutor-ai')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>🎯</span>
+                    <span>Tutor AI</span>
+                  </div>
+                </Link>
+                <Link
+                  to="/card-search"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/card-search')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>🔍</span>
+                    <span>Card Search</span>
+                  </div>
+                </Link>
+              </div>
+            </div>
+
+            {/* Mobile auth actions */}
+            <div className="pt-4 mt-4 border-t border-slate-700/50 space-y-2">
               {isAuthenticated ? (
                 <>
-                  <div className="flex items-center pl-3 pr-4 py-2">
-                    {(() => {
-                      const profilePicUrl = currentUser?.customFields?.find(cf => cf.id === PROFILE_PIC_CUSTOM_FIELD_ID)?.value;
-                      if (profilePicUrl) {
-                        return (
-                          <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="mr-3 flex-shrink-0">
-                            <img 
-                              src={profilePicUrl} 
-                              alt="Profile" 
-                              className="h-10 w-10 rounded-full object-cover border-2 border-logoScheme-gold"
-                            />
-                          </Link>
-                        );
-                      } else {
-                        return (
-                          <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="mr-3 p-1 rounded-full hover:bg-logoScheme-brown transition-colors flex-shrink-0">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-gray-300">
-                              <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" />
-                            </svg>
-                          </Link>
-                        );
-                      }
-                    })()}
-                    <span className="block text-base font-medium text-gray-200">Hi, {currentUser.firstName || currentUser.email}!</span>
-                  </div>
                   <Link
                     to="/profile"
                     onClick={() => setIsMenuOpen(false)}
-                    className="block w-full text-left pl-3 pr-4 py-2 text-base font-medium text-gray-300 hover:bg-logoScheme-brown hover:text-gray-100"
+                    className="block w-full p-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 border border-transparent hover:border-slate-600/50"
                   >
-                    View Profile
+                    <div className="flex items-center space-x-3">
+                      <span>👤</span>
+                      <span>View Profile</span>
+                    </div>
                   </Link>
                   <button 
                     onClick={handleLogout}
-                    className="block w-full text-left pl-3 pr-4 py-2 text-base font-medium text-logoScheme-red hover:bg-red-700 hover:text-white"
+                    className="block w-full p-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 text-left border border-transparent hover:border-red-500/30"
                   >
-                    Logout
+                    <div className="flex items-center space-x-3">
+                      <span>🚪</span>
+                      <span>Sign out</span>
+                    </div>
                   </button>
                 </>
               ) : (
@@ -403,26 +564,19 @@ const Navbar = () => {
                   <Link 
                     to="/login"
                     onClick={() => setIsMenuOpen(false)}
-                    className="block w-full text-left pl-3 pr-4 py-2 text-base font-medium text-gray-300 hover:bg-logoScheme-brown hover:text-gray-100"
+                    className="block w-full p-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 text-center border border-transparent hover:border-slate-600/50"
                   >
-                    Login
+                    Sign in
                   </Link>
                   <Link 
                     to="/register"
                     onClick={() => setIsMenuOpen(false)}
-                    className="block w-full text-left pl-3 pr-4 py-2 mt-1 text-base font-medium text-gray-300 hover:bg-logoScheme-brown hover:text-gray-100"
+                    className="block w-full p-3 bg-gradient-to-r from-primary-500 to-blue-500 text-white rounded-xl font-medium hover:from-primary-600 hover:to-blue-600 transition-all duration-200 text-center border border-primary-400/30"
                   >
-                    Sign Up
+                    Get Started
                   </Link>
                 </>
               )}
-               <Link 
-                to="/builder"
-                className="block w-full mt-2 text-center bg-logoScheme-gold text-logoScheme-darkGray px-4 py-2 rounded-md text-base font-medium hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-gold"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                New Deck
-              </Link>
             </div>
           </div>
         </div>

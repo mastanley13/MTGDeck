@@ -1,0 +1,260 @@
+/* Modern UI Effects - Reusable utility classes for consistent styling */
+
+/* ===== MODERN BUTTONS ===== */
+
+/* Base button class with modern effects */
+.btn-modern {
+  @apply inline-flex items-center justify-center font-semibold transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden rounded-xl;
+}
+
+/* Primary button with site colors */
+.btn-modern-primary {
+  @apply btn-modern bg-gradient-to-r from-primary-500 to-blue-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 border border-primary-400/30 hover:border-primary-300/50 hover:from-primary-600 hover:to-blue-600 hover:scale-105 focus:ring-primary-500;
+}
+
+/* Secondary button */
+.btn-modern-secondary {
+  @apply btn-modern bg-gradient-to-r from-slate-700/80 via-slate-600/80 to-slate-700/80 text-slate-100 shadow-lg shadow-slate-900/25 hover:shadow-slate-900/40 border border-slate-500/30 hover:border-slate-400/50 hover:from-slate-600/80 hover:via-slate-500/80 hover:to-slate-600/80 hover:scale-105 focus:ring-slate-500;
+}
+
+/* Outline button */
+.btn-modern-outline {
+  @apply btn-modern bg-transparent text-primary-500 border-2 border-primary-500 hover:bg-primary-500 hover:text-white hover:scale-105 focus:ring-primary-500 shadow-sm hover:shadow-lg;
+}
+
+/* Ghost button */
+.btn-modern-ghost {
+  @apply btn-modern bg-transparent text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50 hover:scale-105 focus:ring-slate-500;
+}
+
+/* Premium button with glow */
+.btn-modern-premium {
+  @apply btn-modern bg-gradient-to-r from-primary-600/90 via-blue-600/90 to-primary-700/90 text-white shadow-xl shadow-primary-500/25 hover:shadow-primary-500/40 border border-primary-400/30 hover:border-primary-300/50 hover:scale-105 focus:ring-primary-500;
+}
+
+/* Button sizes */
+.btn-modern-xs { @apply px-3 py-1.5 text-xs rounded-lg; }
+.btn-modern-sm { @apply px-4 py-2 text-sm rounded-lg; }
+.btn-modern-md { @apply px-6 py-3 text-sm; }
+.btn-modern-lg { @apply px-8 py-4 text-base; }
+.btn-modern-xl { @apply px-10 py-5 text-lg rounded-2xl; }
+
+/* ===== MODERN CARDS ===== */
+
+/* Base modern card */
+.card-modern {
+  @apply bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 transition-all duration-300 hover:shadow-slate-900/40 hover:border-slate-600/50;
+}
+
+/* Interactive card with hover effects */
+.card-modern-interactive {
+  @apply card-modern hover:scale-[1.02] hover:shadow-2xl transform cursor-pointer;
+}
+
+/* Premium card with special effects */
+.card-modern-premium {
+  @apply card-modern border-primary-500/30 shadow-primary-500/10 hover:border-primary-400/50 hover:shadow-primary-500/20;
+}
+
+/* ===== MODERN INPUTS ===== */
+
+/* Modern input field */
+.input-modern {
+  @apply w-full px-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50;
+}
+
+/* Modern select dropdown */
+.select-modern {
+  @apply input-modern appearance-none bg-no-repeat bg-right bg-[length:16px_16px] pr-10;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* ===== MODERN BADGES ===== */
+
+/* Base modern badge */
+.badge-modern {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-all duration-300;
+}
+
+/* Primary badge */
+.badge-modern-primary {
+  @apply badge-modern bg-primary-500/20 text-primary-400 border border-primary-500/30;
+}
+
+/* Success badge */
+.badge-modern-success {
+  @apply badge-modern bg-green-500/20 text-green-400 border border-green-500/30;
+}
+
+/* Warning badge */
+.badge-modern-warning {
+  @apply badge-modern bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+}
+
+/* Danger badge */
+.badge-modern-danger {
+  @apply badge-modern bg-red-500/20 text-red-400 border border-red-500/30;
+}
+
+/* Premium badge with glow */
+.badge-modern-premium {
+  @apply badge-modern bg-gradient-to-r from-primary-600/20 to-blue-600/20 text-primary-300 border border-primary-500/30 shadow-lg shadow-primary-500/10;
+}
+
+/* ===== MODERN NAVIGATION ===== */
+
+/* Modern navigation link */
+.nav-link-modern {
+  @apply px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden whitespace-nowrap border border-transparent;
+}
+
+/* Active navigation link */
+.nav-link-modern-active {
+  @apply nav-link-modern bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border-primary-500/20;
+}
+
+/* Inactive navigation link */
+.nav-link-modern-inactive {
+  @apply nav-link-modern text-slate-300 hover:text-white hover:bg-slate-700/60 hover:border-slate-600/50;
+}
+
+/* ===== MODERN ANIMATIONS ===== */
+
+/* Fade in animation */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scale in animation */
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Slide in from top */
+.animate-slide-in-top {
+  animation: slideInTop 0.3s ease-out;
+}
+
+@keyframes slideInTop {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== MODERN EFFECTS ===== */
+
+/* Glassmorphism effect */
+.glassmorphism {
+  @apply bg-slate-800/80 backdrop-blur-xl border border-slate-700/50;
+}
+
+/* Glassmorphism card */
+.glassmorphism-card {
+  @apply glassmorphism rounded-2xl shadow-xl;
+}
+
+/* Modern gradient background */
+.gradient-modern {
+  background: linear-gradient(135deg, 
+    rgb(30 41 59 / 0.95) 0%, 
+    rgb(51 65 85 / 0.95) 50%, 
+    rgb(30 41 59 / 0.95) 100%
+  );
+}
+
+/* Subtle hover glow */
+.hover-glow {
+  @apply transition-all duration-300;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Premium glow effect */
+.premium-glow {
+  position: relative;
+}
+
+.premium-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, 
+    rgba(59, 130, 246, 0.1) 0%, 
+    rgba(147, 197, 253, 0.1) 50%, 
+    rgba(59, 130, 246, 0.1) 100%
+  );
+  border-radius: inherit;
+  filter: blur(20px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.premium-glow:hover::before {
+  opacity: 1;
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+/* Text gradients */
+.text-gradient-primary {
+  @apply bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 bg-clip-text text-transparent;
+}
+
+.text-gradient-premium {
+  @apply bg-gradient-to-r from-primary-400 via-blue-500 to-primary-600 bg-clip-text text-transparent;
+}
+
+/* Shadow utilities */
+.shadow-modern {
+  @apply shadow-2xl shadow-slate-900/20;
+}
+
+.shadow-modern-primary {
+  @apply shadow-xl shadow-primary-500/25;
+}
+
+.shadow-modern-hover {
+  @apply hover:shadow-2xl hover:shadow-slate-900/40 transition-shadow duration-300;
+}
+
+/* Border utilities */
+.border-modern {
+  @apply border border-slate-700/50;
+}
+
+.border-modern-hover {
+  @apply border-slate-700/50 hover:border-slate-600/50 transition-colors duration-300;
+}
+
+.border-modern-primary {
+  @apply border border-primary-500/30;
+}
+
+/* Backdrop utilities */
+.backdrop-modern {
+  @apply backdrop-blur-xl bg-slate-900/95;
+}
+
+/* ===== RESPONSIVE HELPERS ===== */
+
+/* Hide on mobile, show on larger screens */
+.desktop-only {
+  @apply hidden xl:flex;
+}
+
+/* Show on mobile, hide on larger screens */
+.mobile-only {
+  @apply flex xl:hidden;
+} 
