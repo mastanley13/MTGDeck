@@ -167,13 +167,20 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
         
         {/* Enhanced Commander Preview */}
         <div className="mb-8">
-          <h3 className="text-xl font-semibold text-logoScheme-gold mb-4 text-center">Your Commander</h3>
-          <div
-            onClick={() => {
-              if (commander) setIsCommanderModalOpen(true);
-            }}
-            className="group max-w-4xl mx-auto bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out hover:scale-[1.02] overflow-hidden border-2 border-logoScheme-brown hover:border-logoScheme-gold p-4 md:p-6 cursor-pointer"
-          >
+          <h3 className="text-2xl font-bold text-white mb-6 text-center flex items-center justify-center space-x-3">
+            <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+            <span>👑 Your Commander</span>
+          </h3>
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl opacity-60"></div>
+            <div
+              onClick={() => {
+                if (commander) setIsCommanderModalOpen(true);
+              }}
+              className="relative group max-w-4xl mx-auto glassmorphism-card border-primary-500/30 shadow-modern-primary hover:shadow-modern-primary hover:scale-[1.02] transition-all duration-300 ease-in-out p-6 md:p-8 cursor-pointer"
+            >
             <div className="flex flex-col md:flex-row gap-4 md:gap-6">
               {/* Left Column: Image - Stacks on top on mobile */}
               <div className="md:w-1/3 flex-shrink-0 self-start mx-auto md:mx-0 max-w-xs md:max-w-none">
@@ -289,7 +296,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
                 <p className="text-xs text-gray-500 mt-3 pt-2 border-t border-logoScheme-brown/30 order-11 sm:order-none">
                     Set: {commander.set_name ? `${commander.set_name} (${commander.set?.toUpperCase()})` : 'N/A'} - Collector #: {commander.collector_number || 'N/A'}
                 </p>
-                <p className="text-center text-sm text-logoScheme-gold group-hover:underline mt-4 font-semibold order-12 sm:order-none">
+                <p className="text-center text-sm text-primary-400 group-hover:text-primary-300 transition-colors mt-4 font-semibold order-12 sm:order-none">
                   Click for Full Card View
                 </p>
               </div>

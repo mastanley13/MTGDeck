@@ -20,6 +20,14 @@ const HomePage = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-primary-600/10 via-transparent to-blue-600/10"></div>
           
           <div className="relative z-10 text-center max-w-5xl mx-auto">
+            {/* Logo */}
+            <div className="mb-12 animate-fade-in">
+              <img 
+                src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/6830e4ad6417b23718765500.png" 
+                alt="MTG Commander Deck Builder Logo" 
+                className="h-24 sm:h-32 lg:h-40 mx-auto drop-shadow-2xl hover:scale-105 transition-transform duration-300"
+              />
+            </div>
             <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold text-white mb-8 leading-tight">
               <span className="block animate-fade-in">Build Powerful</span>
               <span className="block text-gradient-primary animate-fade-in delay-200">Commander Decks</span>

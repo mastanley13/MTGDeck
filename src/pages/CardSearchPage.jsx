@@ -102,6 +102,13 @@ const CardSearchPage = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 space-y-8">
         {/* Header */}
         <div className="text-center">
+          <div className="mb-8">
+            <img 
+              src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/6830e4ad6417b23718765500.png" 
+              alt="MTG Commander Deck Builder Logo" 
+              className="h-16 sm:h-20 mx-auto drop-shadow-2xl hover:scale-105 transition-transform duration-300 mb-6"
+            />
+          </div>
           <h1 className="text-5xl font-bold text-gradient-primary mb-4">
             🔍 Card Search
           </h1>
@@ -220,7 +227,10 @@ const CardSearchPage = () => {
                     key={card.id} 
                     className={`group relative glassmorphism-card p-4 border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-modern-primary ${gameChangerEffect}`}
                   >
-                    <div className="cursor-pointer" onClick={() => handleOpenCardDetailsModal(card)}>
+                    <div className="cursor-pointer" onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenCardDetailsModal(card);
+                    }}>
                       <h3 className="font-bold text-white mb-3 group-hover:text-primary-300 transition-colors line-clamp-2" title={card.name}>
                         {card.name}
                       </h3>
@@ -249,7 +259,10 @@ const CardSearchPage = () => {
                     </div>
                     
                     <button 
-                      onClick={() => handleOpenDeckModal(card)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDeckModal(card);
+                      }}
                       className="w-full btn-modern btn-modern-secondary btn-modern-sm group/add"
                     >
                       <span className="flex items-center justify-center space-x-2">
@@ -261,7 +274,7 @@ const CardSearchPage = () => {
                     </button>
 
                     {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end justify-center p-4">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end justify-center p-4 pointer-events-none">
                       <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1 text-white text-xs font-semibold">
                         Click to view details
                       </div>
