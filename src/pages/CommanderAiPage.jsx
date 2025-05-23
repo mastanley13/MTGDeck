@@ -362,26 +362,30 @@ const CommanderAiPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100 py-12 px-4 text-neutral-800 flex flex-col items-center">
-      <div className="w-full max-w-3xl mx-auto bg-logoScheme-darkGray border-2 border-logoScheme-gold rounded-xl p-6 md:p-8 shadow-2xl">
-        
-        <div className="flex justify-between items-center mb-3">
-          <h1 className="text-3xl font-bold text-logoScheme-gold">
-            Commander A.I.
-          </h1>
-          {/* Optional: Up arrow icon - keeping it simple for now */}
+    <div className="min-h-screen bg-slate-900">
+      {/* Background effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-12 space-y-12">
+        {/* Hero Header */}
+        <div className="text-center">
+          <div className="mb-6">
+            <h1 className="text-5xl lg:text-6xl font-bold text-gradient-primary mb-4">
+              👑 Commander AI
+            </h1>
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500/20 to-blue-500/20 rounded-full px-6 py-3 border border-primary-500/30">
+              <span className="text-primary-400 text-lg font-semibold">✨ Find Your Perfect Leader</span>
+            </div>
+          </div>
+          <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+            Describe your preferred playstyle, colors, or mechanics, and let our AI suggest the perfect commanders for you!
+          </p>
         </div>
 
-        <div className="text-center mb-6">
-          <span className="bg-logoScheme-gold text-slate-800 px-4 py-1.5 rounded-full text-sm font-semibold shadow-md">
-            Find Your Perfect Leader
-          </span>
-        </div>
-      
-        <p className="text-slate-300 text-center mb-8">
-          Describe your preferred playstyle, colors, or mechanics, and let the AI suggest some commanders for you!
-        </p>
-      
+        {/* Modals */}
         <AlertModal
           isOpen={isAlertModalOpen}
           title={alertModalConfig.title}
@@ -416,103 +420,228 @@ const CommanderAiPage = () => {
           disabled={deckContextLoading}
         />
 
+        {/* API Key Warning */}
         {!OPENAI_API_KEY && (
-          <div className="max-w-xl mx-auto bg-red-900 bg-opacity-50 border-l-4 border-logoScheme-red text-red-300 p-4 mb-6 rounded-md shadow-md" role="alert">
-            <p className="font-bold">API Key Missing</p>
-            <p>Your OpenAI API key (VITE_OPENAI_API_KEY) is not configured in your <code>.env</code> file. Please add it to enable AI suggestions.</p>
+          <div className="glassmorphism-card p-6 border-red-500/30 bg-red-500/10">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-red-300">API Key Missing</h3>
+                <p className="text-red-200">Your OpenAI API key (VITE_OPENAI_API_KEY) is not configured in your <code>.env</code> file. Please add it to enable AI suggestions.</p>
+              </div>
+            </div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mb-10">
-          <div className="mb-6">
-            <label htmlFor="preferences" className="block text-sm font-medium text-slate-200 mb-2">
-              What are you looking for in a Commander?
-            </label>
-            <textarea
-              id="preferences"
-              name="preferences"
-              rows="4"
-              className="w-full p-3 border border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-logoScheme-gold focus:border-logoScheme-gold transition duration-150 ease-in-out bg-slate-800 text-slate-100 placeholder-slate-400"
-              placeholder="e.g., I love drawing cards and controlling the board, maybe in Blue and White. Or, I want an aggressive Red commander that deals a lot of damage quickly."
-              value={preferences}
-              onChange={handleInputChange}
-              disabled={isLoading}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading || !preferences.trim() || !OPENAI_API_KEY}
-            className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-700 ring-1 ring-white ring-opacity-50"
-          >
-            {isLoading ? 'Thinking...' : 'Get Suggestions'}
-          </button>
-        </form>
+        {/* Main Content */}
+        <div className="glassmorphism-card p-8 lg:p-12 border-primary-500/20">
+          {/* Input Form */}
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <span>Describe Your Ideal Commander</span>
+              </h2>
 
-        <div className="space-y-3 text-slate-300 mb-10 text-sm">
-          <div className="flex items-start">
-            <CheckIcon className="h-5 w-5 text-logoScheme-gold mr-2 mt-0.5 flex-shrink-0" />
-            <span>Explore diverse commanders tailored to your playstyle preferences.</span>
-          </div>
-          <div className="flex items-start">
-            <CheckIcon className="h-5 w-5 text-logoScheme-gold mr-2 mt-0.5 flex-shrink-0" />
-            <span>Gain insights into each commander's strategy and strengths.</span>
-          </div>
-          <div className="flex items-start">
-            <CheckIcon className="h-5 w-5 text-logoScheme-gold mr-2 mt-0.5 flex-shrink-0" />
-            <span>View rich card details powered by Scryfall integration.</span>
+              <div className="space-y-2">
+                <label htmlFor="preferences" className="block text-sm font-semibold text-white">
+                  What are you looking for in a Commander?
+                </label>
+                <textarea
+                  id="preferences"
+                  name="preferences"
+                  rows="6"
+                  className="w-full p-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50 resize-y"
+                  placeholder="Examples:
+• I love drawing cards and controlling the board, maybe in Blue and White
+• I want an aggressive Red commander that deals damage quickly
+• Looking for a token-based strategy with Green and White
+• Want a commander that cares about the graveyard or recursion
+• Need something that synergizes with artifacts or enchantments"
+                  value={preferences}
+                  onChange={handleInputChange}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || !preferences.trim() || !OPENAI_API_KEY}
+              className="btn-modern btn-modern-primary btn-modern-xl w-full premium-glow group"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center space-x-3">
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                  <span>Finding Perfect Commanders...</span>
+                </span>
+              ) : (
+                <span className="flex items-center justify-center space-x-3">
+                  <span>🤖 Get AI Suggestions</span>
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              )}
+            </button>
+          </form>
+
+          {/* Features List */}
+          <div className="mt-12 pt-8 border-t border-slate-700/50">
+            <h3 className="text-xl font-bold text-white mb-6 text-center">✨ What You Get</h3>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckIcon className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-slate-300">Explore diverse commanders tailored to your playstyle preferences.</span>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckIcon className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-slate-300">Gain insights into each commander's strategy and strengths.</span>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckIcon className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-slate-300">View rich card details powered by Scryfall integration.</span>
+              </div>
+            </div>
           </div>
         </div>
-        
 
+        {/* Loading State */}
         {isLoading && (
-          <div className="text-center py-10">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-logoScheme-gold mx-auto"></div>
-            <p className="mt-4 text-slate-300">Finding commanders and images for you...</p>
+          <div className="glassmorphism-card p-12 text-center border-primary-500/30">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-500 border-t-transparent mx-auto mb-6"></div>
+            <h3 className="text-2xl font-bold text-white mb-2">AI Finding Your Commanders</h3>
+            <p className="text-slate-400 text-lg">Analyzing preferences and fetching perfect matches...</p>
           </div>
         )}
 
+        {/* Error State */}
         {error && (
-          <div className="max-w-xl mx-auto bg-red-900 bg-opacity-50 border border-logoScheme-red text-red-300 px-4 py-3 rounded-xl relative mb-6 shadow-md" role="alert">
-            <strong className="font-bold">Oops! </strong>
-            <span className="block sm:inline">{error}</span>
+          <div className="glassmorphism-card p-8 border-red-500/30 bg-red-500/10">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-red-300">Oops! Something went wrong</h3>
+                <p className="text-red-200">{error}</p>
+              </div>
+            </div>
           </div>
         )}
 
+        {/* Results Grid */}
         {suggestions.length > 0 && !isLoading && (
-          <div>
-            <h2 className="text-2xl font-semibold text-center mb-8 text-logoScheme-gold">Commander Suggestions:</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-8">
+            <div className="text-center">
+              <h2 className="text-4xl font-bold text-gradient-primary mb-4">
+                👑 Commander Suggestions
+              </h2>
+              <p className="text-xl text-slate-400">
+                Click on any commander to view detailed information
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {suggestions.map((commander, index) => (
                 <div 
                   key={`${commander.name}-${index}`}
-                  className="bg-slate-800 border border-slate-600 rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300 ease-in-out cursor-pointer flex flex-col"
+                  className="group relative glassmorphism-card p-0 overflow-hidden border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-modern-primary"
                   onClick={() => handleOpenModal(commander)}
                 >
-                  {commander.imageUrl ? (
-                    <img src={commander.imageUrl} alt={`Art for ${commander.name}`} className="w-full h-60 object-cover object-top" />
-                  ) : (
-                    <div className="w-full h-60 bg-slate-700 flex items-center justify-center text-slate-400 relative">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="absolute text-xs bottom-2 left-2 p-1 bg-slate-800 bg-opacity-70 text-slate-200 rounded">Image not found</span>
+                  {/* Commander Image */}
+                  <div className="relative h-64 overflow-hidden">
+                    {commander.imageUrl ? (
+                      <img 
+                        src={commander.imageUrl} 
+                        alt={`Art for ${commander.name}`} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
+                        <div className="text-center">
+                          <svg className="h-16 w-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-sm">Image not found</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Color Identity Badge */}
+                    <div className="absolute top-3 right-3 flex space-x-1">
+                      {Array.isArray(commander.colors) && commander.colors.map((color, colorIndex) => (
+                        <div 
+                          key={colorIndex}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-lg ${
+                            color === 'W' ? 'bg-yellow-100 text-yellow-800' :
+                            color === 'U' ? 'bg-blue-500' :
+                            color === 'B' ? 'bg-gray-800' :
+                            color === 'R' ? 'bg-red-500' :
+                            color === 'G' ? 'bg-green-500' : 'bg-gray-500'
+                          }`}
+                        >
+                          {color}
+                        </div>
+                      ))}
                     </div>
-                  )}
-                  <div className="p-4 flex flex-col flex-grow">
-                    <h3 className="text-lg font-semibold text-logoScheme-gold mb-2 min-h-[3em]">{commander.name}</h3>
-                    <p className="text-sm text-slate-400 mb-2">Colors: {Array.isArray(commander.colors) ? commander.colors.join(', ') : 'N/A'}</p>
-                    <p className="text-xs text-slate-300 leading-relaxed flex-grow h-20 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-700 mb-3">{commander.aiDescription || commander.description}</p>
-                    <div className="mt-auto pt-3 border-t border-slate-700 flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                  </div>
+                  
+                  {/* Commander Details */}
+                  <div className="p-6 space-y-4">
+                    <h3 className="text-lg font-bold text-white group-hover:text-primary-300 transition-colors line-clamp-2">
+                      {commander.name}
+                    </h3>
+                    
+                    <p className="text-sm text-slate-400">
+                      Colors: {Array.isArray(commander.colors) ? commander.colors.join(', ') : 'Colorless'}
+                    </p>
+                    
+                    <p className="text-sm text-slate-300 leading-relaxed line-clamp-4">
+                      {commander.aiDescription || commander.description}
+                    </p>
+
+                    {/* Action Buttons */}
+                    <div className="pt-4 border-t border-slate-700 space-y-3">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSaveNewDeckFromAI(commander);
                         }}
-                        className="w-full sm:w-auto flex-grow text-sm bg-logoScheme-gold hover:bg-sky-600 text-white font-semibold py-2 px-3 rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:ring-offset-2 focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="btn-modern btn-modern-primary btn-modern-sm w-full group/save"
                         disabled={deckContextLoading || !isAuthenticated}
                       >
-                        {deckContextLoading ? 'Saving...' : 'Save as New Deck'}
+                        {deckContextLoading ? (
+                          <span className="flex items-center justify-center space-x-2">
+                            <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                            <span>Saving...</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center space-x-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <span>Save as New Deck</span>
+                          </span>
+                        )}
                       </button>
+                      
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -529,11 +658,23 @@ const CommanderAiPage = () => {
                               handleBuildWithCommander(commander);
                           }
                         }}
-                        className="w-full sm:w-auto flex-grow text-sm bg-logoScheme-green hover:bg-green-600 text-white font-semibold py-2 px-3 rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-logoScheme-green focus:ring-offset-2 focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="btn-modern btn-modern-secondary btn-modern-sm w-full"
                         disabled={!OPENAI_API_KEY || isLoading }
                       >
-                        Build Deck
+                        <span className="flex items-center justify-center space-x-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                          </svg>
+                          <span>Build Deck</span>
+                        </span>
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-4">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1 text-white text-xs font-semibold">
+                      Click to view details
                     </div>
                   </div>
                 </div>
@@ -542,6 +683,7 @@ const CommanderAiPage = () => {
           </div>
         )}
 
+        {/* Modal */}
         {isModalOpen && selectedCardForModal && (
           <CardDetailModal card={selectedCardForModal} onClose={handleCloseModal} />
         )}

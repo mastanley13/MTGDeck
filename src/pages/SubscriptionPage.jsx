@@ -16,7 +16,6 @@ const SubscriptionPage = () => {
   const { currentUser } = useAuth();
   const daysUntilReset = getDaysUntilWeeklyReset;
 
-  // Handle upgrade to premium
   const handleUpgradeClick = async () => {
     if (!currentUser) {
       alert('Please log in to upgrade your subscription.');
@@ -25,9 +24,9 @@ const SubscriptionPage = () => {
 
     try {
       await initiatePremiumCheckout(
-        currentUser.id, // GoHighLevel contact ID
-        currentUser.email, // User's email
-        currentUser.id // User ID for metadata
+        currentUser.id,
+        currentUser.email,
+        currentUser.id
       );
     } catch (error) {
       console.error('Error starting checkout:', error);
@@ -35,7 +34,6 @@ const SubscriptionPage = () => {
     }
   };
 
-  // Handle subscription management
   const handleManageSubscription = async () => {
     if (!currentUser) {
       alert('Please log in to manage your subscription.');
@@ -50,383 +48,415 @@ const SubscriptionPage = () => {
     }
   };
 
-  // Handle refresh subscription status
   const handleRefreshStatus = () => {
     window.location.reload();
   };
 
   const PlanCard = ({ planType, planData, isCurrentPlan }) => (
-    <div className={`relative bg-theme-bg-secondary rounded-xl p-6 border-2 transition-all duration-300 ${
+    <div className={`relative group ${
       isCurrentPlan 
-        ? 'border-theme-accent-blue shadow-lg scale-105' 
-        : 'border-theme-bg-tertiary hover:border-theme-accent-blue/50'
+        ? 'scale-105 z-10' 
+        : 'hover:scale-[1.02] transition-transform duration-300'
     }`}>
-      {isCurrentPlan && (
-        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-          <span className="bg-gradient-to-r from-theme-accent-blue to-theme-accent-purple text-white px-4 py-1 rounded-full text-sm font-medium">
-            Current Plan
-          </span>
-        </div>
-      )}
+      {/* Glow effect */}
+      <div className={`absolute inset-0 rounded-3xl blur-xl transition-opacity duration-300 ${
+        isCurrentPlan 
+          ? 'bg-gradient-to-r from-primary-500/30 to-blue-500/30 opacity-60' 
+          : 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 opacity-0 group-hover:opacity-40'
+      }`}></div>
       
-      <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-theme-text-primary mb-2">
-          {planData.name}
-        </h3>
-        <div className="text-4xl font-bold text-theme-accent-blue mb-2">
-          ${planData.price}
-          <span className="text-sm font-normal text-theme-text-secondary">
-            {planData.price > 0 ? '/month' : ''}
-          </span>
+      <div className={`relative glassmorphism-card p-8 border-2 transition-all duration-300 ${
+        isCurrentPlan 
+          ? 'border-primary-500/50 shadow-modern-primary' 
+          : 'border-slate-700/50 hover:border-primary-500/30'
+      }`}>
+        {isCurrentPlan && (
+          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-20">
+            <div className="bg-gradient-to-r from-primary-500 to-blue-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
+              ✨ Current Plan
+            </div>
+          </div>
+        )}
+        
+        <div className="text-center mb-8">
+          <h3 className="text-3xl font-bold text-white mb-4">
+            {planData.name}
+          </h3>
+          <div className="text-5xl font-bold text-gradient-primary mb-3">
+            ${planData.price}
+            <span className="text-lg font-normal text-slate-400">
+              {planData.price > 0 ? '/month' : ''}
+            </span>
+          </div>
+          {planData.price === 0 && (
+            <p className="text-slate-400">Perfect for getting started</p>
+          )}
+          {planData.price > 0 && (
+            <p className="text-slate-400">Professional deck building</p>
+          )}
         </div>
-        {planData.price === 0 && (
-          <p className="text-sm text-theme-text-secondary">Perfect for getting started</p>
-        )}
-      </div>
 
-      <div className="space-y-4 mb-8">
-        {planData.features ? (
-          planData.features.map((feature, index) => (
-            <FeatureItem 
-              key={index}
-              included={true}
-              text={feature}
-            />
-          ))
-        ) : (
-          <>
-            <FeatureItem 
-              included={true}
-              text={`${planData.maxDecks === Infinity ? 'Unlimited' : planData.maxDecks} saved decks`}
-            />
-            <FeatureItem 
-              included={true}
-              text={`${planData.maxAIRequestsPerWeek === Infinity ? 'Unlimited' : planData.maxAIRequestsPerWeek} AI requests per week`}
-            />
-            <FeatureItem 
-              included={planType === 'PREMIUM'}
-              text="Priority AI responses"
-            />
-            <FeatureItem 
-              included={planType === 'PREMIUM'}
-              text="Advanced deck analytics"
-            />
-            <FeatureItem 
-              included={planType === 'PREMIUM'}
-              text="Cloud sync across devices"
-            />
-            <FeatureItem 
-              included={planType === 'PREMIUM'}
-              text="Export to popular formats"
-            />
-            <FeatureItem 
-              included={planType === 'PREMIUM'}
-              text="Priority customer support"
-            />
-          </>
-        )}
-      </div>
-
-      <div className="text-center">
-        {isCurrentPlan ? (
-          planType === 'PREMIUM' ? (
-            <button
-              onClick={handleManageSubscription}
-              className="w-full px-6 py-3 bg-theme-bg-tertiary text-theme-text-primary rounded-lg font-medium hover:bg-gray-300 transition-colors border border-theme-bg-tertiary"
-            >
-              Manage Subscription
-            </button>
+        <div className="space-y-4 mb-10">
+          {planData.features ? (
+            planData.features.map((feature, index) => (
+              <FeatureItem 
+                key={index}
+                included={true}
+                text={feature}
+              />
+            ))
           ) : (
+            <>
+              <FeatureItem 
+                included={true}
+                text={`${planData.maxDecks === Infinity ? 'Unlimited' : planData.maxDecks} saved decks`}
+              />
+              <FeatureItem 
+                included={true}
+                text={`${planData.maxAIRequestsPerWeek === Infinity ? 'Unlimited' : planData.maxAIRequestsPerWeek} AI requests per week`}
+              />
+              <FeatureItem 
+                included={planType === 'PREMIUM'}
+                text="Priority AI responses"
+              />
+              <FeatureItem 
+                included={planType === 'PREMIUM'}
+                text="Advanced deck analytics"
+              />
+              <FeatureItem 
+                included={planType === 'PREMIUM'}
+                text="Cloud sync across devices"
+              />
+              <FeatureItem 
+                included={planType === 'PREMIUM'}
+                text="Export to popular formats"
+              />
+              <FeatureItem 
+                included={planType === 'PREMIUM'}
+                text="Priority customer support"
+              />
+            </>
+          )}
+        </div>
+
+        <div className="text-center">
+          {isCurrentPlan ? (
+            planType === 'PREMIUM' ? (
+              <button
+                onClick={handleManageSubscription}
+                className="btn-modern btn-modern-secondary btn-modern-md w-full"
+              >
+                <span className="flex items-center justify-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Manage Subscription</span>
+                </span>
+              </button>
+            ) : (
+              <button
+                disabled
+                className="btn-modern btn-modern-ghost btn-modern-md w-full opacity-50 cursor-not-allowed"
+              >
+                ✅ Current Plan
+              </button>
+            )
+          ) : planType === 'PREMIUM' ? (
             <button
-              disabled
-              className="w-full px-6 py-3 bg-theme-bg-tertiary text-theme-text-secondary rounded-lg font-medium cursor-not-allowed"
+              onClick={handleUpgradeClick}
+              className="btn-modern btn-modern-primary btn-modern-md w-full premium-glow"
             >
-              Current Plan
+              <span className="flex items-center justify-center space-x-2">
+                <span>🚀 Upgrade to Premium</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
             </button>
-          )
-        ) : planType === 'PREMIUM' ? (
-          <button
-            onClick={handleUpgradeClick}
-            className="w-full px-6 py-3 bg-gradient-to-r from-theme-accent-blue to-theme-accent-purple text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
-          >
-            Upgrade to Premium
-          </button>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </div>
   );
 
   const FeatureItem = ({ included, text }) => (
-    <div className="flex items-center">
-      <span className={`mr-3 text-lg ${included ? 'text-green-500' : 'text-theme-text-muted'}`}>
-        {included ? '✓' : '✗'}
-      </span>
-      <span className={`text-sm ${included ? 'text-theme-text-primary' : 'text-theme-text-muted'}`}>
+    <div className="flex items-center space-x-3">
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+        included 
+          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
+          : 'bg-slate-700 text-slate-400'
+      }`}>
+        {included ? (
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+      </div>
+      <span className={`text-sm ${included ? 'text-white' : 'text-slate-500'}`}>
         {text}
       </span>
     </div>
   );
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-theme-text-primary mb-4">
-          Subscription & Usage
-        </h1>
-        <p className="text-lg text-theme-text-secondary max-w-2xl mx-auto">
-          Manage your subscription and track your usage of MTG Commander Deck Builder features.
-        </p>
+    <div className="min-h-screen bg-slate-900">
+      {/* Background effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      {/* Upgrade CTA for Free Users */}
-      {!isPremium && (
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Upgrade to Premium Today!</h2>
-          <p className="text-xl mb-6 opacity-90">
-            Unlock unlimited decks, unlimited AI requests, and premium features for just $3.99/month
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button
-              onClick={handleUpgradeClick}
-              className="px-8 py-4 bg-white text-blue-600 text-lg font-bold rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              🚀 Start Premium Now - $3.99/month
-            </button>
-            <a
-              href={getPaymentUrl()}
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="px-6 py-3 border-2 border-white text-white text-lg font-medium rounded-lg hover:bg-white hover:text-blue-600 transition-colors"
-            >
-              Direct Payment Link →
-            </a>
-          </div>
-          <p className="text-sm mt-4 opacity-75">
-            ✅ Secure payment through Stripe • ✅ Cancel anytime • ✅ Instant activation
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-12 space-y-16">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-5xl lg:text-6xl font-bold text-gradient-primary mb-6">
+            Subscription & Usage
+          </h1>
+          <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+            Manage your subscription and track your usage of our powerful MTG Commander Deck Builder features.
           </p>
         </div>
-      )}
 
-      {/* Payment Information */}
-      {!isPremium && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <span className="text-blue-400">💳</span>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-800">
-                  Ready to Upgrade to Premium?
-                </h3>
-                <div className="mt-2 text-sm text-blue-700">
-                  <p>
-                    Payment is processed securely through Stripe. Click below to upgrade now for just $3.99/month.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="ml-4 flex flex-col gap-2">
-              <button
-                onClick={handleUpgradeClick}
-                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-md hover:opacity-90 transition-opacity font-medium"
-              >
-                Pay Now - $3.99/month
-              </button>
-              <a
-                href={getPaymentUrl()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-6 py-2 bg-white border border-blue-300 text-blue-600 text-sm rounded-md hover:bg-blue-50 transition-colors text-center"
-              >
-                Direct Link
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Just Paid Section */}
-      {!isPremium && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <span className="text-green-400">✅</span>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">
-                  Just completed payment?
-                </h3>
-                <div className="mt-1 text-sm text-green-700">
-                  <p>
-                    If you just completed your payment, click refresh to update your subscription status.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={handleRefreshStatus}
-              className="ml-4 px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
-            >
-              Refresh Status
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Current Usage Dashboard */}
-      <div>
-        <h2 className="text-2xl font-semibold text-theme-text-primary mb-6">
-          Current Usage
-        </h2>
-        <UsageDashboard />
-      </div>
-
-      {/* Subscription Plans */}
-      <div>
-        <h2 className="text-2xl font-semibold text-theme-text-primary mb-6">
-          Subscription Plans
-        </h2>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <PlanCard 
-            planType="FREE"
-            planData={SUBSCRIPTION_LIMITS.FREE}
-            isCurrentPlan={subscriptionStatus === 'FREE'}
-          />
-          <PlanCard 
-            planType="PREMIUM"
-            planData={SUBSCRIPTION_LIMITS.PREMIUM}
-            isCurrentPlan={subscriptionStatus === 'PREMIUM'}
-          />
-        </div>
-      </div>
-
-      {/* Usage Details */}
-      <div className="bg-theme-bg-secondary rounded-xl p-6 border border-theme-bg-tertiary">
-        <h3 className="text-xl font-semibold text-theme-text-primary mb-4">
-          Usage Details
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-medium text-theme-text-primary mb-2">Saved Decks</h4>
-            <p className="text-sm text-theme-text-secondary mb-1">
-              You have saved {usageData.savedDecks} out of {limits.maxDecks === Infinity ? 'unlimited' : limits.maxDecks} decks.
-            </p>
-            {!isPremium && usageData.savedDecks >= limits.maxDecks && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600 mb-2">
-                  ⚠️ You've reached your deck limit! Upgrade to Premium for unlimited decks.
-                </p>
-                <button
-                  onClick={handleUpgradeClick}
-                  className="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
-                >
-                  Upgrade Now
-                </button>
-              </div>
-            )}
-          </div>
-          
-          <div>
-            <h4 className="font-medium text-theme-text-primary mb-2">AI Requests</h4>
-            <p className="text-sm text-theme-text-secondary mb-1">
-              You have used {usageData.aiRequestsThisWeek} out of {limits.maxAIRequestsPerWeek === Infinity ? 'unlimited' : limits.maxAIRequestsPerWeek} AI requests this week.
-            </p>
-            {!isPremium && (
-              <p className="text-sm text-theme-text-muted">
-                Resets in {daysUntilReset} day{daysUntilReset !== 1 ? 's' : ''}
-              </p>
-            )}
-            {!isPremium && usageData.aiRequestsThisWeek >= limits.maxAIRequestsPerWeek && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600 mb-2">
-                  ⚠️ You've reached your weekly AI request limit! Upgrade to Premium for unlimited requests.
-                </p>
-                <button
-                  onClick={handleUpgradeClick}
-                  className="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
-                >
-                  Upgrade Now
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Quick upgrade section in usage details for free users */}
+        {/* Upgrade Hero for Free Users */}
         {!isPremium && (
-          <div className="mt-6 pt-6 border-t border-theme-bg-tertiary">
-            <div className="text-center">
-              <h4 className="font-medium text-theme-text-primary mb-2">Ready to upgrade?</h4>
-              <p className="text-sm text-theme-text-secondary mb-4">
-                Get unlimited access to all features for just $3.99/month
-              </p>
-              <div className="flex justify-center gap-3">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl"></div>
+            <div className="relative glassmorphism-card p-12 border-primary-500/30 text-center">
+              <div className="mb-8">
+                <h2 className="text-4xl font-bold text-white mb-4">
+                  🚀 Unlock Premium Power
+                </h2>
+                <p className="text-xl text-slate-300 mb-2">
+                  Unlimited decks, unlimited AI requests, and premium features
+                </p>
+                <p className="text-3xl font-bold text-gradient-primary">
+                  Just $3.99/month
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
                 <button
                   onClick={handleUpgradeClick}
-                  className="px-6 py-2 bg-gradient-to-r from-theme-accent-blue to-theme-accent-purple text-white rounded-md hover:opacity-90 transition-opacity"
+                  className="btn-modern btn-modern-primary btn-modern-xl premium-glow group"
                 >
-                  Upgrade to Premium
+                  <span className="flex items-center space-x-3">
+                    <span>⚡ Start Premium Now</span>
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </span>
                 </button>
                 <a
                   href={getPaymentUrl()}
-                  target="_blank"
+                  target="_blank" 
                   rel="noopener noreferrer"
-                  className="px-6 py-2 border border-theme-accent-blue text-theme-accent-blue rounded-md hover:bg-theme-accent-blue hover:text-white transition-colors"
+                  className="btn-modern btn-modern-outline btn-modern-lg"
                 >
-                  Direct Link
+                  <span className="flex items-center space-x-2">
+                    <span>Direct Payment Link</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </span>
                 </a>
+              </div>
+              
+              <div className="flex justify-center space-x-8 text-sm text-slate-400">
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Secure Stripe Payment</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Cancel Anytime</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Instant Activation</span>
+                </div>
+              </div>
+
+              {/* Just Paid Section */}
+              <div className="mt-8 pt-8 border-t border-slate-700/50">
+                <div className="flex items-center justify-center space-x-4 text-slate-400">
+                  <span>Just completed payment?</span>
+                  <button
+                    onClick={handleRefreshStatus}
+                    className="btn-modern btn-modern-ghost btn-modern-sm"
+                  >
+                    <span className="flex items-center space-x-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>Refresh Status</span>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* FAQ Section */}
-      <div className="bg-theme-bg-secondary rounded-xl p-6 border border-theme-bg-tertiary">
-        <h3 className="text-xl font-semibold text-theme-text-primary mb-4">
-          Frequently Asked Questions
-        </h3>
-        
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-medium text-theme-text-primary mb-1">
-              How do I upgrade to Premium?
-            </h4>
-            <p className="text-sm text-theme-text-secondary">
-              Click the "Upgrade to Premium" button above to be redirected to our secure Stripe payment page. After completing payment, return to this page and refresh your browser to activate your premium features.
-            </p>
-          </div>
+        {/* Current Usage Dashboard */}
+        <div>
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">
+            📊 Current Usage
+          </h2>
+          <UsageDashboard />
+        </div>
+
+        {/* Subscription Plans */}
+        <div>
+          <h2 className="text-3xl font-bold text-white mb-4 text-center">
+            🎯 Choose Your Plan
+          </h2>
+          <p className="text-slate-400 text-center mb-12 text-lg">
+            Select the plan that best fits your deck building needs
+          </p>
           
-          <div>
-            <h4 className="font-medium text-theme-text-primary mb-1">
-              What happens after I pay?
-            </h4>
-            <p className="text-sm text-theme-text-secondary">
-              After successful payment, your account will be automatically upgraded to Premium. You may need to refresh the page to see your new premium status and unlimited access to all features.
-            </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
+            <PlanCard 
+              planType="FREE"
+              planData={SUBSCRIPTION_LIMITS.FREE}
+              isCurrentPlan={subscriptionStatus === 'FREE'}
+            />
+            <PlanCard 
+              planType="PREMIUM"
+              planData={SUBSCRIPTION_LIMITS.PREMIUM}
+              isCurrentPlan={subscriptionStatus === 'PREMIUM'}
+            />
           </div>
+        </div>
+
+        {/* Usage Details */}
+        <div className="glassmorphism-card p-8 border-slate-700/50">
+          <h3 className="text-2xl font-bold text-white mb-8 text-center">
+            📈 Usage Details
+          </h3>
           
-          <div>
-            <h4 className="font-medium text-theme-text-primary mb-1">
-              When do AI requests reset?
-            </h4>
-            <p className="text-sm text-theme-text-secondary">
-              AI requests reset every 7 days from when you first used the feature. Premium users have unlimited requests.
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-semibold text-white">Saved Decks</h4>
+              </div>
+              <p className="text-slate-300">
+                You have saved <span className="text-primary-400 font-semibold">{usageData.savedDecks}</span> out of <span className="text-primary-400 font-semibold">{limits.maxDecks === Infinity ? 'unlimited' : limits.maxDecks}</span> decks.
+              </p>
+              {!isPremium && usageData.savedDecks >= limits.maxDecks && (
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4">
+                  <p className="text-red-300 mb-3">
+                    ⚠️ You've reached your deck limit! Upgrade to Premium for unlimited decks.
+                  </p>
+                  <button
+                    onClick={handleUpgradeClick}
+                    className="btn-modern btn-modern-primary btn-modern-sm"
+                  >
+                    Upgrade Now
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-semibold text-white">AI Requests</h4>
+              </div>
+              <p className="text-slate-300">
+                You have used <span className="text-primary-400 font-semibold">{usageData.aiRequestsThisWeek}</span> out of <span className="text-primary-400 font-semibold">{limits.maxAIRequestsPerWeek === Infinity ? 'unlimited' : limits.maxAIRequestsPerWeek}</span> AI requests this week.
+              </p>
+              {!isPremium && (
+                <p className="text-slate-400 text-sm">
+                  Resets in {daysUntilReset} day{daysUntilReset !== 1 ? 's' : ''}
+                </p>
+              )}
+              {!isPremium && usageData.aiRequestsThisWeek >= limits.maxAIRequestsPerWeek && (
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4">
+                  <p className="text-red-300 mb-3">
+                    ⚠️ You've reached your weekly AI request limit! Upgrade to Premium for unlimited requests.
+                  </p>
+                  <button
+                    onClick={handleUpgradeClick}
+                    className="btn-modern btn-modern-primary btn-modern-sm"
+                  >
+                    Upgrade Now
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="glassmorphism-card p-8 border-slate-700/50">
+          <h3 className="text-2xl font-bold text-white mb-8 text-center">
+            ❓ Frequently Asked Questions
+          </h3>
           
-          <div>
-            <h4 className="font-medium text-theme-text-primary mb-1">
-              Can I cancel my subscription anytime?
-            </h4>
-            <p className="text-sm text-theme-text-secondary">
-              Yes, you can cancel your Premium subscription at any time. Contact our support team or use the subscription management link in your payment confirmation email from Stripe.
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-2 flex items-center space-x-2">
+                  <span>💳</span>
+                  <span>How do I upgrade to Premium?</span>
+                </h4>
+                <p className="text-slate-300 leading-relaxed">
+                  Click the "Upgrade to Premium" button to be redirected to our secure Stripe payment page. After completing payment, refresh this page to activate your premium features.
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-2 flex items-center space-x-2">
+                  <span>⚡</span>
+                  <span>What happens after I pay?</span>
+                </h4>
+                <p className="text-slate-300 leading-relaxed">
+                  Your account will be automatically upgraded to Premium. You may need to refresh the page to see your new premium status and unlimited access to all features.
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-2 flex items-center space-x-2">
+                  <span>🔄</span>
+                  <span>When do AI requests reset?</span>
+                </h4>
+                <p className="text-slate-300 leading-relaxed">
+                  AI requests reset every 7 days from when you first used the feature. Premium users have unlimited requests.
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-2 flex items-center space-x-2">
+                  <span>✅</span>
+                  <span>Can I cancel anytime?</span>
+                </h4>
+                <p className="text-slate-300 leading-relaxed">
+                  Yes, you can cancel your Premium subscription at any time. Use the "Manage Subscription" button or contact our support team.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

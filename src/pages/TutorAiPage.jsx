@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useDeck } from '../context/DeckContext'; // Assuming path to DeckContext
-import { useAuth } from '../context/AuthContext';   // Assuming path to AuthContext
-import CardDetailModal from '../components/ui/CardDetailModal'; // Import the modal
+import { useDeck } from '../context/DeckContext';
+import { useAuth } from '../context/AuthContext';
+import CardDetailModal from '../components/ui/CardDetailModal';
 
-// Checkmark Icon Component (can be moved to a shared UI components file)
 const CheckIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -14,25 +13,23 @@ const TutorAiPage = () => {
   const [currentDecklist, setCurrentDecklist] = useState('');
   const [selectedDeckId, setSelectedDeckId] = useState('');
   const [suggestedCards, setSuggestedCards] = useState([]);
-  const [isLoading, setIsLoading] = useState(false); // For AI suggestions loading
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCardForModal, setSelectedCardForModal] = useState(null);
 
   const { savedDecks, fetchAndSetUserDecks, loading: decksLoading, error: decksError } = useDeck();
-  const { currentUser } = useAuth(); // Assuming currentUser has contactId or similar GHL ID
+  const { currentUser } = useAuth();
 
-  const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY; // Prepare for OpenAI integration
+  const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
-  // Fetch user's decks when the component mounts or currentUser changes
   useEffect(() => {
-    if (currentUser && currentUser.contactId) { // Adjust currentUser.contactId to actual GHL contact ID field
+    if (currentUser && currentUser.contactId) {
       fetchAndSetUserDecks(currentUser.contactId);
     }
   }, [currentUser, fetchAndSetUserDecks]);
 
-  // Handle deck selection from dropdown
   const handleDeckSelectChange = (event) => {
     const deckId = event.target.value;
     setSelectedDeckId(deckId);
@@ -58,13 +55,11 @@ const TutorAiPage = () => {
 
   const handleInputChange = (event) => {
     setCurrentDecklist(event.target.value);
-    // If user types in textarea, deselect the deck from dropdown
     if (selectedDeckId) {
-        setSelectedDeckId('');
+      setSelectedDeckId('');
     }
   };
 
-  // Placeholder: will be used by actual AI call to Scryfall for images
   const fetchScryfallImage = async (cardName) => {
     try {
       const response = await fetch(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(cardName)}`);
@@ -73,7 +68,6 @@ const TutorAiPage = () => {
         return null;
       }
       const cardData = await response.json();
-      // Return more complete card data for the modal, not just image_uris
       return cardData;
     } catch (scryfallError) {
       console.error(`Failed to fetch full card data from Scryfall for ${cardName}:`, scryfallError);
@@ -137,10 +131,10 @@ const TutorAiPage = () => {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo', // Consider gpt-4 for potentially better suggestions if available/budget allows
+          model: 'gpt-3.5-turbo',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
-          max_tokens: 3000, // Increased max_tokens to accommodate ~30 card suggestions with details
+          max_tokens: 3000,
         }),
       });
 
@@ -156,7 +150,6 @@ const TutorAiPage = () => {
       if (aiResponse) {
         let parsedAiSuggestions = [];
         try {
-          // Remove potential markdown formatting and ensure it's valid JSON
           const cleanedJsonResponse = aiResponse.replace(/^```json\n?/, '').replace(/\n?```$/, '');
           parsedAiSuggestions = JSON.parse(cleanedJsonResponse);
         } catch (parseError) {
@@ -166,30 +159,26 @@ const TutorAiPage = () => {
           return;
         }
 
-        // Simulate fetching images for mock suggestions
         const suggestionsWithFullData = await Promise.all(
-            parsedAiSuggestions.map(async (cardStub) => {
-                const fullCardData = await fetchScryfallImage(cardStub.name);
-                if (fullCardData) {
-                  return {
-                    ...cardStub, // Keep AI-provided data like quantity, AI description
-                    ...fullCardData, // Add full Scryfall data
-                    imageUrl: fullCardData.image_uris?.art_crop || fullCardData.image_uris?.normal || null, 
-                    // Use AI's description if provided, otherwise fallback to Scryfall's oracle_text
-                    description: cardStub.description || fullCardData.oracle_text, 
-                    // Ensure mana_cost and type from AI are used if Scryfall's format differs or is missing
-                    mana_cost: cardStub.mana_cost || fullCardData.mana_cost,
-                    type: cardStub.type || fullCardData.type_line,
-                  };
-                }
-                // Fallback if Scryfall fetch fails but AI provided a card
-                return { 
-                    ...cardStub, 
-                    name: cardStub.name, 
-                    imageUrl: null, 
-                    description: cardStub.description || "No Scryfall data found for this card, AI reason provided."
-                }; 
-            })
+          parsedAiSuggestions.map(async (cardStub) => {
+            const fullCardData = await fetchScryfallImage(cardStub.name);
+            if (fullCardData) {
+              return {
+                ...cardStub,
+                ...fullCardData,
+                imageUrl: fullCardData.image_uris?.art_crop || fullCardData.image_uris?.normal || null, 
+                description: cardStub.description || fullCardData.oracle_text, 
+                mana_cost: cardStub.mana_cost || fullCardData.mana_cost,
+                type: cardStub.type || fullCardData.type_line,
+              };
+            }
+            return { 
+              ...cardStub, 
+              name: cardStub.name, 
+              imageUrl: null, 
+              description: cardStub.description || "No Scryfall data found for this card, AI reason provided."
+            }; 
+          })
         );
         setSuggestedCards(suggestionsWithFullData);
       } else {
@@ -213,142 +202,273 @@ const TutorAiPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100 py-12 px-4 text-neutral-800 flex flex-col items-center">
-      <div className="w-full max-w-3xl mx-auto bg-logoScheme-darkGray border-2 border-logoScheme-gold rounded-xl p-6 md:p-8 shadow-2xl">
+    <div className="min-h-screen bg-slate-900">
+      {/* Background effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
 
-        <div className="flex justify-between items-center mb-3">
-          <h1 className="text-3xl font-bold text-logoScheme-gold">
-            Tutor AI
-          </h1>
-        </div>
-
-        <div className="text-center mb-6">
-          <span className="bg-logoScheme-gold text-slate-800 px-4 py-1.5 rounded-full text-sm font-semibold shadow-md">
-            Refine Your Masterpiece
-          </span>
-        </div>
-
-        <p className="text-slate-300 text-center mb-4">
-          Select a saved deck or enter card names below. The AI will suggest up to 30 cards to round out your deck!
-        </p>
-        
-        {!OPENAI_API_KEY && (
-          <div className="mx-auto bg-yellow-900 bg-opacity-50 border-l-4 border-yellow-500 text-yellow-300 p-4 mb-6 rounded-md shadow-md" role="alert">
-            <p className="font-bold">OpenAI API Key Not Yet In Use</p>
-            <p className="text-sm">This page currently uses placeholder data. Ensure your VITE_OPENAI_API_KEY is set for full AI integration.</p>
-          </div>
-        )}
-
-        <div className="mb-8">
-          <label htmlFor="deckSelect" className="block text-sm font-medium text-slate-200 mb-2">
-            Select a Saved Deck:
-          </label>
-          <select
-            id="deckSelect"
-            name="deckSelect"
-            className="w-full p-3 border border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-logoScheme-gold focus:border-logoScheme-gold transition duration-150 ease-in-out bg-slate-800 text-slate-100 placeholder-slate-400"
-            value={selectedDeckId}
-            onChange={handleDeckSelectChange}
-            disabled={decksLoading || isLoading}
-          >
-            <option value="">-- Select a Deck --</option>
-            {decksLoading && <option value="" disabled>Loading decks...</option>}
-            {!decksLoading && savedDecks && savedDecks.map(deck => (
-              <option key={deck.id} value={deck.id}>
-                {deck.name} (Commander: {deck.commander ? deck.commander.name : 'N/A'})
-              </option>
-            ))}
-          </select>
-          {decksError && <p className="text-xs text-logoScheme-red mt-1">Error loading decks: {typeof decksError === 'string' ? decksError : decksError.message}</p>}
-          {!decksLoading && savedDecks.length === 0 && !decksError && currentUser && <p className="text-xs text-slate-400 mt-1">No saved decks found.</p>}
-          {!currentUser && <p className="text-xs text-slate-400 mt-1">Login to see your saved decks.</p>}
-        </div>
-
-        <form onSubmit={handleSubmit} className="mb-10">
-          <div className="relative flex py-5 items-center mb-4">
-            <div className="flex-grow border-t border-slate-600"></div>
-            <span className="flex-shrink mx-4 text-slate-400 text-sm uppercase">Or</span>
-            <div className="flex-grow border-t border-slate-600"></div>
-          </div>
-      
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-12 space-y-12">
+        {/* Hero Header */}
+        <div className="text-center">
           <div className="mb-6">
-            <label htmlFor="decklist" className="block text-sm font-medium text-slate-200 mb-2">
-              Manually Enter Card List (one card per line, include commander):
-            </label>
-            <textarea
-              id="decklist"
-              name="decklist"
-              rows="8" // Reduced rows slightly
-              className="w-full p-3 border border-slate-600 rounded-lg shadow-sm focus:ring-2 focus:ring-logoScheme-gold focus:border-logoScheme-gold transition duration-150 ease-in-out bg-slate-800 text-slate-100 placeholder-slate-400"
-              placeholder="e.g.,\nAtraxa, Praetors' Voice (Commander)\n1x Sol Ring\n1x Command Tower\n..."
-              value={currentDecklist}
-              onChange={handleInputChange}
-              disabled={isLoading || decksLoading}
-            />
+            <h1 className="text-5xl lg:text-6xl font-bold text-gradient-primary mb-4">
+              🎯 Tutor AI
+            </h1>
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500/20 to-blue-500/20 rounded-full px-6 py-3 border border-primary-500/30">
+              <span className="text-primary-400 text-lg font-semibold">✨ Refine Your Masterpiece</span>
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={isLoading || decksLoading || !currentDecklist.trim() || !OPENAI_API_KEY } 
-            className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-700 ring-1 ring-white ring-opacity-50"
-          >
-            {isLoading ? 'Analyzing Deck...' : 'Get Card Suggestions'}
-          </button>
-        </form>
+          <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+            Select a saved deck or enter card names below. Our AI will suggest up to 30 cards to perfect your Commander deck!
+          </p>
+        </div>
 
-        <div className="space-y-3 text-slate-300 mb-10 text-sm">
-          <div className="flex items-start">
-            <CheckIcon className="h-5 w-5 text-logoScheme-gold mr-2 mt-0.5 flex-shrink-0" />
-            <span>AI-powered suggestions to complement your existing deck strategy.</span>
+        {/* API Key Warning */}
+        {!OPENAI_API_KEY && (
+          <div className="glassmorphism-card p-6 border-yellow-500/30 bg-yellow-500/10">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-yellow-500 flex items-center justify-center">
+                <svg className="w-4 h-4 text-yellow-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-yellow-300">OpenAI API Key Not Configured</h3>
+                <p className="text-yellow-200">This page currently uses placeholder data. Ensure your VITE_OPENAI_API_KEY is set for full AI integration.</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-start">
-            <CheckIcon className="h-5 w-5 text-logoScheme-gold mr-2 mt-0.5 flex-shrink-0" />
-            <span>Optimized for Commander format, aiming for around 30 card ideas.</span>
+        )}
+
+        {/* Main Content */}
+        <div className="glassmorphism-card p-8 lg:p-12 border-primary-500/20">
+          {/* Deck Selection */}
+          <div className="mb-10">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+              <span>Select a Saved Deck</span>
+            </h2>
+
+            <div className="space-y-2">
+              <label htmlFor="deckSelect" className="block text-sm font-semibold text-white">
+                Choose from your saved decks:
+              </label>
+              <div className="relative">
+                <select
+                  id="deckSelect"
+                  name="deckSelect"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50 appearance-none"
+                  value={selectedDeckId}
+                  onChange={handleDeckSelectChange}
+                  disabled={decksLoading || isLoading}
+                >
+                  <option value="">-- Select a Deck --</option>
+                  {decksLoading && <option value="" disabled>Loading decks...</option>}
+                  {!decksLoading && savedDecks && savedDecks.map(deck => (
+                    <option key={deck.id} value={deck.id}>
+                      {deck.name} (Commander: {deck.commander ? deck.commander.name : 'N/A'})
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              {decksError && (
+                <p className="text-sm text-red-300">Error loading decks: {typeof decksError === 'string' ? decksError : decksError.message}</p>
+              )}
+              {!decksLoading && savedDecks.length === 0 && !decksError && currentUser && (
+                <p className="text-sm text-slate-400">No saved decks found.</p>
+              )}
+              {!currentUser && (
+                <p className="text-sm text-slate-400">Login to see your saved decks.</p>
+              )}
+            </div>
           </div>
-          <div className="flex items-start">
-            <CheckIcon className="h-5 w-5 text-logoScheme-gold mr-2 mt-0.5 flex-shrink-0" />
-            <span>Quickly view card details and art with Scryfall integration.</span>
+
+          {/* Divider */}
+          <div className="relative flex py-8 items-center mb-10">
+            <div className="flex-grow border-t border-slate-700"></div>
+            <span className="flex-shrink mx-6 text-slate-400 text-sm font-semibold uppercase tracking-wider">Or</span>
+            <div className="flex-grow border-t border-slate-700"></div>
+          </div>
+
+          {/* Manual Entry Form */}
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+                <span>Manual Card Entry</span>
+              </h2>
+
+              <div className="space-y-2">
+                <label htmlFor="decklist" className="block text-sm font-semibold text-white">
+                  Enter your card list (one card per line, include commander):
+                </label>
+                <textarea
+                  id="decklist"
+                  name="decklist"
+                  rows="12"
+                  className="w-full p-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50 resize-y"
+                  placeholder={`Example format:\n\nAtraxa, Praetors' Voice (Commander)\n1x Sol Ring\n1x Command Tower\n1x Rhystic Study\n1x Smothering Tithe\n1x Fierce Guardianship\n...\n\nInclude quantities (1x, 2x, etc.) and card names exactly as they appear on the cards.`}
+                  value={currentDecklist}
+                  onChange={handleInputChange}
+                  disabled={isLoading || decksLoading}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || decksLoading || !currentDecklist.trim() || !OPENAI_API_KEY } 
+              className="btn-modern btn-modern-primary btn-modern-xl w-full premium-glow group"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center space-x-3">
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                  <span>Analyzing Deck...</span>
+                </span>
+              ) : (
+                <span className="flex items-center justify-center space-x-3">
+                  <span>🚀 Get AI Card Suggestions</span>
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              )}
+            </button>
+          </form>
+
+          {/* Features List */}
+          <div className="mt-12 pt-8 border-t border-slate-700/50">
+            <h3 className="text-xl font-bold text-white mb-6 text-center">✨ What You Get</h3>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckIcon className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-slate-300">AI-powered suggestions to complement your existing deck strategy.</span>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckIcon className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-slate-300">Optimized for Commander format, aiming for around 30 card ideas.</span>
+              </div>
+              <div className="flex items-start space-x-3">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <CheckIcon className="h-3 w-3 text-white" />
+                </div>
+                <span className="text-slate-300">Quickly view card details and art with Scryfall integration.</span>
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Loading State */}
         {isLoading && (
-          <div className="text-center py-10">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-logoScheme-gold mx-auto"></div>
-            <p className="mt-4 text-slate-300">Finding up to 30 card suggestions for you...</p>
+          <div className="glassmorphism-card p-12 text-center border-primary-500/30">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-500 border-t-transparent mx-auto mb-6"></div>
+            <h3 className="text-2xl font-bold text-white mb-2">Analyzing Your Deck</h3>
+            <p className="text-slate-400 text-lg">Finding up to 30 perfect card suggestions for you...</p>
           </div>
         )}
 
+        {/* Error State */}
         {error && (
-          <div className="mx-auto bg-red-900 bg-opacity-50 border border-logoScheme-red text-red-300 px-4 py-3 rounded-xl relative mb-6 shadow-md" role="alert">
-            <strong className="font-bold">Oops! </strong>
-            <span className="block sm:inline">{error}</span>
+          <div className="glassmorphism-card p-8 border-red-500/30 bg-red-500/10">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-red-300">Oops! Something went wrong</h3>
+                <p className="text-red-200">{error}</p>
+              </div>
+            </div>
           </div>
         )}
 
+        {/* Results Grid */}
         {suggestedCards.length > 0 && !isLoading && (
-          <div>
-            <h2 className="text-2xl font-semibold text-center mb-8 text-logoScheme-gold">Suggested Cards ({suggestedCards.length} shown):</h2>
+          <div className="space-y-8">
+            <div className="text-center">
+              <h2 className="text-4xl font-bold text-gradient-primary mb-4">
+                🎴 Suggested Cards ({suggestedCards.length} found)
+              </h2>
+              <p className="text-xl text-slate-400">
+                Click on any card to view detailed information
+              </p>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {suggestedCards.map((card, index) => (
                 <div 
                   key={`${card.name}-${index}`}
-                  className="bg-slate-800 border border-slate-600 rounded-xl shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300 ease-in-out cursor-pointer flex flex-col"
+                  className="group relative glassmorphism-card p-0 overflow-hidden border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-modern-primary"
                   onClick={() => handleOpenModal(card)}
                 >
-                  {card.imageUrl ? (
-                    <img src={card.imageUrl} alt={`Art for ${card.name}`} className="w-full h-60 object-cover object-top" />
-                  ) : (
-                    <div className="w-full h-60 bg-slate-700 flex items-center justify-center text-slate-500 relative">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="absolute text-xs bottom-2 left-2 p-1 bg-slate-800 bg-opacity-70 text-slate-200 rounded">No Image</span>
+                  {/* Card Image */}
+                  <div className="relative h-48 overflow-hidden">
+                    {card.imageUrl ? (
+                      <img 
+                        src={card.imageUrl} 
+                        alt={`Art for ${card.name}`} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
+                        <div className="text-center">
+                          <svg className="h-12 w-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-xs">No Image</span>
+                        </div>
+                      </div>
+                    )}
+                    {/* Quantity Badge */}
+                    <div className="absolute top-2 left-2 bg-primary-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                      {card.quantity}x
                     </div>
-                  )}
-                  <div className="p-4 flex flex-col flex-grow">
-                    <h3 className="text-md font-semibold text-logoScheme-gold mb-1 truncate min-h-[3em]">{card.name}</h3>
-                    <p className="text-xs text-slate-400 mb-1">{card.type_line || card.type} - {card.mana_cost}</p>
-                    <p className="text-xs text-slate-300 leading-snug mb-2">Qty: {card.quantity}</p>
-                    <p className="text-xs text-slate-300 leading-snug flex-grow h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-700">{card.description}</p>
+                  </div>
+                  
+                  {/* Card Details */}
+                  <div className="p-4 space-y-3">
+                    <h3 className="text-sm font-bold text-white truncate group-hover:text-primary-300 transition-colors">
+                      {card.name}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      {card.type_line || card.type} • {card.mana_cost}
+                    </p>
+                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                      {card.description}
+                    </p>
+                  </div>
+
+                  {/* Hover Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-4">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1 text-white text-xs font-semibold">
+                      Click to view details
+                    </div>
                   </div>
                 </div>
               ))}
@@ -356,6 +476,7 @@ const TutorAiPage = () => {
           </div>
         )}
 
+        {/* Modal */}
         {isModalOpen && selectedCardForModal && (
           <CardDetailModal card={selectedCardForModal} onClose={handleCloseModal} />
         )}

@@ -13,21 +13,19 @@ const DeckViewer = () => {
   const { savedDecks, loadDeck, fetchAndSetUserDecks, loading: deckLoading, error: deckError } = useDeck();
   const { currentUser, loadingAuth } = useAuth();
   const [selectedDeck, setSelectedDeck] = useState(null);
-  const [activeTab, setActiveTab] = useState('cards'); // 'cards', 'analytics', 'export', 'share'
+  const [activeTab, setActiveTab] = useState('cards');
   const [hasFetchedDecks, setHasFetchedDecks] = useState(false);
   const [isCardDetailModalOpen, setIsCardDetailModalOpen] = useState(false);
   const [selectedCardForModal, setSelectedCardForModal] = useState(null);
 
   useEffect(() => {
-    // Fetch all decks for the user if no specific deckId is in URL and not already fetched
     if (!loadingAuth && currentUser && currentUser.id && !deckId && !hasFetchedDecks) {
       console.log('DeckViewer: Current user found, fetching decks for contact ID:', currentUser.id);
       fetchAndSetUserDecks(currentUser.id);
-      setHasFetchedDecks(true); // Mark that fetching has been initiated
+      setHasFetchedDecks(true);
     }
   }, [currentUser, loadingAuth, fetchAndSetUserDecks, deckId, hasFetchedDecks]);
 
-  // Reset hasFetchedDecks if the user logs out (currentUser becomes null)
   useEffect(() => {
     if (!currentUser) {
       setHasFetchedDecks(false);
@@ -35,7 +33,6 @@ const DeckViewer = () => {
   }, [currentUser]);
 
   useEffect(() => {
-    // If a specific deck ID is provided, find and load that deck
     if (deckId && savedDecks && savedDecks.length > 0) {
       const deck = savedDecks.find(d => d.id === deckId);
       if (deck) {
@@ -45,51 +42,39 @@ const DeckViewer = () => {
     }
   }, [deckId, savedDecks, loadDeck]);
 
-  // Handler to open the card detail modal
   const handleOpenCardDetailModal = (card) => {
-    // The card object from selectedDeck.cards might be minimal.
-    // We need to ensure it has all the fields CardDetailModal expects,
-    // especially image_uris and oracle_text.
-    // If not, we might need to fetch full card data here or ensure selectedDeck.cards has it.
-    // For now, assuming `card` has enough details or CardDetailModal can handle missing fields.
     setSelectedCardForModal(card);
     setIsCardDetailModalOpen(true);
   };
 
-  // Handler to close the card detail modal
   const handleCloseCardDetailModal = () => {
     setIsCardDetailModalOpen(false);
     setSelectedCardForModal(null);
   };
 
-  // Handle loading states
   if (loadingAuth || deckLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center text-gray-300">
-        <p className="text-xl">Loading decks...</p>
-        {/* You might want to add a spinner component here */}
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="glassmorphism-card p-12 text-center">
+          <div className="animate-spin h-16 w-16 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-6"></div>
+          <h3 className="text-2xl font-bold text-white mb-2">Loading Your Decks</h3>
+          <p className="text-slate-400 text-lg">Fetching your collection...</p>
+        </div>
       </div>
     );
   }
 
-  // Handle error state
   if (deckError) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center text-logoScheme-red">
-        <p className="text-xl">Error loading decks: {deckError}</p>
-      </div>
-    );
-  }
-
-  if (!deckId && savedDecks.length === 0) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6 text-logoScheme-gold">Your Decks</h1>
-        <div className="bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-md p-8 text-center">
-          <p className="text-xl mb-4 text-gray-100">You haven't saved any decks yet.</p>
-          <Link to="/builder" className="btn-primary px-6 py-3">
-            Start Building
-          </Link>
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="glassmorphism-card p-12 text-center border-red-500/30 bg-red-500/10">
+          <div className="w-16 h-16 rounded-lg bg-red-500 flex items-center justify-center mx-auto mb-6">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-red-300 mb-2">Error Loading Decks</h3>
+          <p className="text-red-200">{deckError}</p>
         </div>
       </div>
     );
@@ -101,22 +86,28 @@ const DeckViewer = () => {
     switch (activeTab) {
       case 'cards':
         return (
-          <div className="mt-6">
-            <h3 className="text-2xl font-bold mb-4 text-logoScheme-gold">Cards ({selectedDeck.cards.length + (selectedDeck.commander ? 1 : 0)})</h3>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-2xl font-bold text-white flex items-center space-x-2">
+                <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>Cards ({selectedDeck.cards.length + (selectedDeck.commander ? 1 : 0)})</span>
+              </h3>
+            </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-              {/* Display Commander First if it exists */} 
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {/* Commander Card */} 
               {selectedDeck.commander && (() => {
                 const commander = selectedDeck.commander;
                 const imageUris = getCardImageUris(commander);
-                // Intense yellow/gold glow effect
-                const gameChangerEffectClass = commander.game_changer 
-                  ? 'ring-3 ring-yellow-400/90 shadow-[0_0_25px_7px_rgba(251,191,36,0.7)] ring-offset-2 ring-offset-gray-800' 
+                const gameChangerEffect = commander.game_changer 
+                  ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
                   : '';
                 return (
                   <div
                     key={commander.id + "-commander"} 
-                    className={`bg-gray-800 p-2 rounded-lg border border-yellow-500 hover:border-yellow-300 transition-all shadow-lg cursor-pointer relative ${gameChangerEffectClass}`}
+                    className={`group relative glassmorphism-card p-3 border-yellow-500/50 hover:border-yellow-400/70 transition-all duration-300 cursor-pointer hover:scale-105 ${gameChangerEffect}`}
                     onClick={() => handleOpenCardDetailModal(commander)}
                     title={`${commander.name} (Commander)`}
                   >
@@ -124,32 +115,38 @@ const DeckViewer = () => {
                       <img
                         src={imageUris.small}
                         alt={commander.name}
-                        className="rounded-md shadow-sm w-full block object-cover aspect-[63/88]"
+                        className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
                       />
                     ) : (
-                      <div className="bg-gray-700 rounded-md shadow-sm w-full aspect-[63/88] flex items-center justify-center p-1">
-                        <span className="text-gray-200 text-center text-xs">{commander.name}</span>
+                      <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
+                        <span className="text-slate-300 text-center text-xs">{commander.name}</span>
                       </div>
                     )}
-                    <div className="mt-1.5 flex justify-between items-center">
+                    <div className="mt-2 flex justify-between items-center">
                       <span className="text-xs text-yellow-400 truncate mr-1 font-semibold" title={commander.name}>{commander.name}</span>
-                      <span className="text-xs text-yellow-200 font-bold flex-shrink-0">Cmdr</span>
+                      <span className="text-xs text-yellow-200 font-bold flex-shrink-0 bg-yellow-500/20 px-2 py-1 rounded-full">Cmdr</span>
+                    </div>
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end justify-center p-2">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1 text-white text-xs font-semibold">
+                        Click to view
+                      </div>
                     </div>
                   </div>
                 );
               })()}
 
+              {/* Regular Cards */}
               {selectedDeck.cards.map(card => {
                 const imageUris = getCardImageUris(card);
-                // Intense yellow/gold glow effect
-                const gameChangerEffectClass = card.game_changer 
-                  ? 'ring-3 ring-yellow-400/90 shadow-[0_0_25px_7px_rgba(251,191,36,0.7)] ring-offset-2 ring-offset-gray-800' 
+                const gameChangerEffect = card.game_changer 
+                  ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
                   : '';
 
                 return (
                   <div 
                     key={card.id}
-                    className={`bg-gray-800 p-2 rounded-lg border border-gray-700 hover:border-logoScheme-gold transition-all shadow-md cursor-pointer relative ${gameChangerEffectClass}`}
+                    className={`group relative glassmorphism-card p-3 border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 cursor-pointer hover:scale-105 ${gameChangerEffect}`}
                     onClick={() => handleOpenCardDetailModal(card)}
                     title={card.name}
                   >
@@ -157,16 +154,22 @@ const DeckViewer = () => {
                       <img
                         src={imageUris.small}
                         alt={card.name}
-                        className="rounded-md shadow-sm w-full block object-cover aspect-[63/88]"
+                        className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
                       />
                     ) : (
-                      <div className="bg-gray-700 rounded-md shadow-sm w-full aspect-[63/88] flex items-center justify-center p-1">
-                        <span className="text-gray-200 text-center text-xs">{card.name}</span>
+                      <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
+                        <span className="text-slate-300 text-center text-xs">{card.name}</span>
                       </div>
                     )}
-                    <div className="mt-1.5 flex justify-between items-center">
-                      <span className="text-xs text-gray-300 truncate mr-1" title={card.name}>{card.name}</span>
-                      <span className="text-xs text-gray-100 font-semibold flex-shrink-0">{card.quantity || 1}x</span>
+                    <div className="mt-2 flex justify-between items-center">
+                      <span className="text-xs text-slate-300 truncate mr-1" title={card.name}>{card.name}</span>
+                      <span className="text-xs text-white font-semibold flex-shrink-0 bg-primary-500/30 px-2 py-1 rounded-full">{card.quantity || 1}x</span>
+                    </div>
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end justify-center p-2">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1 text-white text-xs font-semibold">
+                        Click to view
+                      </div>
                     </div>
                   </div>
                 );
@@ -186,133 +189,228 @@ const DeckViewer = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 text-neutral-800">
-      <h1 className="text-3xl font-bold mb-6 text-logoScheme-gold">Your Decks</h1>
-      
-      {deckId ? (
-        // Single deck view
-        selectedDeck ? (
-          <div>
-            <Link to="/decks" className="text-logoScheme-blue mb-4 inline-block hover:underline">
-              ← Back to All Decks
-            </Link>
-            
-            <div className="bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-md p-6 mb-6">
-              <div className="flex items-start">
-                {selectedDeck.commander && selectedDeck.commander.image_uris && (
-                  <img
-                    src={selectedDeck.commander.image_uris.art_crop}
-                    alt={selectedDeck.commander.name}
-                    className="w-32 h-auto mr-6 rounded-lg border border-logoScheme-brown"
-                  />
-                )}
-                <div>
-                  <h2 className="text-2xl font-bold text-logoScheme-gold">{selectedDeck.name}</h2>
-                  <div className="text-gray-300 mb-2">Commander: {selectedDeck.commander ? selectedDeck.commander.name : 'Unknown'}</div>
-                  {selectedDeck.description && (
-                    <p className="text-gray-300">{selectedDeck.description}</p>
+    <div className="min-h-screen bg-slate-900">
+      {/* Background effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {!deckId && savedDecks.length === 0 ? (
+          /* Empty State */
+          <div className="space-y-8">
+            <div className="text-center">
+              <h1 className="text-5xl font-bold text-gradient-primary mb-4">
+                🃏 Your Deck Collection
+              </h1>
+              <p className="text-xl text-slate-400">
+                Build and manage your Magic: The Gathering decks
+              </p>
+            </div>
+
+            <div className="glassmorphism-card p-12 text-center border-slate-700/50">
+              <div className="mb-6">
+                <svg className="h-20 w-20 mx-auto mb-6 text-slate-400 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <h2 className="text-3xl font-bold text-white mb-4">No Decks Yet</h2>
+                <p className="text-slate-400 text-lg mb-8 max-w-2xl mx-auto">
+                  You haven't saved any decks yet. Start building your first deck and begin your collection!
+                </p>
+                <Link to="/builder" className="btn-modern btn-modern-primary btn-modern-xl premium-glow group">
+                  <span className="flex items-center space-x-3">
+                    <span>🚀 Start Building</span>
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : deckId ? (
+          /* Single Deck View */
+          selectedDeck ? (
+            <div className="space-y-8">
+              {/* Back Navigation */}
+              <div>
+                <Link to="/decks" className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 transition-colors group">
+                  <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span>Back to All Decks</span>
+                </Link>
+              </div>
+              
+              {/* Deck Header */}
+              <div className="glassmorphism-card p-8 border-primary-500/20">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center space-y-6 lg:space-y-0 lg:space-x-8">
+                  {selectedDeck.commander && selectedDeck.commander.image_uris && (
+                    <img
+                      src={selectedDeck.commander.image_uris.art_crop}
+                      alt={selectedDeck.commander.name}
+                      className="w-40 h-40 rounded-2xl border-2 border-primary-500/50 shadow-lg shadow-primary-500/20 object-cover"
+                    />
                   )}
-                  <div className="text-sm text-gray-400 mt-2">
-                    Last updated: {new Date(selectedDeck.lastUpdated).toLocaleDateString()}
+                  <div className="flex-1">
+                    <h1 className="text-4xl font-bold text-gradient-primary mb-4">{selectedDeck.name}</h1>
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2 text-lg">
+                        <span className="text-slate-400">Commander:</span>
+                        <span className="text-white font-semibold">{selectedDeck.commander ? selectedDeck.commander.name : 'Unknown'}</span>
+                      </div>
+                      {selectedDeck.description && (
+                        <p className="text-slate-300 text-lg leading-relaxed">{selectedDeck.description}</p>
+                      )}
+                      <div className="flex items-center space-x-4 text-sm text-slate-400">
+                        <span>📅 Last updated: {new Date(selectedDeck.lastUpdated).toLocaleDateString()}</span>
+                        <span>🃏 {selectedDeck.cards.length + (selectedDeck.commander ? 1 : 0)} cards</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
+              
+              {/* Tabs */}
+              <div className="glassmorphism-card border-slate-700/50">
+                {/* Tab Navigation */}
+                <div className="border-b border-slate-700/50">
+                  <nav className="flex space-x-8 px-8">
+                    {[
+                      { id: 'cards', label: 'Cards', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+                      { id: 'analytics', label: 'Analytics', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+                      { id: 'export', label: 'Export', icon: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                      { id: 'share', label: 'Share', icon: 'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z' }
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`py-4 px-1 font-semibold text-sm transition-all duration-300 border-b-2 ${
+                          activeTab === tab.id
+                            ? 'border-primary-500 text-primary-400'
+                            : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={tab.icon} />
+                          </svg>
+                          <span>{tab.label}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+                
+                {/* Tab Content */}
+                <div className="p-8">
+                  {renderTabContent()}
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-4">
+                <Link to={`/builder?deck=${selectedDeck.id}`} className="btn-modern btn-modern-primary btn-modern-lg group">
+                  <span className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>Edit Deck</span>
+                  </span>
+                </Link>
+              </div>
             </div>
-            
-            {/* Tab navigation */}
-            <div className="border-b border-logoScheme-brown mb-6">
-              <nav className="flex space-x-8">
-                <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'cards' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold'}`}
-                  onClick={() => setActiveTab('cards')}
-                >
-                  Cards
-                </button>
-                <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'analytics' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold'}`}
-                  onClick={() => setActiveTab('analytics')}
-                >
-                  Analytics
-                </button>
-                <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'export' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold'}`}
-                  onClick={() => setActiveTab('export')}
-                >
-                  Export
-                </button>
-                <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'share' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold'}`}
-                  onClick={() => setActiveTab('share')}
-                >
-                  Share
-                </button>
-              </nav>
+          ) : (
+            /* Deck Not Found */
+            <div className="glassmorphism-card p-12 text-center border-red-500/30 bg-red-500/10">
+              <div className="w-16 h-16 rounded-lg bg-red-500 flex items-center justify-center mx-auto mb-6">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-red-300 mb-4">Deck Not Found</h3>
+              <p className="text-red-200 mb-6">The deck you're looking for doesn't exist or may have been deleted.</p>
+              <Link to="/decks" className="btn-modern btn-modern-secondary btn-modern-md">
+                View All Decks
+              </Link>
             </div>
-            
-            {/* Tab content */}
-            {renderTabContent()}
-            
-            <div className="mt-8 flex space-x-4">
-              <Link to={`/builder?deck=${selectedDeck.id}`} className="btn-secondary px-4 py-2">
-                Edit Deck
+          )
+        ) : (
+          /* Deck List View */
+          <div className="space-y-8">
+            <div className="text-center">
+              <h1 className="text-5xl font-bold text-gradient-primary mb-4">
+                🃏 Your Deck Collection
+              </h1>
+              <p className="text-xl text-slate-400">
+                {savedDecks.length} {savedDecks.length === 1 ? 'deck' : 'decks'} in your collection
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {savedDecks.map(deck => (
+                <Link 
+                  key={deck.id} 
+                  to={`/decks/${deck.id}`}
+                  className="group glassmorphism-card p-6 border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-modern-primary"
+                >
+                  <div className="flex items-start space-x-4">
+                    {deck.commander && deck.commander.image_uris ? (
+                      <img
+                        src={deck.commander.image_uris.art_crop}
+                        alt={deck.commander.name}
+                        className="w-16 h-16 rounded-2xl object-cover border-2 border-primary-500/50 shadow-lg group-hover:border-primary-400/70 transition-colors"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center shadow-lg">
+                        <span className="text-xl font-bold text-white">
+                          {deck.name.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl font-bold text-white group-hover:text-primary-300 transition-colors truncate">{deck.name}</h3>
+                      <div className="text-sm text-slate-400 mb-2">
+                        <span className="font-medium">Commander:</span> {deck.commander ? deck.commander.name : 'Unknown'}
+                      </div>
+                      <div className="flex items-center space-x-4 text-xs text-slate-500">
+                        <span>🃏 {deck.cards.length} cards</span>
+                        <span>📅 {new Date(deck.lastUpdated).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+                </Link>
+              ))}
+              
+              {/* Create New Deck Card */}
+              <Link 
+                to="/builder"
+                className="group glassmorphism-card p-6 border-2 border-dashed border-slate-600 hover:border-primary-500/50 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center min-h-[120px]"
+              >
+                <div className="text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <div className="text-slate-300 font-semibold group-hover:text-white transition-colors">Create New Deck</div>
+                </div>
               </Link>
             </div>
           </div>
-        ) : (
-          <div className="bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-md p-8 text-center">
-            <p className="text-xl mb-4 text-gray-100">Deck not found.</p>
-            <Link to="/decks" className="btn-primary px-6 py-3">
-              View All Decks
-            </Link>
-          </div>
-        )
-      ) : (
-        // Decks list view
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {savedDecks.map(deck => (
-            <Link 
-              key={deck.id} 
-              to={`/decks/${deck.id}`}
-              className="bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-md p-6 hover:border-logoScheme-gold hover:shadow-lg transition-shadow"
-            >
-              <div className="flex items-center">
-                {deck.commander && deck.commander.image_uris && (
-                  <img
-                    src={deck.commander.image_uris.art_crop}
-                    alt={deck.commander.name}
-                    className="w-16 h-16 mr-4 rounded-full object-cover border border-logoScheme-gold"
-                  />
-                )}
-                <div>
-                  <h3 className="text-xl font-bold text-logoScheme-gold">{deck.name}</h3>
-                  <div className="text-sm text-gray-300">Commander: {deck.commander ? deck.commander.name : 'Unknown'}</div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {deck.cards.length} cards • Last updated: {new Date(deck.lastUpdated).toLocaleDateString()}
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-          
-          <Link 
-            to="/builder"
-            className="bg-gray-700 rounded-lg border-2 border-dashed border-logoScheme-brown p-6 flex items-center justify-center hover:bg-gray-600 transition-colors"
-          >
-            <div className="text-center">
-              <div className="text-4xl font-light text-gray-400 mb-2">+</div>
-              <div className="text-gray-300 font-medium">Create New Deck</div>
-            </div>
-          </Link>
-        </div>
-      )}
+        )}
 
-      {/* Render CardDetailModal */}
-      {isCardDetailModalOpen && selectedCardForModal && (
-        <CardDetailModal 
-          card={selectedCardForModal} 
-          onClose={handleCloseCardDetailModal} 
-        />
-      )}
+        {/* Card Detail Modal */}
+        {isCardDetailModalOpen && selectedCardForModal && (
+          <CardDetailModal 
+            card={selectedCardForModal} 
+            onClose={handleCloseCardDetailModal} 
+          />
+        )}
+      </div>
     </div>
   );
 };

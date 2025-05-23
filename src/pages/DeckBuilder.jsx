@@ -340,206 +340,251 @@ const DeckBuilderAIPage = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="container mx-auto px-4 py-8 text-neutral-800">
-        {/* Button to open Commander Search Modal - replaces inline search */}
-        {!commander && (
-          <div className="w-full mb-6 text-center p-8 bg-logoScheme-darkGray rounded-lg shadow border border-logoScheme-brown">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-logoScheme-gold opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>
-            <h2 className="text-xl font-bold mb-2 text-logoScheme-gold">No Commander Selected</h2>
-            <p className="text-gray-300 mb-4">
-                Start by selecting your commander to build your deck.
+      <div className="min-h-screen bg-slate-900">
+        {/* Background effects */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-3/4 left-1/2 w-64 h-64 bg-primary-600/6 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 space-y-8">
+          {/* Header */}
+          <div className="text-center">
+            <h1 className="text-5xl font-bold text-gradient-primary mb-4">
+              🏗️ Deck Builder
+            </h1>
+            <p className="text-xl text-slate-400">
+              Create and optimize your perfect Commander deck
             </p>
-            <button 
-                onClick={openCommanderSearchModal}
-                className="btn-primary px-6 py-3"
-            >
-                Select Commander
-            </button>
           </div>
-        )}
-        
-        {/* Sticky Commander Header - Appears once commander is selected */}
-        {commander && <StickyCommanderHeader commander={commander} />}
 
-        {/* CommanderSearch Modal Component */}
-        <CommanderSearch 
-            isOpen={isCommanderSearchModalOpen}
-            onClose={closeCommanderSearchModal}
-            onCommanderSelect={handleCommanderSelectionFromModal}
-            selectedCommander={commander} // Pass current commander for display if modal is reopened
-        />
-
-        {/* Alert Modal for custom notifications */}
-        <AlertModal
-          isOpen={isAlertModalOpen}
-          title={alertModalConfig.title}
-          message={alertModalConfig.message}
-          onConfirm={alertModalConfig.onConfirm}
-          onClose={() => {
-            if (alertModalConfig.onCloseOverride) {
-                alertModalConfig.onCloseOverride();
-            } else {
-                setIsAlertModalOpen(false);
-            }
-          }}
-          confirmText={alertModalConfig.confirmText}
-          cancelText={alertModalConfig.cancelText || 'Cancel'}
-          showCancelButton={alertModalConfig.showCancelButton}
-        />
-
-        {/* Input Modal for deck name */}
-        <InputModal
-          isOpen={isInputModalOpen}
-          title={inputModalConfig.title}
-          message={inputModalConfig.message}
-          inputLabel={inputModalConfig.inputLabel}
-          initialValue={inputModalConfig.initialValue}
-          placeholder={inputModalConfig.placeholder}
-          onConfirm={inputModalConfig.onConfirm}
-          onClose={() => setIsInputModalOpen(false)}
-          confirmText={inputModalConfig.confirmText}
-        />
-
-        {/* Paywall Modal */}
-        <PaywallModal
-          isOpen={isPaywallModalOpen}
-          onClose={() => setIsPaywallModalOpen(false)}
-          type={paywallModalConfig.type}
-          title={paywallModalConfig.title}
-          message={paywallModalConfig.message}
-        />
-
-        {/* Render CardDetailModal */}
-        {isCardDetailModalOpen && selectedCardForDetailModal && (
-          <CardDetailModal 
-            card={selectedCardForDetailModal} 
-            onClose={handleCloseCardDetailModal} 
-          />
-        )}
-
-        {commander ? (
-          <>
-            {/* Deck Info Header - Title, Card Count, and potentially Change Commander button */}
-            <div className="flex justify-center items-center mb-8 pt-6">
-
-              <button 
-                onClick={openCommanderSearchModal} 
-                className="btn-secondary px-5 py-2.5"
-              >
-                Change Commander
-              </button>
-            </div>
-            
-            {/* AI Features Section - Now includes Auto Deck Builder */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-              {/* Auto Deck Builder - Added prominently */} 
-              <div className="lg:col-span-6 lg:col-start-4 flex flex-col">
-                <AutoDeckBuilder />
-              </div>
-              
-              {/* AI Card Suggestions */}
-              {/*
-              <div className="lg:col-span-5">
-                <SuggestionPanel />
-              </div>
-              */}
-              
-              {/* AI Chatbot */}
-              {/*
-              <div className="lg:col-span-3">
-                <AIChatbot />
-              </div>
-              */}
-            </div>
-            
-            {/* Main Tabs and Content */}
-            <div className="border-b border-logoScheme-brown mb-4" ref={deckViewRef}>
-              <nav className="flex -mb-px justify-around md:justify-start">
-                {/* View Deck Tab */}
-                <button
-                  onClick={() => setActiveTab('deck')}
-                  className={`pb-2 pt-1 px-2 md:px-4 md:py-2 font-medium text-xs md:text-sm focus:outline-none transition-colors duration-150 ${
-                    activeTab === 'deck'
-                      ? 'border-b-2 border-logoScheme-gold text-logoScheme-gold active:bg-logoScheme-brown'
-                      : 'text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold active:bg-logoScheme-brown'
-                  }`}
-                >
-                  <div className="md:hidden flex flex-col items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M5 11v6m14-6v6" />
-                    </svg>
-                    <span>View Deck</span>
-                  </div>
-                  <span className="hidden md:inline">View Deck ({totalCardCount})</span>
-                </button>
-
-                {/* Deck Stats Tab */}
-                <button
-                  onClick={() => setActiveTab('stats')}
-                  className={`pb-2 pt-1 px-2 md:px-4 md:py-2 font-medium text-xs md:text-sm focus:outline-none transition-colors duration-150 ${
-                    activeTab === 'stats'
-                      ? 'border-b-2 border-logoScheme-gold text-logoScheme-gold active:bg-logoScheme-brown'
-                      : 'text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold active:bg-logoScheme-brown'
-                  }`}
-                >
-                  <div className="md:hidden flex flex-col items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <span>Deck Stats</span>
-                  </div>
-                  <span className="hidden md:inline">Deck Stats</span>
-                </button>
-              </nav>
-            </div>
-            
-            {/* Tab Content */}
-            <div className="w-full">
-              {activeTab === 'deck' && (
-                <>
-                  {/* Save Controls - Now inside Deck tab and responsive */}
-                  <div className="flex flex-col sm:flex-row items-stretch gap-3 mb-6 p-1">
-                    <input
-                      type="text"
-                      value={currentDeckName}
-                      onChange={(e) => setDeckName(e.target.value)}
-                      className="flex-grow px-4 py-3 rounded-lg text-sm bg-slate-100 text-slate-800 border border-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:border-logoScheme-gold shadow-sm w-full sm:w-auto"
-                      placeholder="Enter Local Deck Name (e.g., Eris Roars)"
-                      disabled={deckContextLoading} // Disable input while saving
-                    />
-                    <button
-                      onClick={() => handleSaveDeck(false)}
-                      disabled={deckContextLoading || !commander} // Disable if loading or no commander
-                      className="btn-primary px-6 py-3 w-full sm:w-auto whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {deckContextLoading ? 'Saving...' : 'Save Deck to Cloud'}
-                    </button>
-                  </div>
-                  <DeckBuilderAI 
-                    deckSaveControls={null} 
-                    onViewCardDetails={handleOpenCardDetailModal}
-                  />
-                </>
-              )}
-              
-              {activeTab === 'stats' && (
-                <div className="space-y-6">
-                  <DeckStats />
-                  <ValidationResults setActiveTab={setActiveTab} />
+          {/* Button to open Commander Search Modal - replaces inline search */}
+          {!commander && (
+            <div className="glassmorphism-card p-8 text-center border-primary-500/20">
+              <div className="mb-6">
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
                 </div>
-              )}
+                <h2 className="text-3xl font-bold text-white mb-4">Choose Your Commander</h2>
+                <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto leading-relaxed">
+                  Start by selecting your commander to unlock the full deck building experience.
+                </p>
+                <button 
+                    onClick={openCommanderSearchModal}
+                    className="btn-modern btn-modern-primary btn-modern-xl premium-glow group"
+                >
+                  <span className="flex items-center space-x-3">
+                    <span>🎯 Select Commander</span>
+                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </span>
+                </button>
+              </div>
             </div>
-          </>
-        ) : (
-          <div className="text-center p-8 bg-logoScheme-darkGray rounded-lg shadow mt-6 border border-logoScheme-brown">
-            <h2 className="text-xl font-bold mb-2 text-logoScheme-gold">Start by Selecting a Commander</h2>
-            <p className="text-gray-300">
-              Use the commander search above to select your commander and begin building your deck.
-            </p>
-          </div>
-        )}
+          )}
+          
+          {/* Sticky Commander Header - Appears once commander is selected */}
+          {commander && <StickyCommanderHeader commander={commander} />}
+
+          {/* CommanderSearch Modal Component */}
+          <CommanderSearch 
+              isOpen={isCommanderSearchModalOpen}
+              onClose={closeCommanderSearchModal}
+              onCommanderSelect={handleCommanderSelectionFromModal}
+              selectedCommander={commander} // Pass current commander for display if modal is reopened
+          />
+
+          {/* Alert Modal for custom notifications */}
+          <AlertModal
+            isOpen={isAlertModalOpen}
+            title={alertModalConfig.title}
+            message={alertModalConfig.message}
+            onConfirm={alertModalConfig.onConfirm}
+            onClose={() => {
+              if (alertModalConfig.onCloseOverride) {
+                  alertModalConfig.onCloseOverride();
+              } else {
+                  setIsAlertModalOpen(false);
+              }
+            }}
+            confirmText={alertModalConfig.confirmText}
+            cancelText={alertModalConfig.cancelText || 'Cancel'}
+            showCancelButton={alertModalConfig.showCancelButton}
+          />
+
+          {/* Input Modal for deck name */}
+          <InputModal
+            isOpen={isInputModalOpen}
+            title={inputModalConfig.title}
+            message={inputModalConfig.message}
+            inputLabel={inputModalConfig.inputLabel}
+            initialValue={inputModalConfig.initialValue}
+            placeholder={inputModalConfig.placeholder}
+            onConfirm={inputModalConfig.onConfirm}
+            onClose={() => setIsInputModalOpen(false)}
+            confirmText={inputModalConfig.confirmText}
+          />
+
+          {/* Paywall Modal */}
+          <PaywallModal
+            isOpen={isPaywallModalOpen}
+            onClose={() => setIsPaywallModalOpen(false)}
+            type={paywallModalConfig.type}
+            title={paywallModalConfig.title}
+            message={paywallModalConfig.message}
+          />
+
+          {/* Render CardDetailModal */}
+          {isCardDetailModalOpen && selectedCardForDetailModal && (
+            <CardDetailModal 
+              card={selectedCardForDetailModal} 
+              onClose={handleCloseCardDetailModal} 
+            />
+          )}
+
+          {commander ? (
+            <>
+              {/* Deck Info Header - Title, Card Count, and potentially Change Commander button */}
+              <div className="flex justify-center items-center mb-8 pt-6">
+                <button 
+                  onClick={openCommanderSearchModal} 
+                  className="btn-modern btn-modern-secondary btn-modern-lg group"
+                >
+                  <span className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4 4m4-4l-4-4m0 6H4m5 0a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Change Commander</span>
+                  </span>
+                </button>
+              </div>
+              
+              {/* AI Features Section - Now includes Auto Deck Builder */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+                {/* Auto Deck Builder - Added prominently */} 
+                <div className="lg:col-span-8 lg:col-start-3 flex flex-col">
+                  <AutoDeckBuilder />
+                </div>
+              </div>
+              
+              {/* Main Tabs and Content */}
+              <div className="glassmorphism-card border-slate-700/50">
+                {/* Tab Navigation */}
+                <div className="border-b border-slate-700/50">
+                  <nav className="flex space-x-8 px-8">
+                    {/* View Deck Tab */}
+                    <button
+                      onClick={() => setActiveTab('deck')}
+                      className={`py-4 px-1 font-semibold text-sm transition-all duration-300 border-b-2 ${
+                        activeTab === 'deck'
+                          ? 'border-primary-500 text-primary-400'
+                          : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        <span>View Deck ({totalCardCount})</span>
+                      </div>
+                    </button>
+
+                    {/* Deck Stats Tab */}
+                    <button
+                      onClick={() => setActiveTab('stats')}
+                      className={`py-4 px-1 font-semibold text-sm transition-all duration-300 border-b-2 ${
+                        activeTab === 'stats'
+                          ? 'border-primary-500 text-primary-400'
+                          : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span>Deck Stats</span>
+                      </div>
+                    </button>
+                  </nav>
+                </div>
+                
+                {/* Tab Content */}
+                <div className="p-8">
+                  {activeTab === 'deck' && (
+                    <>
+                      {/* Save Controls - Now inside Deck tab and responsive */}
+                      <div className="flex flex-col sm:flex-row items-stretch gap-4 mb-8">
+                        <div className="flex-1 relative">
+                          <input
+                            type="text"
+                            value={currentDeckName}
+                            onChange={(e) => setDeckName(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50"
+                            placeholder="Enter Local Deck Name (e.g., Eris Roars)"
+                            disabled={deckContextLoading} // Disable input while saving
+                          />
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleSaveDeck(false)}
+                          disabled={deckContextLoading || !commander} // Disable if loading or no commander
+                          className="btn-modern btn-modern-primary btn-modern-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed premium-glow"
+                        >
+                          {deckContextLoading ? (
+                            <span className="flex items-center space-x-2">
+                              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                              <span>Saving...</span>
+                            </span>
+                          ) : (
+                            <span className="flex items-center space-x-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                              </svg>
+                              <span>Save Deck to Cloud</span>
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                      <DeckBuilderAI 
+                        deckSaveControls={null} 
+                        onViewCardDetails={handleOpenCardDetailModal}
+                      />
+                    </>
+                  )}
+                  
+                  {activeTab === 'stats' && (
+                    <div className="space-y-6">
+                      <DeckStats />
+                      <ValidationResults setActiveTab={setActiveTab} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="glassmorphism-card p-12 text-center border-slate-700/50">
+              <div className="mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-4">Ready to Build?</h2>
+                <p className="text-slate-400 text-lg leading-relaxed">
+                  Select your commander above to begin building your deck and unlock all the powerful tools and features.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </DndProvider>
   );

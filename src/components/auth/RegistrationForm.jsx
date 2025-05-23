@@ -4,6 +4,9 @@ import { setInitialSubscriptionStatus } from '../../utils/ghlSubscriptionAPI';
 
 const RegistrationForm = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -14,47 +17,53 @@ const RegistrationForm = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Clear errors when user starts typing
+    if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+    
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!"); // Replace with a proper notification later
+      setError("Passwords don't match. Please make sure both password fields are identical.");
+      setLoading(false);
       return;
     }
-    // TODO: Implement GoHighLevel API call for registration
-    console.log('Registration attempt with:', formData);
-    upsertGHLContact(formData); // Call the GHL upsert contact function
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      setLoading(false);
+      return;
+    }
+
+    await upsertGHLContact(formData);
   };
 
-  // Function to handle GHL API call for upserting a contact
   const upsertGHLContact = async (userData) => {
-    // IMPORTANT: Replace with your actual GHL API details if different
-    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com'; // Or your specific GHL API URL
-    // Consistent API token usage from environment variables
+    const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
     const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY; 
-    const GHL_API_VERSION = '2021-07-28'; // Replace with the API version you are using
-    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY'; // The locationId you provided
+    const GHL_API_VERSION = '2021-07-28';
+    const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
 
-    const apiEndpoint = `${GHL_API_BASE_URL}/contacts/upsert`; // Changed to upsert endpoint
+    const apiEndpoint = `${GHL_API_BASE_URL}/contacts/upsert`;
 
     const contactData = {
       firstName: userData.firstName,
       lastName: userData.lastName,
       email: userData.email,
-      locationId: GHL_LOCATION_ID, // Added locationId
+      locationId: GHL_LOCATION_ID,
       customFields: [
         {
-          id: "7GbpQNKTkpS3Od2U0xEl", // ID for the 'Password' custom field
+          id: "7GbpQNKTkpS3Od2U0xEl",
           value: userData.password,
         },
         {
-          id: "zi3peZjkU9rZmf5j41Et", // Subscription field ID
-          field_value: "no", // New free users start with "no"
+          id: "zi3peZjkU9rZmf5j41Et",
+          field_value: "no",
         },
       ],
-      // Add other relevant fields from UpsertContactDto as needed
-      // e.g., phone: userData.phone, source: 'Website Registration', etc.
     };
 
     try {
@@ -70,41 +79,56 @@ const RegistrationForm = () => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('GHL Contact upserted successfully:', result);
         
-        // Set initial subscription status using our utility function
         if (result.contact && result.contact.id) {
           try {
-            await setInitialSubscriptionStatus(result.contact.id, false); // false = free plan
-            console.log('Initial subscription status set to FREE for new user');
+            await setInitialSubscriptionStatus(result.contact.id, false);
           } catch (error) {
             console.error('Failed to set initial subscription status:', error);
-            // Don't fail registration if subscription status setting fails
           }
         }
         
-        navigate('/login');
+        setSuccess(true);
+        setLoading(false);
+        
+        // Show success message for 2 seconds then redirect
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
       } else {
         const errorResult = await response.json();
-        console.error('GHL API Error (Upsert):', response.status, errorResult);
-        alert(`Registration failed: ${errorResult.message || 'Unknown error'}`); // Replace with a proper notification
-        // TODO: Handle API error (e.g., show error message to user)
+        setError(errorResult.message || 'Registration failed. Please try again.');
+        setLoading(false);
       }
     } catch (error) {
-      console.error('Error during GHL API call (Upsert):', error);
-      alert('Registration failed: An unexpected error occurred.'); // Replace with a proper notification
-      // TODO: Handle network or other unexpected errors
+      setError('Registration failed: Network error. Please check your connection and try again.');
+      setLoading(false);
     }
   };
 
+  if (success) {
+    return (
+      <div className="text-center py-8">
+        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-500/20 mb-4">
+          <svg className="h-6 w-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-white mb-2">Account Created Successfully!</h3>
+        <p className="text-slate-400">Redirecting you to login...</p>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="firstName" className="block text-sm font-medium text-slate-700">
-            First name
+      {/* Name Fields */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <label htmlFor="firstName" className="block text-sm font-semibold text-white">
+            First Name
           </label>
-          <div className="mt-1">
+          <div className="relative">
             <input
               type="text"
               name="firstName"
@@ -113,16 +137,23 @@ const RegistrationForm = () => {
               required
               value={formData.firstName}
               onChange={handleChange}
-              className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-slate-100 text-slate-800"
+              className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50"
+              placeholder="Enter first name"
+              disabled={loading}
             />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label htmlFor="lastName" className="block text-sm font-medium text-slate-700">
-            Last name
+        <div className="space-y-2">
+          <label htmlFor="lastName" className="block text-sm font-semibold text-white">
+            Last Name
           </label>
-          <div className="mt-1">
+          <div className="relative">
             <input
               type="text"
               name="lastName"
@@ -131,17 +162,25 @@ const RegistrationForm = () => {
               required
               value={formData.lastName}
               onChange={handleChange}
-              className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-slate-100 text-slate-800"
+              className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50"
+              placeholder="Enter last name"
+              disabled={loading}
             />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-          Email address
+      {/* Email Field */}
+      <div className="space-y-2">
+        <label htmlFor="email" className="block text-sm font-semibold text-white">
+          Email Address
         </label>
-        <div className="mt-1">
+        <div className="relative">
           <input
             id="email"
             name="email"
@@ -150,53 +189,114 @@ const RegistrationForm = () => {
             required
             value={formData.email}
             onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-slate-100 text-slate-800"
+            className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50"
+            placeholder="Enter your email address"
+            disabled={loading}
           />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+            </svg>
+          </div>
         </div>
       </div>
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-          Password
-        </label>
-        <div className="mt-1">
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={formData.password}
-            onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-slate-100 text-slate-800"
-          />
+      {/* Password Fields */}
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <label htmlFor="password" className="block text-sm font-semibold text-white">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50"
+              placeholder="Create a password (min. 6 characters)"
+              disabled={loading}
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="confirmPassword" className="block text-sm font-semibold text-white">
+            Confirm Password
+          </label>
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50"
+              placeholder="Confirm your password"
+              disabled={loading}
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700">
-          Confirm Password
-        </label>
-        <div className="mt-1">
-          <input
-            id="confirmPassword"
-            name="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-slate-100 text-slate-800"
-          />
+      {error && (
+        <div className="relative">
+          <div className="absolute inset-0 bg-red-500/10 rounded-xl blur-sm"></div>
+          <div className="relative bg-red-500/20 border border-red-500/30 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-sm text-red-300 font-medium">{error}</p>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div>
+      <div className="pt-2">
         <button
           type="submit"
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-logoScheme-gold hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-logoScheme-gold transition-colors"
+          disabled={loading}
+          className="btn-modern btn-modern-primary btn-modern-md w-full relative overflow-hidden group"
         >
-          Create account
+          {loading && (
+            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] animate-pulse"></div>
+          )}
+          <span className="relative flex items-center justify-center space-x-2">
+            {loading ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Creating Account...</span>
+              </>
+            ) : (
+              <>
+                <span>Create Account</span>
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </>
+            )}
+          </span>
         </button>
       </div>
     </form>

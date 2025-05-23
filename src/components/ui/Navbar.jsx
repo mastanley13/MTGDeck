@@ -49,7 +49,7 @@ const Navbar = () => {
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
               <Link to="/" className="flex items-center space-x-3">
-                <img src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/682a1f02bac5a0c4a0465b4f.png" alt="Logo" className="h-10 w-auto" />
+                <img src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/6830e4ad6417b23718765500.png" alt="Logo" className="h-10 w-auto" />
                 <span className="font-bold text-xl bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 bg-clip-text text-transparent">
                   Deck Tutor AI
                 </span>
@@ -75,7 +75,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-8">
             <Link to="/" className="flex items-center space-x-3 group">
               <img 
-                src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/682a1f02bac5a0c4a0465b4f.png" 
+                src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/6830e4ad6417b23718765500.png" 
                 alt="Logo" 
                 className="h-10 w-auto transition-all duration-300 group-hover:scale-110 drop-shadow-lg" 
               />

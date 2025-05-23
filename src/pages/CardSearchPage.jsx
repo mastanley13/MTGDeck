@@ -92,115 +92,274 @@ const CardSearchPage = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-white">Card Search</h1>
-      {/* Search Input and Button */}
-      <div className="flex mb-4">
-        <input
-          type="text"
-          value={query}
-          onChange={handleInputChange}
-          placeholder="Search for cards (e.g., 'Black Lotus', 'type:creature pow=5')"
-          className="border border-gray-600 bg-gray-700 text-white p-2 rounded-l-md w-full focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
-        />
-        <button
-          onClick={() => performSearch(query)}
-          disabled={isLoading}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r-md transition-colors"
-        >
-          {isLoading ? 'Searching...' : 'Search'}
-        </button>
+    <div className="min-h-screen bg-slate-900">
+      {/* Background effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-      {isLoading && query.trim() && <p className="text-center py-4 text-gray-300">Loading results for "{query}"...</p>}
-
-      {/* Search Results Grid */}
-      {!isLoading && results.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {results.map((card) => {
-            // Intense yellow/gold glow effect for game changer cards
-            const gameChangerEffectClass = card.game_changer 
-              ? 'ring-3 ring-yellow-400/90 shadow-[0_0_25px_7px_rgba(251,191,36,0.7)] ring-offset-2 ring-offset-gray-800' 
-              : '';
-
-            return (
-            <div 
-              key={card.id} 
-              className={`border border-gray-700 bg-gray-800 rounded-lg p-3 flex flex-col justify-between shadow-md hover:shadow-lg hover:border-blue-500 transition-all relative ${gameChangerEffectClass}`}>
-              <div className="cursor-pointer group" onClick={() => handleOpenCardDetailsModal(card)}>
-                <h2 className="font-semibold text-md text-gray-100 mb-1 truncate group-hover:text-blue-400" title={card.name}>{card.name}</h2>
-                {card.image_uris?.normal ? (
-                  <img src={card.image_uris.normal} alt={card.name} className="mx-auto my-2 rounded shadow-sm w-full object-contain aspect-[5/7] group-hover:opacity-90 transition-opacity" />
-                ) : (
-                  <div className="mx-auto my-2 rounded shadow-sm w-full bg-gray-700 flex items-center justify-center aspect-[5/7]">
-                    <span className="text-gray-500 text-sm p-2">No Image</span>
-                  </div>
-                )}
-                <p className="text-xs text-gray-400 truncate group-hover:text-gray-200" title={card.type_line}>{card.type_line}</p>
-                <p className="text-xs text-gray-500 truncate group-hover:text-gray-300" title={card.set_name}>Set: {card.set_name}</p>
-              </div>
-              <button 
-                onClick={() => handleOpenDeckModal(card)}
-                className="mt-3 w-full bg-green-600 hover:bg-green-700 text-white font-medium py-1.5 px-3 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-              >
-                Add to Deck
-              </button>
-            </div>
-            );
-          })}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-5xl font-bold text-gradient-primary mb-4">
+            🔍 Card Search
+          </h1>
+          <p className="text-xl text-slate-400">
+            Search through Magic: The Gathering's vast card library
+          </p>
         </div>
-      )}
-      {!isLoading && !error && results.length === 0 && query.trim() && (
-        <p className="text-center py-4 text-gray-400">No cards found for "{query}".</p>
-      )}
 
-      {/* Add to Deck Modal */}
-      {isDeckModalOpen && selectedCardForAdding && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-gray-800 p-5 rounded-lg shadow-xl max-w-md w-full border border-gray-700">
-            <h3 className="text-lg font-semibold text-white mb-3">Add "{selectedCardForAdding.name}" to:</h3>
-            <ul className="space-y-2 max-h-60 overflow-y-auto mb-4 pr-1 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-              <li>
-                <button 
-                  onClick={() => handleAddCardToDeck('current')}
-                  className="w-full text-left p-2.5 hover:bg-blue-700 bg-blue-600 text-white rounded border border-blue-500 font-medium text-sm transition-colors"
-                >
-                  Current Deck: {currentDeckName}
-                </button>
-              </li>
-              {savedDecks && savedDecks.length > 0 && <hr className="my-1.5 border-gray-700"/>}
-              {savedDecks && savedDecks.map((deck) => (
-                <li key={deck.id}>
-                  <button 
-                    onClick={() => handleAddCardToDeck(deck.id)}
-                    className="w-full text-left p-2.5 hover:bg-gray-700 bg-gray-600 text-gray-200 rounded border border-gray-500 text-sm transition-colors"
-                  >
-                    {deck.name}
-                  </button>
-                </li>
-              ))}
-               {(!savedDecks || savedDecks.length === 0) && (
-                <li><p className="text-xs text-gray-400 p-1">No other saved decks found.</p></li>
-              )}
-            </ul>
-            <button 
-              onClick={handleCloseDeckModal}
-              className="mt-3 w-full bg-gray-600 hover:bg-gray-500 text-gray-200 py-2 px-4 rounded text-sm font-medium transition-colors"
+        {/* Search Interface */}
+        <div className="glassmorphism-card p-8 border-primary-500/20">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-primary-500 to-blue-500 flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <span>Search Cards</span>
+          </h2>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                value={query}
+                onChange={handleInputChange}
+                placeholder="Search for cards (e.g., 'Black Lotus', 'type:creature pow=5')"
+                className="w-full pl-10 pr-4 py-4 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50"
+              />
+            </div>
+            <button
+              onClick={() => performSearch(query)}
+              disabled={isLoading || !query.trim()}
+              className="btn-modern btn-modern-primary btn-modern-lg premium-glow disabled:opacity-50 disabled:cursor-not-allowed group"
             >
-              Cancel
+              {isLoading ? (
+                <span className="flex items-center space-x-2">
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  <span>Searching...</span>
+                </span>
+              ) : (
+                <span className="flex items-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <span>Search</span>
+                </span>
+              )}
             </button>
           </div>
-        </div>
-      )}
 
-      {/* Use the consolidated CardDetailModal component */}
-      {selectedCardForDetails && (
-        <CardDetailModal 
-          card={selectedCardForDetails} 
-          onClose={handleCloseCardDetailsModal} 
-        />
-      )}
+          {/* Search Tips */}
+          <div className="mt-6 p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+            <h3 className="text-sm font-semibold text-slate-300 mb-2">💡 Search Tips:</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs text-slate-400">
+              <div>• <code className="text-primary-400">type:creature</code> - Find creatures</div>
+              <div>• <code className="text-primary-400">pow&gt;=5</code> - Power 5 or greater</div>
+              <div>• <code className="text-primary-400">cmc:3</code> - Mana cost of 3</div>
+              <div>• <code className="text-primary-400">c:r</code> - Red cards</div>
+              <div>• <code className="text-primary-400">rarity:rare</code> - Rare cards</div>
+              <div>• <code className="text-primary-400">format:commander</code> - Commander legal</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="glassmorphism-card p-6 border-red-500/30 bg-red-500/10">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-red-300">Search Error</h3>
+                <p className="text-red-200">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && query.trim() && (
+          <div className="glassmorphism-card p-12 text-center border-primary-500/30">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-500 border-t-transparent mx-auto mb-6"></div>
+            <h3 className="text-2xl font-bold text-white mb-2">Searching Cards</h3>
+            <p className="text-slate-400 text-lg">Looking for "{query}"...</p>
+          </div>
+        )}
+
+        {/* Search Results */}
+        {!isLoading && results.length > 0 && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-3xl font-bold text-white flex items-center space-x-3">
+                <span>🃏 Search Results</span>
+              </h2>
+              <div className="text-slate-400">
+                {results.length} {results.length === 1 ? 'card' : 'cards'} found
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {results.map((card) => {
+                const gameChangerEffect = card.game_changer 
+                  ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
+                  : '';
+
+                return (
+                  <div 
+                    key={card.id} 
+                    className={`group relative glassmorphism-card p-4 border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-modern-primary ${gameChangerEffect}`}
+                  >
+                    <div className="cursor-pointer" onClick={() => handleOpenCardDetailsModal(card)}>
+                      <h3 className="font-bold text-white mb-3 group-hover:text-primary-300 transition-colors line-clamp-2" title={card.name}>
+                        {card.name}
+                      </h3>
+                      
+                      {card.image_uris?.normal ? (
+                        <img 
+                          src={card.image_uris.normal} 
+                          alt={card.name} 
+                          className="w-full rounded-xl shadow-lg object-cover aspect-[5/7] group-hover:scale-105 transition-transform duration-300 mb-3" 
+                        />
+                      ) : (
+                        <div className="w-full bg-slate-800 rounded-xl shadow-lg flex items-center justify-center aspect-[5/7] mb-3">
+                          <div className="text-center">
+                            <svg className="h-12 w-12 mx-auto mb-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-slate-500 text-xs">No Image</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="space-y-1 mb-4">
+                        <p className="text-xs text-slate-400 truncate" title={card.type_line}>{card.type_line}</p>
+                        <p className="text-xs text-slate-500 truncate" title={card.set_name}>📦 {card.set_name}</p>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => handleOpenDeckModal(card)}
+                      className="w-full btn-modern btn-modern-secondary btn-modern-sm group/add"
+                    >
+                      <span className="flex items-center justify-center space-x-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <span>Add to Deck</span>
+                      </span>
+                    </button>
+
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end justify-center p-4">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1 text-white text-xs font-semibold">
+                        Click to view details
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* No Results */}
+        {!isLoading && !error && results.length === 0 && query.trim() && (
+          <div className="glassmorphism-card p-12 text-center border-slate-700/50">
+            <div className="text-slate-400 mb-4">
+              <svg className="h-16 w-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2">No Cards Found</h3>
+            <p className="text-slate-400 mb-6">
+              No cards match your search for "<span className="text-primary-400">{query}</span>". 
+              Try adjusting your search terms or using different filters.
+            </p>
+          </div>
+        )}
+
+        {/* Add to Deck Modal */}
+        {isDeckModalOpen && selectedCardForAdding && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glassmorphism-card p-8 max-w-md w-full border-primary-500/30">
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center space-x-2">
+                <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Add "{selectedCardForAdding.name}"</span>
+              </h3>
+              
+              <div className="space-y-3 max-h-60 overflow-y-auto mb-6">
+                {/* Current Deck Option */}
+                <button 
+                  onClick={() => handleAddCardToDeck('current')}
+                  className="w-full btn-modern btn-modern-primary btn-modern-md text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <span>Current Deck: {currentDeckName || 'Untitled'}</span>
+                  </div>
+                </button>
+
+                {/* Saved Decks */}
+                {savedDecks && savedDecks.length > 0 && (
+                  <>
+                    <div className="border-t border-slate-700/50 pt-3 mt-3">
+                      <p className="text-sm text-slate-400 mb-3">Or add to saved deck:</p>
+                    </div>
+                    {savedDecks.map((deck) => (
+                      <button 
+                        key={deck.id}
+                        onClick={() => handleAddCardToDeck(deck.id)}
+                        className="w-full btn-modern btn-modern-secondary btn-modern-sm text-left"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          <span>{deck.name}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {(!savedDecks || savedDecks.length === 0) && (
+                  <p className="text-xs text-slate-500 text-center py-4">No other saved decks found.</p>
+                )}
+              </div>
+
+              <button 
+                onClick={handleCloseDeckModal}
+                className="w-full btn-modern btn-modern-outline btn-modern-md"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Card Details Modal */}
+        {selectedCardForDetails && (
+          <CardDetailModal 
+            card={selectedCardForDetails} 
+            onClose={handleCloseCardDetailsModal} 
+          />
+        )}
+      </div>
     </div>
   );
 };
