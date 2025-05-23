@@ -7,7 +7,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-logoScheme-brown text-gray-300 flex flex-col">
+    <div className="min-h-screen bg-neutral-100 text-neutral-800 flex flex-col">
       <nav className="bg-logoScheme-darkGray text-logoScheme-gold p-4">
         <div className="container mx-auto flex justify-between items-center">
           <div className="text-xl font-bold">MTG Commander Deck Builder</div>

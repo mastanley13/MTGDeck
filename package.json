@@ -16,6 +16,7 @@
     "chart.js": "^4.4.9",
     "comlink": "^4.4.1",
     "file-saver": "^2.0.5",
+    "mana-font": "^1.18.0",
     "postcss": "^8.4.31",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",

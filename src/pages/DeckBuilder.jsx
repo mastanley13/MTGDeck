@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import CommanderSearch from '../components/search/CommanderSearch.jsx';
 import SearchBar from '../components/search/SearchBar.jsx';
 import SearchResults from '../components/search/SearchResults.jsx';
-import DeckBuilder from '../components/deck/DeckBuilder.jsx';
+import DeckBuilderAI from '../components/deck/DeckBuilder.jsx';
 import DeckStats from '../components/deck/DeckStats.jsx';
 import ValidationResults from '../components/deck/ValidationResults.jsx';
 // import SuggestionPanel from '../components/suggestions/SuggestionPanel.jsx';
@@ -19,7 +19,7 @@ import AlertModal from '../components/ui/AlertModal.jsx';
 import InputModal from '../components/ui/InputModal.jsx';
 import CardDetailModal from '../components/ui/CardDetailModal.jsx';
 
-const DeckBuilderPage = () => {
+const DeckBuilderAIPage = () => {
   const [activeTab, setActiveTab] = useState('deck'); // 'search', 'deck', 'stats'
   const [validationError, setValidationError] = useState(null);
   const [isCommanderSearchModalOpen, setIsCommanderSearchModalOpen] = useState(false);
@@ -297,10 +297,13 @@ const DeckBuilderPage = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="container mx-auto px-4 py-8 text-gray-300">
+      <div className="container mx-auto px-4 py-8 text-neutral-800">
         {/* Button to open Commander Search Modal - replaces inline search */}
         {!commander && (
           <div className="w-full mb-6 text-center p-8 bg-logoScheme-darkGray rounded-lg shadow border border-logoScheme-brown">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-logoScheme-gold opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
             <h2 className="text-xl font-bold mb-2 text-logoScheme-gold">No Commander Selected</h2>
             <p className="text-gray-300 mb-4">
                 Start by selecting your commander to build your deck.
@@ -408,7 +411,7 @@ const DeckBuilderPage = () => {
                   className={`pb-2 pt-1 px-2 md:px-4 md:py-2 font-medium text-xs md:text-sm focus:outline-none transition-colors duration-150 ${
                     activeTab === 'deck'
                       ? 'border-b-2 border-logoScheme-gold text-logoScheme-gold active:bg-logoScheme-brown'
-                      : 'text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400 active:bg-logoScheme-brown'
+                      : 'text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold active:bg-logoScheme-brown'
                   }`}
                 >
                   <div className="md:hidden flex flex-col items-center">
@@ -426,7 +429,7 @@ const DeckBuilderPage = () => {
                   className={`pb-2 pt-1 px-2 md:px-4 md:py-2 font-medium text-xs md:text-sm focus:outline-none transition-colors duration-150 ${
                     activeTab === 'stats'
                       ? 'border-b-2 border-logoScheme-gold text-logoScheme-gold active:bg-logoScheme-brown'
-                      : 'text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400 active:bg-logoScheme-brown'
+                      : 'text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold active:bg-logoScheme-brown'
                   }`}
                 >
                   <div className="md:hidden flex flex-col items-center">
@@ -450,7 +453,7 @@ const DeckBuilderPage = () => {
                       type="text"
                       value={currentDeckName}
                       onChange={(e) => setDeckName(e.target.value)}
-                      className="flex-grow px-4 py-3 rounded-lg text-sm bg-gray-700 border border-gray-500 text-gray-100 focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:border-logoScheme-gold placeholder-gray-400 shadow-sm w-full sm:w-auto"
+                      className="flex-grow px-4 py-3 rounded-lg text-sm bg-slate-100 text-slate-800 border border-slate-300 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:border-logoScheme-gold shadow-sm w-full sm:w-auto"
                       placeholder="Enter Local Deck Name (e.g., Eris Roars)"
                       disabled={deckContextLoading} // Disable input while saving
                     />
@@ -462,7 +465,7 @@ const DeckBuilderPage = () => {
                       {deckContextLoading ? 'Saving...' : 'Save Deck to Cloud'}
                     </button>
                   </div>
-                  <DeckBuilder 
+                  <DeckBuilderAI 
                     deckSaveControls={null} 
                     onViewCardDetails={handleOpenCardDetailModal}
                   />
@@ -490,4 +493,4 @@ const DeckBuilderPage = () => {
   );
 };
 
-export default DeckBuilderPage; 
+export default DeckBuilderAIPage; 

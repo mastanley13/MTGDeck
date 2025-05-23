@@ -89,7 +89,7 @@ const LoginForm = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+        <label htmlFor="email" className="block text-sm font-medium text-slate-700">
           Email address
         </label>
         <div className="mt-1">
@@ -101,14 +101,14 @@ const LoginForm = () => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="appearance-none block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100"
+            className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-slate-100 text-slate-800"
             disabled={loading}
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+        <label htmlFor="password" className="block text-sm font-medium text-slate-700">
           Password
         </label>
         <div className="mt-1">
@@ -120,7 +120,7 @@ const LoginForm = () => {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="appearance-none block w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-gray-700 text-gray-100"
+            className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-logoScheme-gold focus:border-logoScheme-gold sm:text-sm bg-slate-100 text-slate-800"
             disabled={loading}
           />
         </div>
@@ -136,7 +136,7 @@ const LoginForm = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-logoScheme-darkGray bg-logoScheme-gold hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray focus:ring-logoScheme-gold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-logoScheme-gold hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-logoScheme-gold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Signing in...' : 'Sign in'}
         </button>

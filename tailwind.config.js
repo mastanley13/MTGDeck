@@ -1,3 +1,5 @@
+import colors from 'tailwindcss/colors';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -20,8 +22,8 @@ export default {
           land: '#A3C095',  // Lands
         },
         logoScheme: {
-          brown: '#795548',
-          gold: '#FFC107',
+          brown: '#334155',
+          gold: '#0ea5e9',
           darkGray: '#37474F',
           green: '#4CAF50',
           red: '#F44336',

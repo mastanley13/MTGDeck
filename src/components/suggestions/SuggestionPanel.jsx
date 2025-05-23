@@ -176,7 +176,7 @@ const SuggestionPanel = () => {
             className={`w-full py-2 rounded-md text-sm font-medium transition-colors duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray ${
               !commander || isLoading
                 ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                : 'bg-logoScheme-gold hover:bg-yellow-400 text-logoScheme-darkGray focus:ring-logoScheme-gold'
+                : 'bg-blue-500 hover:bg-blue-700 text-white focus:ring-blue-500 shadow-lg hover:shadow-xl ring-1 ring-white ring-opacity-60'
             }`}
           >
             {isLoading ? 'Getting Suggestions...' : `Get ${suggestionCount} AI Suggestions`}

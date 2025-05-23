@@ -29,7 +29,7 @@ const Navbar = () => {
             <div className="flex items-center">
               <Link to="/" className="flex items-center">
                 <img src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/682a1f02bac5a0c4a0465b4f.png" alt="Logo" className="h-8 w-auto mr-3" />
-                <span className="font-bold text-lg text-logoScheme-gold">MTG Commander</span>
+                <span className="font-bold text-lg text-logoScheme-gold">Deck Tutor AI</span>
               </Link>
             </div>
             <div className="text-sm text-gray-300">Loading...</div>
@@ -46,7 +46,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <img src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/682a1f02bac5a0c4a0465b4f.png" alt="Logo" className="h-8 w-auto mr-3" />
-              <span className="font-bold text-lg text-logoScheme-gold">MTG Commander</span>
+              <span className="font-bold text-lg text-logoScheme-gold">Deck Tutor AI</span>
             </Link>
             
             <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
@@ -54,8 +54,8 @@ const Navbar = () => {
                 to="/" 
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                   isActive('/') 
-                    ? 'border-logoScheme-gold text-gray-100' 
-                    : 'border-transparent text-gray-300 hover:border-yellow-400 hover:text-gray-100'
+                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
+                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
                 }`}
               >
                 Home
@@ -64,19 +64,19 @@ const Navbar = () => {
                 to="/builder" 
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                   isActive('/builder') 
-                    ? 'border-logoScheme-gold text-gray-100' 
-                    : 'border-transparent text-gray-300 hover:border-yellow-400 hover:text-gray-100'
+                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
+                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
                 }`}
               >
-                Deck Builder
+                Deck Builder AI
               </Link>
               {isAuthenticated && (
                 <Link 
                   to="/decks" 
                   className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                     isActive('/decks') 
-                      ? 'border-logoScheme-gold text-gray-100' 
-                      : 'border-transparent text-gray-300 hover:border-yellow-400 hover:text-gray-100'
+                      ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
+                      : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
                   }`}
                 >
                   My Decks
@@ -86,21 +86,31 @@ const Navbar = () => {
                 to="/commander-ai" 
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
                   isActive('/commander-ai') 
-                    ? 'border-logoScheme-gold text-gray-100' 
-                    : 'border-transparent text-gray-300 hover:border-yellow-400 hover:text-gray-100'
+                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
+                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
                 }`}
               >
                 Commander AI
               </Link>
               <Link 
-                to="/deck-completion-ai" 
+                to="/tutor-ai" 
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/deck-completion-ai') 
-                    ? 'border-logoScheme-gold text-gray-100' 
-                    : 'border-transparent text-gray-300 hover:border-yellow-400 hover:text-gray-100'
+                  isActive('/tutor-ai') 
+                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
+                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
                 }`}
               >
-                Deck Completion AI
+                Tutor AI
+              </Link>
+              <Link 
+                to="/card-search" 
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  isActive('/card-search') 
+                    ? 'border-logoScheme-gold text-gray-100 bg-logoScheme-brown' 
+                    : 'border-transparent text-gray-300 hover:border-logoScheme-gold hover:text-gray-100'
+                }`}
+              >
+                Card Search
               </Link>
             </div>
           </div>
@@ -203,7 +213,7 @@ const Navbar = () => {
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
                 isActive('/')
                   ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-yellow-400 hover:text-gray-100'
+                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
               }`}
             >
               Home
@@ -214,10 +224,10 @@ const Navbar = () => {
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
                 isActive('/builder')
                   ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-yellow-400 hover:text-gray-100'
+                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
               }`}
             >
-              Deck Builder
+              Deck Builder AI
             </Link>
             {isAuthenticated && (
               <Link
@@ -226,7 +236,7 @@ const Navbar = () => {
                 className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
                   isActive('/decks')
                     ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                    : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-yellow-400 hover:text-gray-100'
+                    : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
                 }`}
               >
                 My Decks
@@ -238,21 +248,32 @@ const Navbar = () => {
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
                 isActive('/commander-ai')
                   ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-yellow-400 hover:text-gray-100'
+                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
               }`}
             >
               Commander AI
             </Link>
             <Link
-              to="/deck-completion-ai"
+              to="/tutor-ai"
               onClick={() => setIsMenuOpen(false)}
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/deck-completion-ai')
+                isActive('/tutor-ai')
                   ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
-                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-yellow-400 hover:text-gray-100'
+                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
               }`}
             >
-              Deck Completion AI
+              Tutor AI
+            </Link>
+            <Link
+              to="/card-search"
+              onClick={() => setIsMenuOpen(false)}
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                isActive('/card-search')
+                  ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
+                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
+              }`}
+            >
+              Card Search
             </Link>
             <div className="mt-4 pt-4 border-t border-logoScheme-brown">
               {isAuthenticated ? (

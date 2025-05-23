@@ -362,8 +362,8 @@ const CommanderAiPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-700 py-12 px-4 text-slate-200 flex flex-col items-center">
-      <div className="w-full max-w-3xl mx-auto bg-slate-700 border-2 border-logoScheme-gold rounded-xl p-6 md:p-8 shadow-2xl">
+    <div className="min-h-screen bg-neutral-100 py-12 px-4 text-neutral-800 flex flex-col items-center">
+      <div className="w-full max-w-3xl mx-auto bg-logoScheme-darkGray border-2 border-logoScheme-gold rounded-xl p-6 md:p-8 shadow-2xl">
         
         <div className="flex justify-between items-center mb-3">
           <h1 className="text-3xl font-bold text-logoScheme-gold">
@@ -442,7 +442,7 @@ const CommanderAiPage = () => {
           <button
             type="submit"
             disabled={isLoading || !preferences.trim() || !OPENAI_API_KEY}
-            className="w-full bg-logoScheme-gold hover:bg-yellow-500 text-slate-800 font-bold py-3 px-4 rounded-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:ring-offset-2 focus:ring-offset-slate-700"
+            className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-700 ring-1 ring-white ring-opacity-50"
           >
             {isLoading ? 'Thinking...' : 'Get Suggestions'}
           </button>
@@ -508,7 +508,7 @@ const CommanderAiPage = () => {
                           e.stopPropagation();
                           handleSaveNewDeckFromAI(commander);
                         }}
-                        className="w-full sm:w-auto flex-grow text-sm bg-logoScheme-blue hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-logoScheme-blue focus:ring-offset-2 focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full sm:w-auto flex-grow text-sm bg-logoScheme-gold hover:bg-sky-600 text-white font-semibold py-2 px-3 rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:ring-offset-2 focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={deckContextLoading || !isAuthenticated}
                       >
                         {deckContextLoading ? 'Saving...' : 'Save as New Deck'}

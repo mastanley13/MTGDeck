@@ -34,7 +34,7 @@ body {
 
 /* Button styles */
 .btn-primary {
-  @apply px-4 py-2 bg-logoScheme-gold text-logoScheme-darkGray rounded-md shadow-sm hover:bg-yellow-400 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-gold;
+  @apply bg-blue-500 hover:bg-blue-700 text-white font-bold px-4 py-3 rounded-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ring-1 ring-white ring-opacity-50 disabled:opacity-60 disabled:cursor-not-allowed;
 }
 
 .btn-secondary {
@@ -46,7 +46,7 @@ body {
 }
 
 .btn-outline {
-  @apply px-4 py-2 border border-logoScheme-gold text-logoScheme-gold rounded-md shadow-sm hover:bg-logoScheme-gold hover:text-logoScheme-darkGray transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-logoScheme-gold;
+  @apply border border-blue-500 hover:bg-blue-500 text-blue-500 hover:text-white font-bold px-4 py-3 rounded-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ring-1 ring-white ring-opacity-50 disabled:opacity-60 disabled:cursor-not-allowed;
 }
 
 /* Card styling */
@@ -147,7 +147,7 @@ body {
 
 /* Commander showcase */
 .commander-showcase {
-  @apply bg-gradient-to-r from-logoScheme-brown to-logoScheme-darkGray rounded-xl p-4 shadow-md;
+  @apply bg-gradient-to-r from-logoScheme-brown to-sky-700 rounded-xl p-4 shadow-md;
   background-size: 400% 400%;
   animation: gradient 5s ease infinite;
 }

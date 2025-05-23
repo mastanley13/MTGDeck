@@ -6,61 +6,32 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import CardDetailModal from '../ui/CardDetailModal.jsx';
 import ManaSymbol from '../ui/ManaSymbol.jsx';
 import useAICommanderSummary from '../../hooks/useAICommanderSummary.js';
+import { parseManaSymbols } from '../../utils/manaSymbols';
 
 // Helper function to parse Oracle text, style mana symbols, and italicize reminder text
-const parseOracleText = (text) => {
+const parseOracleTextWithReminders = (text) => {
   if (!text) return [];
 
   const paragraphs = text.split('\n');
   
   return paragraphs.map((paragraph, pIndex) => {
-    // First, split by mana symbols to preserve them
-    const partsWithManaSymbols = paragraph.split(/(\{[^}]+\})/g);
+    // Split by mana symbols AND reminder text, keeping delimiters
+    const parts = paragraph.split(/(\{[^}]+\}|\([^)]+\))/g);
 
     return (
       <p key={pIndex} className="mb-2 last:mb-0">
-        {partsWithManaSymbols.map((part, partIndex) => {
+        {parts.map((part, partIndex) => {
+          if (!part) return null; // Skip empty strings from split
+
           if (part.startsWith('{') && part.endsWith('}')) {
-            // Handle Mana Symbols (as before)
-            const symbol = part.substring(1, part.length - 1).toUpperCase();
-            let bgColor = 'bg-gray-400'; // Updated default
-            let textColor = 'text-black';
-            let symbolText = symbol;
-            // Mana symbol styling switch (condensed for brevity, same as before)
-            switch (symbol) {
-                case 'W': bgColor = 'bg-mtg-white'; symbolText = 'W'; textColor = 'text-black'; break;
-                case 'U': bgColor = 'bg-mtg-blue'; symbolText = 'U'; textColor = 'text-white'; break;
-                case 'B': bgColor = 'bg-mtg-black'; textColor = 'text-white'; symbolText = 'B'; break;
-                case 'R': bgColor = 'bg-mtg-red'; textColor = 'text-white'; symbolText = 'R'; break;
-                case 'G': bgColor = 'bg-mtg-green'; textColor = 'text-white'; symbolText = 'G'; break;
-                case 'C': bgColor = 'bg-mtg-colorless'; symbolText = 'C'; textColor = 'text-black'; break;
-                case 'X': bgColor = 'bg-purple-400'; symbolText = 'X'; textColor = 'text-white'; break;
-                case 'T': bgColor = 'bg-orange-400'; symbolText = 'T'; textColor = 'text-white'; break;
-                default: if (!isNaN(symbol)) { bgColor = 'bg-gray-400'; } else { bgColor = 'bg-gray-400'; } break; // Keep textColor black for numbers
-            }
-            return (
-              <span 
-                key={`${pIndex}-mana-${partIndex}`} 
-                className={`inline-flex items-center justify-center w-5 h-5 ${bgColor} ${textColor} rounded-full text-xs font-mono mx-0.5 shadow-sm border border-gray-500/50 align-middle`}
-                title={part}
-              >
-                {symbolText}
-              </span>
-            );
+            // It's a mana symbol, use the global parser
+            return parseManaSymbols(part); 
+          } else if (part.startsWith('(') && part.endsWith(')')) {
+            // It's reminder text
+            return <em key={`${pIndex}-reminder-${partIndex}`} className="italic text-gray-400 opacity-90 px-px">{part}</em>;
           } else {
-            // For non-mana symbol parts, split by and italicize reminder text
-            const textSegments = part.split(/(\([^)]+\))/g); // Split by parenthesized text, keeping delimiters
-            return textSegments.map((segment, segIndex) => {
-              if (segment && segment.startsWith('(') && segment.endsWith(')')) {
-                // Apply italic styling for reminder text, slightly muted
-                return <em key={`${pIndex}-reminder-${partIndex}-${segIndex}`} className="italic text-gray-400 opacity-90 px-px">{segment}</em>;
-              }
-              // Filter out empty strings that can result from splitting if the part itself was just a parenthesized segment
-              if (segment) { 
-                return <span key={`${pIndex}-text-${partIndex}-${segIndex}`}>{segment}</span>;
-              }
-              return null;
-            });
+            // Regular text
+            return <span key={`${pIndex}-text-${partIndex}`}>{part}</span>;
           }
         })}
       </p>
@@ -109,7 +80,7 @@ const parseManaCostString = (costString) => {
   return symbols;
 };
 
-const DeckBuilder = ({ deckSaveControls, onViewCardDetails }) => {
+const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
   const { 
     commander, 
     cards, 
@@ -149,7 +120,7 @@ const DeckBuilder = ({ deckSaveControls, onViewCardDetails }) => {
   }
   
   const commanderLegality = commander.legalities?.commander;
-  const commanderManaCostSymbols = parseManaCostString(commander.mana_cost);
+  const manaCostForDisplay = commander.mana_cost ? commander.mana_cost.match(/\{([^}]+)\}/g) || [] : [];
   
   return (
     <DndProvider backend={HTML5Backend}>
@@ -158,7 +129,7 @@ const DeckBuilder = ({ deckSaveControls, onViewCardDetails }) => {
         {commander && deckSaveControls}
 
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-logoScheme-gold">Deck Builder</h1>
+          <h1 className="text-2xl font-bold text-logoScheme-gold">Deck Builder AI</h1>
           <div className="text-gray-400">
             {totalCardCount} / 100 cards
           </div>
@@ -224,9 +195,9 @@ const DeckBuilder = ({ deckSaveControls, onViewCardDetails }) => {
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-1">
                     <h4 className="text-2xl lg:text-3xl font-bold text-logoScheme-gold mb-1 sm:mb-0 order-1 sm:order-none">{commander.name}</h4>
                     {/* Mana Cost using ManaSymbol */}
-                    {commanderManaCostSymbols.length > 0 && (
+                    {manaCostForDisplay.length > 0 && (
                       <div className="flex items-center order-2 sm:order-none sm:ml-4">
-                        {commanderManaCostSymbols.map((symbol, index) => (
+                        {manaCostForDisplay.map((symbol, index) => (
                           <ManaSymbol key={index} symbol={symbol} size="lg" />
                         ))}
                       </div>
@@ -238,7 +209,8 @@ const DeckBuilder = ({ deckSaveControls, onViewCardDetails }) => {
                   <div className="flex items-center mb-2 order-3 sm:order-none">
                     <span className="text-xs text-gray-400 mr-1.5">Colors:</span>
                     {commander.color_identity.map(color => (
-                      <ManaSymbol key={color} symbol={color} size="sm" />
+                      // Assuming color is like 'W', 'U'. ManaSymbol expects format like {W}
+                      <ManaSymbol key={color} symbol={`{${color}}`} size="sm" />
                     ))}
                   </div>
                 )}
@@ -256,7 +228,7 @@ const DeckBuilder = ({ deckSaveControls, onViewCardDetails }) => {
 
                 {commander.oracle_text && (
                   <div className="bg-gray-700/50 p-3 rounded-md mb-3 max-h-32 md:max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-750 border border-gray-600/50 text-xs leading-relaxed order-6 sm:order-none">
-                    {parseOracleText(commander.oracle_text)}
+                    {parseOracleTextWithReminders(commander.oracle_text)}
                   </div>
                 )}
 
@@ -357,4 +329,4 @@ const DeckBuilder = ({ deckSaveControls, onViewCardDetails }) => {
   );
 };
 
-export default DeckBuilder; 
+export default DeckBuilderAI; 

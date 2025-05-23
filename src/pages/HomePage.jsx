@@ -18,7 +18,7 @@ const HomePage = () => {
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link 
               to="/builder" 
-              className="btn-primary px-8 py-4 shadow-lg hover:shadow-xl transform hover:-translate-y-1 duration-200"
+              className="btn-primary px-10 py-5 text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 duration-200"
             >
               Start Building
             </Link>
@@ -40,38 +40,32 @@ const HomePage = () => {
         
         <div className="grid md:grid-cols-3 gap-8">
           <div className="bg-white rounded-xl shadow-card p-6 transform transition duration-300 hover:shadow-card-hover hover:-translate-y-1">
-            <div className="h-14 w-14 rounded-lg bg-logoScheme-brown flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-7 h-7 text-logoScheme-gold">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-              </svg>
+            <div className="h-14 w-14 rounded-lg bg-logoScheme-gold flex items-center justify-center mb-4">
+              <img src="/images/cards.png" alt="Deck Builder AI Icon" className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold text-logoScheme-darkGray mb-2">Comprehensive Search</h3>
+            <h3 className="text-xl font-bold text-logoScheme-darkGray mb-2">Deck Builder AI</h3>
             <p className="text-gray-700">
-              Access the entire Scryfall database, with powerful filtering tools to find exactly what your deck needs.
+              Leverage AI to intelligently construct and refine your decks, drawing from the comprehensive Scryfall database with advanced filtering.
             </p>
           </div>
           
           <div className="bg-white rounded-xl shadow-card p-6 transform transition duration-300 hover:shadow-card-hover hover:-translate-y-1">
-            <div className="h-14 w-14 rounded-lg bg-logoScheme-brown flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-7 h-7 text-logoScheme-gold">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-              </svg>
+            <div className="h-14 w-14 rounded-lg bg-logoScheme-gold flex items-center justify-center mb-4">
+              <img src="/images/Flashicon.png" alt="Commander AI Icon" className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold text-logoScheme-darkGray mb-2">AI Recommendations</h3>
+            <h3 className="text-xl font-bold text-logoScheme-darkGray mb-2">Commander AI</h3>
             <p className="text-gray-700">
-              Get intelligent card suggestions based on your commander and existing deck composition.
+              Receive AI-driven insights and card recommendations tailored specifically to your chosen commander and overall deck strategy.
             </p>
           </div>
           
           <div className="bg-white rounded-xl shadow-card p-6 transform transition duration-300 hover:shadow-card-hover hover:-translate-y-1">
-            <div className="h-14 w-14 rounded-lg bg-logoScheme-brown flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-7 h-7 text-logoScheme-gold">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-              </svg>
+            <div className="h-14 w-14 rounded-lg bg-logoScheme-gold flex items-center justify-center mb-4">
+              <img src="/images/aitutoricon.png" alt="Tutor AI Icon" className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-bold text-logoScheme-darkGray mb-2">Deck Analytics</h3>
+            <h3 className="text-xl font-bold text-logoScheme-darkGray mb-2">Tutor AI</h3>
             <p className="text-gray-700">
-              Visualize your deck's mana curve, color distribution, and card type breakdown to ensure a balanced strategy.
+              Utilize AI-powered tutoring to efficiently search and discover the perfect cards from your deck or the vast card library to complete your combos or answer threats.
             </p>
           </div>
         </div>
@@ -80,12 +74,12 @@ const HomePage = () => {
       {/* Color Identity Section */}
       <div className="max-w-7xl mx-auto bg-logoScheme-darkGray rounded-xl p-6 lg:p-10 shadow-sm mb-20 border border-logoScheme-gold">
         <h2 className="text-2xl font-bold text-center mb-6 text-logoScheme-gold">Build Decks for Any Color Identity</h2>
-        <div className="flex flex-wrap justify-center gap-6">
-          <div className="color-badge white w-14 h-14 hover:scale-110 transition-transform cursor-pointer"></div>
-          <div className="color-badge blue w-14 h-14 hover:scale-110 transition-transform cursor-pointer"></div>
-          <div className="color-badge black w-14 h-14 hover:scale-110 transition-transform cursor-pointer"></div>
-          <div className="color-badge red w-14 h-14 hover:scale-110 transition-transform cursor-pointer"></div>
-          <div className="color-badge green w-14 h-14 hover:scale-110 transition-transform cursor-pointer"></div>
+        <div className="flex flex-wrap justify-center gap-6 text-5xl">
+          <i className="ms ms-w ms-cost hover:scale-110 transition-transform cursor-pointer"></i>
+          <i className="ms ms-u ms-cost hover:scale-110 transition-transform cursor-pointer"></i>
+          <i className="ms ms-b ms-cost hover:scale-110 transition-transform cursor-pointer"></i>
+          <i className="ms ms-r ms-cost hover:scale-110 transition-transform cursor-pointer"></i>
+          <i className="ms ms-g ms-cost hover:scale-110 transition-transform cursor-pointer"></i>
         </div>
       </div>
       

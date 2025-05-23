@@ -102,46 +102,71 @@ const DeckViewer = () => {
       case 'cards':
         return (
           <div className="mt-6">
-            <h3 className="text-2xl font-bold mb-4 text-logoScheme-gold">Cards ({selectedDeck.cards.length})</h3>
+            <h3 className="text-2xl font-bold mb-4 text-logoScheme-gold">Cards ({selectedDeck.cards.length + (selectedDeck.commander ? 1 : 0)})</h3>
             
-            {/* Group cards by type and show them */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {/* Display Commander First if it exists */} 
+              {selectedDeck.commander && (() => {
+                const commander = selectedDeck.commander;
+                const imageUris = getCardImageUris(commander);
+                // Intense yellow/gold glow effect
+                const gameChangerEffectClass = commander.game_changer 
+                  ? 'ring-3 ring-yellow-400/90 shadow-[0_0_25px_7px_rgba(251,191,36,0.7)] ring-offset-2 ring-offset-gray-800' 
+                  : '';
+                return (
+                  <div
+                    key={commander.id + "-commander"} 
+                    className={`bg-gray-800 p-2 rounded-lg border border-yellow-500 hover:border-yellow-300 transition-all shadow-lg cursor-pointer relative ${gameChangerEffectClass}`}
+                    onClick={() => handleOpenCardDetailModal(commander)}
+                    title={`${commander.name} (Commander)`}
+                  >
+                    {imageUris ? (
+                      <img
+                        src={imageUris.small}
+                        alt={commander.name}
+                        className="rounded-md shadow-sm w-full block object-cover aspect-[63/88]"
+                      />
+                    ) : (
+                      <div className="bg-gray-700 rounded-md shadow-sm w-full aspect-[63/88] flex items-center justify-center p-1">
+                        <span className="text-gray-200 text-center text-xs">{commander.name}</span>
+                      </div>
+                    )}
+                    <div className="mt-1.5 flex justify-between items-center">
+                      <span className="text-xs text-yellow-400 truncate mr-1 font-semibold" title={commander.name}>{commander.name}</span>
+                      <span className="text-xs text-yellow-200 font-bold flex-shrink-0">Cmdr</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {selectedDeck.cards.map(card => {
                 const imageUris = getCardImageUris(card);
-                // Add a conditional class for game changers
-                const cardItemClasses = [
-                  "card-item",
-                  "cursor-pointer",
-                  "relative", // Needed for potential future badges/icons positioned absolutely
-                  card.game_changer ? `ring-4 ring-logoScheme-gold ring-offset-2 ring-offset-logoScheme-darkGray rounded-lg` : ""
-                ].join(" ").trim();
+                // Intense yellow/gold glow effect
+                const gameChangerEffectClass = card.game_changer 
+                  ? 'ring-3 ring-yellow-400/90 shadow-[0_0_25px_7px_rgba(251,191,36,0.7)] ring-offset-2 ring-offset-gray-800' 
+                  : '';
 
                 return (
                   <div 
-                    key={card.id} 
-                    className={cardItemClasses} // Updated className
+                    key={card.id}
+                    className={`bg-gray-800 p-2 rounded-lg border border-gray-700 hover:border-logoScheme-gold transition-all shadow-md cursor-pointer relative ${gameChangerEffectClass}`}
                     onClick={() => handleOpenCardDetailModal(card)}
+                    title={card.name}
                   >
                     {imageUris ? (
                       <img
                         src={imageUris.small}
                         alt={card.name}
-                        className="rounded-lg shadow-md w-full block" // Ensure image is a block and rounded
+                        className="rounded-md shadow-sm w-full block object-cover aspect-[63/88]"
                       />
                     ) : (
-                      <div className="bg-gray-700 rounded-lg shadow-md w-full aspect-[63/88] flex items-center justify-center p-2">
-                        <span className="text-gray-200">{card.name}</span>
+                      <div className="bg-gray-700 rounded-md shadow-sm w-full aspect-[63/88] flex items-center justify-center p-1">
+                        <span className="text-gray-200 text-center text-xs">{card.name}</span>
                       </div>
                     )}
-                    {/* Optional: Add a specific badge/icon for game_changer here if preferred over border */}
-                    {/* Example badge:
-                    {card.game_changer && (
-                      <span className="absolute top-1 right-1 bg-yellow-400 text-black text-xs font-bold px-1.5 py-0.5 rounded-full shadow-md">GC</span>
-                    )}
-                    */}
-                    <div className="mt-1 flex justify-between text-gray-300">
-                      <div className="text-xs truncate">{card.name}</div>
-                      <div className="text-xs font-bold">{card.quantity || 1}x</div>
+                    <div className="mt-1.5 flex justify-between items-center">
+                      <span className="text-xs text-gray-300 truncate mr-1" title={card.name}>{card.name}</span>
+                      <span className="text-xs text-gray-100 font-semibold flex-shrink-0">{card.quantity || 1}x</span>
                     </div>
                   </div>
                 );
@@ -161,7 +186,7 @@ const DeckViewer = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 text-gray-300">
+    <div className="container mx-auto px-4 py-8 text-neutral-800">
       <h1 className="text-3xl font-bold mb-6 text-logoScheme-gold">Your Decks</h1>
       
       {deckId ? (
@@ -198,25 +223,25 @@ const DeckViewer = () => {
             <div className="border-b border-logoScheme-brown mb-6">
               <nav className="flex space-x-8">
                 <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'cards' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400'}`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'cards' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold'}`}
                   onClick={() => setActiveTab('cards')}
                 >
                   Cards
                 </button>
                 <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'analytics' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400'}`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'analytics' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold'}`}
                   onClick={() => setActiveTab('analytics')}
                 >
                   Analytics
                 </button>
                 <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'export' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400'}`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'export' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold'}`}
                   onClick={() => setActiveTab('export')}
                 >
                   Export
                 </button>
                 <button 
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'share' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-yellow-400'}`}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'share' ? 'border-logoScheme-gold text-logoScheme-gold' : 'border-transparent text-gray-400 hover:text-logoScheme-gold hover:border-logoScheme-gold'}`}
                   onClick={() => setActiveTab('share')}
                 >
                   Share

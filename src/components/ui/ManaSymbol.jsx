@@ -3,89 +3,74 @@ import React from 'react';
 const ManaSymbol = ({ symbol, size = 'md' }) => {
   if (!symbol) return null;
 
-  const getSymbolDetails = (s) => {
-    s = s.toUpperCase();
-    let text = s;
-    let bgColor = 'bg-gray-400';
-    let textColor = 'text-black';
-    let isPhyrexian = false;
-    let isHybrid = false;
-    let parts = [];
+  let symbolKey = symbol.replace(/[{}]/g, '').toLowerCase(); // Normalize: remove braces, lowercase
+  let iconClass = '';
 
-    if (s.includes('/P')) {
-      isPhyrexian = true;
-      s = s.replace('/P', '');
-      text = s; // Display the color, Phyrexian aspect handled by icon/style
-    }
-
-    if (s.includes('/')) { // Hybrid mana like {W/U} or {2/B}
-      isHybrid = true;
-      parts = s.split('/').map(p => getSymbolDetails(p)); // Recursive call for each part
-      // For hybrid, we might not set a single bgColor/textColor at this level
-    } else {
-      switch (s) {
-        case 'W': bgColor = 'bg-mtg-white'; text = 'W'; textColor = 'text-black'; break;
-        case 'U': bgColor = 'bg-mtg-blue'; text = 'U'; textColor = 'text-white'; break;
-        case 'B': bgColor = 'bg-mtg-black'; text = 'B'; textColor = 'text-white'; break;
-        case 'R': bgColor = 'bg-mtg-red'; text = 'R'; textColor = 'text-white'; break;
-        case 'G': bgColor = 'bg-mtg-green'; text = 'G'; textColor = 'text-white'; break;
-        case 'C': bgColor = 'bg-mtg-colorless'; text = 'C'; textColor = 'text-black'; break;
-        case 'X': bgColor = 'bg-purple-500'; text = 'X'; textColor = 'text-white'; break;
-        case 'Y': bgColor = 'bg-purple-500'; text = 'Y'; textColor = 'text-white'; break;
-        case 'Z': bgColor = 'bg-purple-500'; text = 'Z'; textColor = 'text-white'; break;
-        case 'T': bgColor = 'bg-orange-400'; text = 'Tap'; textColor = 'text-white'; break; // Represent Tap symbol
-        case 'Q': bgColor = 'bg-blue-300'; text = 'Untap'; textColor = 'text-black'; break; // Represent Untap symbol
-        case 'S': bgColor = 'bg-yellow-300'; text = 'Snow'; textColor = 'text-black'; break; // Snow mana
-        default:
-          if (!isNaN(parseInt(s))) { // Numeric mana
-            bgColor = 'bg-gray-400';
-            text = s;
-            textColor = 'text-black';
-          } else {
-            // Fallback for unknown symbols, maybe an error or specific style
-            bgColor = 'bg-pink-500'; text = '?'; textColor = 'text-white';
-          }
-          break;
+  // Determine the correct ms- class
+  // This mapping should align with your manaSymbols.tsx or be expanded here
+  switch (symbolKey) {
+    case 'w': iconClass = 'ms-w'; break;
+    case 'u': iconClass = 'ms-u'; break;
+    case 'b': iconClass = 'ms-b'; break;
+    case 'r': iconClass = 'ms-r'; break;
+    case 'g': iconClass = 'ms-g'; break;
+    case 'c': iconClass = 'ms-c'; break;
+    case 'x': iconClass = 'ms-x'; break;
+    case 'y': iconClass = 'ms-y'; break;
+    case 'z': iconClass = 'ms-z'; break;
+    case 't': iconClass = 'ms-tap'; break;
+    case 'q': iconClass = 'ms-untap'; break; // Assuming Q is untap
+    case 's': iconClass = 'ms-s'; break; // Snow
+    case 'e': iconClass = 'ms-e'; break; // Energy
+    // Phyrexian Mana (e.g., {wp}, {up})
+    case 'wp': iconClass = 'ms-wp'; break;
+    case 'up': iconClass = 'ms-up'; break;
+    case 'bp': iconClass = 'ms-bp'; break;
+    case 'rp': iconClass = 'ms-rp'; break;
+    case 'gp': iconClass = 'ms-gp'; break;
+    // Hybrid Mana (e.g., {wu}, {ub})
+    // Add all 10 two-color pairs
+    case 'wu': case 'uw': iconClass = 'ms-wu'; break;
+    case 'wb': case 'bw': iconClass = 'ms-wb'; break;
+    case 'ub': case 'bu': iconClass = 'ms-ub'; break;
+    case 'ur': case 'ru': iconClass = 'ms-ur'; break;
+    case 'br': case 'rb': iconClass = 'ms-br'; break;
+    case 'bg': case 'gb': iconClass = 'ms-bg'; break;
+    case 'rg': case 'gr': iconClass = 'ms-rg'; break;
+    case 'rw': case 'wr': iconClass = 'ms-rw'; break;
+    case 'gw': case 'wg': iconClass = 'ms-gw'; break;
+    case 'gu': case 'ug': iconClass = 'ms-gu'; break;
+    // Hybrid Colorless/Color (e.g., {2w}, {2u})
+    case '2w': iconClass = 'ms-2w'; break;
+    case '2u': iconClass = 'ms-2u'; break;
+    case '2b': iconClass = 'ms-2b'; break;
+    case '2r': iconClass = 'ms-2r'; break;
+    case '2g': iconClass = 'ms-2g'; break;
+    default:
+      // Numeric mana
+      const num = parseInt(symbolKey, 10);
+      if (!isNaN(num) && num >= 0 && num <= 20) { // mana-font supports 0-20, X, Y, Z
+        iconClass = `ms-${num}`;
+      } else {
+        // Fallback for unknown symbols or unhandled hybrid (e.g. tri-color)
+        // Render the text directly or a placeholder
+        return <span className="mx-0.5" title={symbol}>{symbolKey}</span>;
       }
-    }
-    return { text, bgColor, textColor, isPhyrexian, isHybrid, parts, originalSymbol: s };
-  };
-
-  const details = getSymbolDetails(symbol.replace(/[{}]/g, '')); // Remove curly braces
-
-  const sizeClasses = {
-    sm: 'w-4 h-4 text-xs',
-    md: 'w-5 h-5 text-sm',
-    lg: 'w-6 h-6 text-base',
-  };
-
-  if (details.isHybrid) {
-    // Render hybrid symbols side-by-side with a slash or specific styling
-    // This is a simplified representation; true hybrid symbols have diagonal splits
-    return (
-      <span className={`inline-flex items-center justify-center rounded-full shadow-sm border border-gray-500/70 overflow-hidden ${sizeClasses[size]} align-middle mx-0.5`}>
-        {details.parts.map((part, index) => (
-          <span 
-            key={index} 
-            className={`flex-1 h-full flex items-center justify-center ${part.bgColor} ${part.textColor} ${index > 0 ? 'border-l border-gray-500/50' : ''}`}
-            title={part.originalSymbol}
-          >
-            {part.text}
-            {part.isPhyrexian && <span className="ml-0.5 text-xs">φ</span>} {/* Simple Phyrexian indicator */}
-          </span>
-        ))}
-      </span>
-    );
+      break;
   }
 
+  const sizeClasses = {
+    sm: 'text-sm', // approx 1em
+    md: 'text-base', // approx 1.15em
+    lg: 'text-lg', // approx 1.3em
+    xl: 'text-xl', // approx 1.5em
+  };
+
   return (
-    <span 
-      className={`inline-flex items-center justify-center rounded-full shadow-sm border border-gray-500/70 ${details.bgColor} ${details.textColor} ${sizeClasses[size]} align-middle mx-0.5`}
+    <i 
+      className={`ms ${iconClass} ms-cost ${sizeClasses[size] || 'text-base'} align-middle mx-px`}
       title={symbol}
-    >
-      {details.text}
-      {details.isPhyrexian && <span className="ml-0.5 text-xs">φ</span>} {/* Simple Phyrexian indicator */}
-    </span>
+    />
   );
 };
 

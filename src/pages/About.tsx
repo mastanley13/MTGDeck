@@ -2,7 +2,7 @@ import React from 'react';
 
 const About: React.FC = () => {
   return (
-    <div className="container mx-auto p-4 text-gray-300">
+    <div className="container mx-auto p-4 text-neutral-800">
       <h1 className="text-3xl font-bold mb-6 text-logoScheme-gold">About MTG Commander Deck Builder</h1>
       
       <div className="bg-logoScheme-darkGray p-6 rounded-lg shadow-md mb-8">
@@ -64,8 +64,8 @@ const About: React.FC = () => {
           MTG Commander Deck Builder is powered by the following technologies and data sources:
         </p>
         <ul className="list-disc pl-6 space-y-2">
-          <li>Card data provided by <a href="https://scryfall.com/docs/api" className="text-logoScheme-blue hover:text-blue-400 underline">Scryfall API</a></li>
-          <li>AI suggestions powered by <a href="https://openai.com" className="text-logoScheme-blue hover:text-blue-400 underline">OpenAI</a></li>
+          <li>Card data provided by <a href="https://scryfall.com/docs/api" className="text-logoScheme-gold hover:text-sky-700 underline">Scryfall API</a></li>
+          <li>AI suggestions powered by <a href="https://openai.com" className="text-logoScheme-gold hover:text-sky-700 underline">OpenAI</a></li>
           <li>Built with React, TailwindCSS, and Node.js</li>
         </ul>
         <p className="mt-4 text-sm text-gray-400">

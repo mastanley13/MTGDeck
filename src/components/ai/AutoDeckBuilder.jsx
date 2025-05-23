@@ -114,11 +114,7 @@ const AutoDeckBuilder = () => {
           <button
             onClick={handleBuildDeck}
             disabled={!commander || isLoading}
-            className={`w-full py-3.5 px-6 rounded-lg text-base font-semibold flex items-center justify-center transition-all duration-150 ease-in-out shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray ${
-              !commander || isLoading
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                : 'bg-logoScheme-gold hover:bg-yellow-400 text-logoScheme-darkGray focus:ring-logoScheme-gold'
-            }`}
+            className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray ring-1 ring-white ring-opacity-50 flex items-center justify-center text-base transform hover:scale-105 disabled:bg-gray-600 disabled:text-gray-400"
           >
             {isLoading ? (
               <>
