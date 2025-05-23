@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { getPaymentUrl, initiatePremiumCheckout } from '../../utils/stripeIntegration';
 
 // Placeholder - replace with the same ID used in UserProfilePage.jsx
 const PROFILE_PIC_CUSTOM_FIELD_ID = "hPIWnTEsvK1pVbATGLS5";
@@ -21,6 +22,24 @@ const Navbar = () => {
     logout();
     setIsMenuOpen(false);
     navigate('/');
+  };
+
+  const handleQuickUpgrade = async () => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await initiatePremiumCheckout(
+        currentUser.id,
+        currentUser.email,
+        currentUser.id
+      );
+    } catch (error) {
+      console.error('Error starting checkout:', error);
+      navigate('/subscription');
+    }
   };
 
   if (loadingAuth) {
@@ -140,6 +159,16 @@ const Navbar = () => {
               )}
             </Link>
 
+            {/* Upgrade button for free users */}
+            {!isPremium && isAuthenticated && (
+              <button
+                onClick={handleQuickUpgrade}
+                className="mr-4 inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-md hover:opacity-90 transition-opacity"
+              >
+                ⚡ Upgrade $3.99
+              </button>
+            )}
+
             {isAuthenticated ? (
               <>
                 {currentUser && <span className="text-sm text-gray-200 mr-4">Welcome, {currentUser.firstName || currentUser.email}!</span>}
@@ -243,6 +272,21 @@ const Navbar = () => {
             >
               {isPremium ? '⭐ Premium Plan' : '🆓 Free Plan'}
             </Link>
+
+            {/* Upgrade options for free users in mobile menu */}
+            {!isPremium && isAuthenticated && (
+              <div className="px-3 py-2">
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    handleQuickUpgrade();
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  ⚡ Upgrade to Premium - $3.99/month
+                </button>
+              </div>
+            )}
             
             <Link
               to="/"

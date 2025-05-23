@@ -1,6 +1,8 @@
 import React from 'react';
 import { useSubscription, SUBSCRIPTION_LIMITS } from '../context/SubscriptionContext';
+import { useAuth } from '../context/AuthContext';
 import UsageDashboard from '../components/paywall/UsageDashboard';
+import { initiatePremiumCheckout, createCustomerPortalSession, isStripeConfigured, getPaymentUrl } from '../utils/stripeIntegration';
 
 const SubscriptionPage = () => {
   const { 
@@ -10,20 +12,47 @@ const SubscriptionPage = () => {
     limits, 
     getDaysUntilWeeklyReset 
   } = useSubscription();
-
+  
+  const { currentUser } = useAuth();
   const daysUntilReset = getDaysUntilWeeklyReset;
 
-  // Placeholder function for Stripe integration
-  const handleUpgradeClick = () => {
-    // TODO: Integrate with Stripe checkout
-    console.log('Stripe integration coming soon');
-    alert('Payment integration coming soon! Please check back later.');
+  // Handle upgrade to premium
+  const handleUpgradeClick = async () => {
+    if (!currentUser) {
+      alert('Please log in to upgrade your subscription.');
+      return;
+    }
+
+    try {
+      await initiatePremiumCheckout(
+        currentUser.id, // GoHighLevel contact ID
+        currentUser.email, // User's email
+        currentUser.id // User ID for metadata
+      );
+    } catch (error) {
+      console.error('Error starting checkout:', error);
+      alert('Unable to start checkout process. Please try again or contact support.');
+    }
   };
 
-  const handleManageSubscription = () => {
-    // TODO: Integrate with Stripe customer portal
-    console.log('Stripe customer portal coming soon');
-    alert('Subscription management coming soon! Please contact support for now.');
+  // Handle subscription management
+  const handleManageSubscription = async () => {
+    if (!currentUser) {
+      alert('Please log in to manage your subscription.');
+      return;
+    }
+
+    try {
+      await createCustomerPortalSession();
+    } catch (error) {
+      console.error('Error opening customer portal:', error);
+      alert('Unable to open subscription management. Please contact support.');
+    }
+  };
+
+  // Handle refresh subscription status
+  const handleRefreshStatus = () => {
+    window.location.reload();
   };
 
   const PlanCard = ({ planType, planData, isCurrentPlan }) => (
@@ -150,6 +179,103 @@ const SubscriptionPage = () => {
         </p>
       </div>
 
+      {/* Upgrade CTA for Free Users */}
+      {!isPremium && (
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl p-8 text-center">
+          <h2 className="text-3xl font-bold mb-4">Upgrade to Premium Today!</h2>
+          <p className="text-xl mb-6 opacity-90">
+            Unlock unlimited decks, unlimited AI requests, and premium features for just $3.99/month
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={handleUpgradeClick}
+              className="px-8 py-4 bg-white text-blue-600 text-lg font-bold rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              🚀 Start Premium Now - $3.99/month
+            </button>
+            <a
+              href={getPaymentUrl()}
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-6 py-3 border-2 border-white text-white text-lg font-medium rounded-lg hover:bg-white hover:text-blue-600 transition-colors"
+            >
+              Direct Payment Link →
+            </a>
+          </div>
+          <p className="text-sm mt-4 opacity-75">
+            ✅ Secure payment through Stripe • ✅ Cancel anytime • ✅ Instant activation
+          </p>
+        </div>
+      )}
+
+      {/* Payment Information */}
+      {!isPremium && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <span className="text-blue-400">💳</span>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">
+                  Ready to Upgrade to Premium?
+                </h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  <p>
+                    Payment is processed securely through Stripe. Click below to upgrade now for just $3.99/month.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="ml-4 flex flex-col gap-2">
+              <button
+                onClick={handleUpgradeClick}
+                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-md hover:opacity-90 transition-opacity font-medium"
+              >
+                Pay Now - $3.99/month
+              </button>
+              <a
+                href={getPaymentUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-2 bg-white border border-blue-300 text-blue-600 text-sm rounded-md hover:bg-blue-50 transition-colors text-center"
+              >
+                Direct Link
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Just Paid Section */}
+      {!isPremium && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <span className="text-green-400">✅</span>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">
+                  Just completed payment?
+                </h3>
+                <div className="mt-1 text-sm text-green-700">
+                  <p>
+                    If you just completed your payment, click refresh to update your subscription status.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleRefreshStatus}
+              className="ml-4 px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
+            >
+              Refresh Status
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Current Usage Dashboard */}
       <div>
         <h2 className="text-2xl font-semibold text-theme-text-primary mb-6">
@@ -191,9 +317,17 @@ const SubscriptionPage = () => {
               You have saved {usageData.savedDecks} out of {limits.maxDecks === Infinity ? 'unlimited' : limits.maxDecks} decks.
             </p>
             {!isPremium && usageData.savedDecks >= limits.maxDecks && (
-              <p className="text-sm text-red-500">
-                You've reached your deck limit. Upgrade to Premium for unlimited decks.
-              </p>
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600 mb-2">
+                  ⚠️ You've reached your deck limit! Upgrade to Premium for unlimited decks.
+                </p>
+                <button
+                  onClick={handleUpgradeClick}
+                  className="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Upgrade Now
+                </button>
+              </div>
             )}
           </div>
           
@@ -208,12 +342,48 @@ const SubscriptionPage = () => {
               </p>
             )}
             {!isPremium && usageData.aiRequestsThisWeek >= limits.maxAIRequestsPerWeek && (
-              <p className="text-sm text-red-500">
-                You've reached your weekly AI request limit. Upgrade to Premium for unlimited requests.
-              </p>
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm text-red-600 mb-2">
+                  ⚠️ You've reached your weekly AI request limit! Upgrade to Premium for unlimited requests.
+                </p>
+                <button
+                  onClick={handleUpgradeClick}
+                  className="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Upgrade Now
+                </button>
+              </div>
             )}
           </div>
         </div>
+
+        {/* Quick upgrade section in usage details for free users */}
+        {!isPremium && (
+          <div className="mt-6 pt-6 border-t border-theme-bg-tertiary">
+            <div className="text-center">
+              <h4 className="font-medium text-theme-text-primary mb-2">Ready to upgrade?</h4>
+              <p className="text-sm text-theme-text-secondary mb-4">
+                Get unlimited access to all features for just $3.99/month
+              </p>
+              <div className="flex justify-center gap-3">
+                <button
+                  onClick={handleUpgradeClick}
+                  className="px-6 py-2 bg-gradient-to-r from-theme-accent-blue to-theme-accent-purple text-white rounded-md hover:opacity-90 transition-opacity"
+                >
+                  Upgrade to Premium
+                </button>
+                <a
+                  href={getPaymentUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-2 border border-theme-accent-blue text-theme-accent-blue rounded-md hover:bg-theme-accent-blue hover:text-white transition-colors"
+                >
+                  Direct Link
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* FAQ Section */}
@@ -228,7 +398,16 @@ const SubscriptionPage = () => {
               How do I upgrade to Premium?
             </h4>
             <p className="text-sm text-theme-text-secondary">
-              Click the "Upgrade to Premium" button above to start your premium subscription. You'll get unlimited deck saves, unlimited AI requests, and exclusive features.
+              Click the "Upgrade to Premium" button above to be redirected to our secure Stripe payment page. After completing payment, return to this page and refresh your browser to activate your premium features.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-medium text-theme-text-primary mb-1">
+              What happens after I pay?
+            </h4>
+            <p className="text-sm text-theme-text-secondary">
+              After successful payment, your account will be automatically upgraded to Premium. You may need to refresh the page to see your new premium status and unlimited access to all features.
             </p>
           </div>
           
@@ -246,16 +425,7 @@ const SubscriptionPage = () => {
               Can I cancel my subscription anytime?
             </h4>
             <p className="text-sm text-theme-text-secondary">
-              Yes, you can cancel your Premium subscription at any time through the "Manage Subscription" button. You'll continue to have Premium access until the end of your billing period.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="font-medium text-theme-text-primary mb-1">
-              What payment methods do you accept?
-            </h4>
-            <p className="text-sm text-theme-text-secondary">
-              We accept all major credit cards and debit cards through our secure payment processor. Your payment information is never stored on our servers.
+              Yes, you can cancel your Premium subscription at any time. Contact our support team or use the subscription management link in your payment confirmation email from Stripe.
             </p>
           </div>
         </div>

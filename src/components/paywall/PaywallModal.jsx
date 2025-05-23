@@ -1,10 +1,33 @@
 import React from 'react';
 import { useSubscription, SUBSCRIPTION_LIMITS } from '../../context/SubscriptionContext';
+import { getPaymentUrl, initiatePremiumCheckout } from '../../utils/stripeIntegration';
+import { useAuth } from '../../context/AuthContext';
 
 const PaywallModal = ({ isOpen, onClose, type = 'deck', title, message }) => {
   const { upgradeToPremium, limits } = useSubscription();
+  const { currentUser } = useAuth();
 
   if (!isOpen) return null;
+
+  const handleDirectUpgrade = async () => {
+    if (!currentUser) {
+      alert('Please log in to upgrade your subscription.');
+      return;
+    }
+
+    try {
+      await initiatePremiumCheckout(
+        currentUser.id,
+        currentUser.email,
+        currentUser.id
+      );
+    } catch (error) {
+      console.error('Error starting checkout:', error);
+      // Fallback to subscription page
+      upgradeToPremium();
+      onClose();
+    }
+  };
 
   const handleUpgrade = () => {
     upgradeToPremium();
@@ -99,19 +122,42 @@ const PaywallModal = ({ isOpen, onClose, type = 'deck', title, message }) => {
         </div>
 
         {/* Actions */}
-        <div className="p-6 border-t border-theme-bg-tertiary flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 text-theme-text-secondary border border-theme-bg-tertiary rounded-lg hover:bg-theme-bg-tertiary transition-colors"
-          >
-            Maybe Later
-          </button>
-          <button
-            onClick={handleUpgrade}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-theme-accent-blue to-theme-accent-purple text-white rounded-lg hover:opacity-90 transition-opacity font-medium"
-          >
-            Upgrade Now
-          </button>
+        <div className="p-6 border-t border-theme-bg-tertiary">
+          <div className="flex flex-col gap-3">
+            {/* Primary action - Direct payment */}
+            <button
+              onClick={handleDirectUpgrade}
+              className="w-full px-4 py-3 bg-gradient-to-r from-theme-accent-blue to-theme-accent-purple text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-lg"
+            >
+              🚀 Pay Now - $3.99/month
+            </button>
+            
+            {/* Alternative options */}
+            <div className="flex gap-2">
+              <a
+                href={getPaymentUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 px-4 py-2 bg-white border border-theme-accent-blue text-theme-accent-blue rounded-lg hover:bg-theme-accent-blue hover:text-white transition-colors text-center text-sm"
+              >
+                Direct Link
+              </a>
+              <button
+                onClick={handleUpgrade}
+                className="flex-1 px-4 py-2 text-theme-text-secondary border border-theme-bg-tertiary rounded-lg hover:bg-theme-bg-tertiary transition-colors text-sm"
+              >
+                View Plans
+              </button>
+            </div>
+            
+            {/* Dismiss option */}
+            <button
+              onClick={onClose}
+              className="w-full px-4 py-2 text-theme-text-muted hover:text-theme-text-secondary transition-colors text-sm"
+            >
+              Maybe Later
+            </button>
+          </div>
         </div>
       </div>
     </div>

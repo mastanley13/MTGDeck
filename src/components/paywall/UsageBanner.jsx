@@ -1,6 +1,8 @@
 import React from 'react';
 import { useSubscription } from '../../context/SubscriptionContext';
+import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { getPaymentUrl, initiatePremiumCheckout } from '../../utils/stripeIntegration';
 
 const UsageBanner = ({ className = '', showOnlyWhenNearLimit = false }) => {
   const {
@@ -10,8 +12,28 @@ const UsageBanner = ({ className = '', showOnlyWhenNearLimit = false }) => {
     getDaysUntilWeeklyReset,
     upgradeToPremium,
   } = useSubscription();
+  
+  const { currentUser } = useAuth();
 
   const daysUntilReset = getDaysUntilWeeklyReset;
+
+  const handleDirectUpgrade = async () => {
+    if (!currentUser) {
+      upgradeToPremium(); // Fallback to subscription page
+      return;
+    }
+
+    try {
+      await initiatePremiumCheckout(
+        currentUser.id,
+        currentUser.email,
+        currentUser.id
+      );
+    } catch (error) {
+      console.error('Error starting checkout:', error);
+      upgradeToPremium(); // Fallback to subscription page
+    }
+  };
 
   // Calculate usage percentages
   const deckUsagePercentage = limits.maxDecks === Infinity ? 0 : (usageData.savedDecks / limits.maxDecks) * 100;
@@ -66,7 +88,7 @@ const UsageBanner = ({ className = '', showOnlyWhenNearLimit = false }) => {
     if (isAtLimit || isNearLimit) {
       return (
         <button
-          onClick={upgradeToPremium}
+          onClick={handleDirectUpgrade}
           className="px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg hover:opacity-90 transition-opacity"
         >
           Upgrade to Premium
@@ -135,14 +157,50 @@ const UsageBanner = ({ className = '', showOnlyWhenNearLimit = false }) => {
 
       {/* Warning Messages */}
       {!isPremium && isAtLimit && (
-        <div className="mt-3 p-2 bg-red-100 border border-red-200 rounded text-sm text-red-800">
-          <strong>Limit reached!</strong> You've hit your usage limits. Upgrade to Premium for unlimited access.
+        <div className="mt-3 p-3 bg-red-100 border border-red-200 rounded">
+          <div className="text-sm text-red-800 mb-2">
+            <strong>Limit reached!</strong> You've hit your usage limits. Upgrade to Premium for unlimited access.
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDirectUpgrade}
+              className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+            >
+              Upgrade Now - $3.99
+            </button>
+            <a
+              href={getPaymentUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1 border border-red-300 text-red-600 text-sm rounded hover:bg-red-50 transition-colors"
+            >
+              Direct Link
+            </a>
+          </div>
         </div>
       )}
       
       {!isPremium && isNearLimit && !isAtLimit && (
-        <div className="mt-3 p-2 bg-yellow-100 border border-yellow-200 rounded text-sm text-yellow-800">
-          <strong>Approaching limit!</strong> You're close to your usage limits. Consider upgrading to Premium.
+        <div className="mt-3 p-3 bg-yellow-100 border border-yellow-200 rounded">
+          <div className="text-sm text-yellow-800 mb-2">
+            <strong>Approaching limit!</strong> You're close to your usage limits. Consider upgrading to Premium.
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDirectUpgrade}
+              className="px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700 transition-colors"
+            >
+              Upgrade to Premium
+            </button>
+            <a
+              href={getPaymentUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1 border border-yellow-300 text-yellow-600 text-sm rounded hover:bg-yellow-50 transition-colors"
+            >
+              Direct Payment
+            </a>
+          </div>
         </div>
       )}
     </div>
