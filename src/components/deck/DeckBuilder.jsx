@@ -129,7 +129,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
         {commander && deckSaveControls}
 
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-logoScheme-gold">Deck Builder AI</h1>
+          <h1 className="text-2xl font-bold text-primary-400">Deck Builder AI</h1>
           <div className="text-gray-400">
             {totalCardCount} / 100 cards
           </div>
@@ -140,7 +140,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
           <div className="mb-4 flex gap-2">
             <button 
               onClick={() => setAllCategoriesOpen(true)}
-              className="p-2 text-xs bg-logoScheme-blue text-white rounded hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-logoScheme-blue transition-colors duration-150"
+              className="p-2 text-xs bg-primary-500 text-white rounded hover:bg-primary-600 active:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors duration-150"
               aria-label="Expand All Categories"
               title="Expand All Categories"
             >
@@ -166,7 +166,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
         )}
         
         {/* Enhanced Commander Preview */}
-        <div className="mb-8">
+        <div className="mb-8" data-commander-section>
           <h3 className="text-2xl font-bold text-white mb-6 text-center flex items-center justify-center space-x-3">
             <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -200,7 +200,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
               {/* Right Column: Details - Stacks below on mobile */}
               <div className="md:w-2/3 flex flex-col text-gray-300">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-1">
-                    <h4 className="text-2xl lg:text-3xl font-bold text-logoScheme-gold mb-1 sm:mb-0 order-1 sm:order-none">{commander.name}</h4>
+                    <h4 className="text-2xl lg:text-3xl font-bold text-primary-400 mb-1 sm:mb-0 order-1 sm:order-none">{commander.name}</h4>
                     {/* Mana Cost using ManaSymbol */}
                     {manaCostForDisplay.length > 0 && (
                       <div className="flex items-center order-2 sm:order-none sm:ml-4">
@@ -250,7 +250,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
                 
                 {/* AI Description Section - Updated */}
                 <div className="mt-1 mb-3 order-8 sm:order-none">
-                  <h5 className="text-sm lg:text-base font-semibold text-logoScheme-gold mb-1">AI Strategic Overview:</h5>
+                  <h5 className="text-sm lg:text-base font-semibold text-primary-400 mb-1">AI Strategic Overview:</h5>
                   {isLoadingAISummary && <p className="text-xs italic text-gray-400">The Oracle is contemplating {commander.name}...</p>}
                   {!isLoadingAISummary && aiSummaryError && <p className="text-xs italic text-red-400">{aiSummaryError}</p>}
                   {!isLoadingAISummary && !aiSummaryError && aiSummary && (
@@ -276,7 +276,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
 
                 {commander.legalities && (
                   <div className="mt-1 text-xs lg:text-sm order-10 sm:order-none">
-                    <h5 className="text-sm lg:text-base font-semibold text-logoScheme-gold mb-1">Format Legalities:</h5>
+                    <h5 className="text-sm lg:text-base font-semibold text-primary-400 mb-1">Format Legalities:</h5>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-0.5">
                       {formatsToShow.map(format => {
                         const status = commander.legalities[format.key];
@@ -300,6 +300,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
                   Click for Full Card View
                 </p>
               </div>
+            </div>
             </div>
           </div>
         </div>

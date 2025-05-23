@@ -62,7 +62,7 @@ const SearchResults = ({
   if (isLoading && results.length === 0) {
     return (
       <div className="flex flex-col justify-center items-center h-64">
-        <svg className="loading-spinner h-12 w-12 text-logoScheme-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <svg className="loading-spinner h-12 w-12 text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
@@ -71,35 +71,9 @@ const SearchResults = ({
     );
   }
 
-  // Display error state
-  if (error) {
-    return (
-      <div className="bg-logoScheme-darkGray border border-logoScheme-red rounded-lg p-6 text-center my-4">
-        <div className="flex justify-center mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-logoScheme-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div className="font-bold text-lg text-logoScheme-red mb-2">Search Error</div>
-        <div className="text-red-300">{error}</div>
-      </div>
-    );
-  }
+    // Display error state  if (error) {    return (      <div className="glassmorphism-card border-red-500/50 p-6 text-center my-4">        <div className="flex justify-center mb-4">          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />          </svg>        </div>        <div className="font-bold text-lg text-red-400 mb-2">Search Error</div>        <div className="text-red-300">{error}</div>      </div>    );  }
 
-  // Display empty results
-  if (results.length === 0) {
-    return (
-      <div className="bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg p-8 text-center my-4">
-        <div className="flex justify-center mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div className="font-bold text-lg text-gray-100 mb-2">No cards found</div>
-        <div className="text-gray-300">Try adjusting your search query or filters</div>
-      </div>
-    );
-  }
+    // Display empty results  if (results.length === 0) {    return (      <div className="glassmorphism-card border-slate-700/50 p-8 text-center my-4">        <div className="flex justify-center mb-4">          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />          </svg>        </div>        <div className="font-bold text-lg text-white mb-2">No cards found</div>        <div className="text-slate-300">Try adjusting your search query or filters</div>      </div>    );  }
 
   return (
     <div className="mt-6">
@@ -110,7 +84,7 @@ const SearchResults = ({
         {hasMore && !isLoading && (
           <button
             onClick={loadMore}
-            className="text-sm text-logoScheme-gold hover:text-yellow-400 font-medium"
+            className="text-sm text-primary-400 hover:text-primary-300 font-medium"
           >
             Show more results
           </button>
@@ -188,7 +162,7 @@ const SearchResults = ({
       {/* Loading more indicator */}
       {isLoading && results.length > 0 && (
         <div className="flex justify-center items-center mt-8 pb-4">
-          <svg className="animate-spin h-8 w-8 text-logoScheme-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg className="animate-spin h-8 w-8 text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -201,7 +175,7 @@ const SearchResults = ({
         <div className="flex justify-center mt-8 pb-4">
           <button
             onClick={loadMore}
-            className="px-5 py-2 bg-logoScheme-gold text-logoScheme-darkGray rounded-lg hover:bg-yellow-400 transition-colors focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray shadow-sm"
+            className="btn-modern btn-modern-primary btn-modern-sm"
           >
             Load More Cards
           </button>
@@ -211,7 +185,7 @@ const SearchResults = ({
       {/* End of results indicator */}
       {!hasMore && results.length > 0 && (
         <div className="text-center text-gray-400 mt-8 pb-4">
-          <div className="inline-block mx-auto h-px w-16 bg-logoScheme-brown mb-3"></div>
+          <div className="inline-block mx-auto h-px w-16 bg-slate-700/50 mb-3"></div>
           <p>End of results</p>
         </div>
       )}

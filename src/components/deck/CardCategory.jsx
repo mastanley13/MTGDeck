@@ -36,7 +36,7 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
           <img
             src={imageUris.normal} // Using normal for better modal preview if this data is used directly
             alt={card.name}
-            className="rounded-t-lg shadow-md w-full object-cover aspect-[63/88] group-hover:opacity-80 transition-opacity duration-150 border border-logoScheme-brown"
+            className="rounded-t-lg shadow-md w-full object-cover aspect-[63/88] group-hover:opacity-80 transition-opacity duration-150 border border-slate-700/50"
           />
         ) : (
           <div className="bg-gray-700 rounded-t-lg shadow-md w-full aspect-[63/88] flex items-center justify-center p-2 group-hover:opacity-80 transition-opacity duration-150">
@@ -52,7 +52,7 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
         <div className="flex items-center">
           <button
             onClick={(e) => { e.stopPropagation(); handleQuantityChange(card.id, (card.quantity || 1) - 1); }}
-            className="w-6 h-6 flex items-center justify-center text-white bg-logoScheme-red rounded-l hover:bg-red-700 focus:outline-none active:bg-red-800 text-xs"
+            className="w-6 h-6 flex items-center justify-center text-white bg-red-500 rounded-l hover:bg-red-600 focus:outline-none active:bg-red-700 text-xs"
             aria-label="Decrease quantity"
             disabled={(card.quantity || 1) <= (card.type_line && card.type_line.toLowerCase().includes('basic land') ? 1 : 1) && !(card.type_line && card.type_line.toLowerCase().includes('basic land'))}
           >
@@ -63,7 +63,7 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
           </span>
           <button
             onClick={(e) => { e.stopPropagation(); handleQuantityChange(card.id, (card.quantity || 1) + 1); }}
-            className="w-6 h-6 flex items-center justify-center text-white bg-logoScheme-green rounded-r hover:bg-green-700 focus:outline-none active:bg-green-800 text-xs"
+            className="w-6 h-6 flex items-center justify-center text-white bg-green-500 rounded-r hover:bg-green-600 focus:outline-none active:bg-green-700 text-xs"
             aria-label="Increase quantity"
           >
             +
@@ -73,7 +73,7 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
         {/* Remove Button */}
         <button
           onClick={(e) => { e.stopPropagation(); handleRemoveCard(card.id); }}
-          className="px-1.5 py-0.5 bg-logoScheme-red text-white rounded text-xs hover:bg-red-700 focus:outline-none active:bg-red-800 ml-1"
+          className="px-1.5 py-0.5 bg-red-500 text-white rounded text-xs hover:bg-red-600 focus:outline-none active:bg-red-700 ml-1"
           aria-label="Remove card"
         >
           Remove
@@ -124,18 +124,18 @@ const CardCategory = ({ title, cards, onCardMove, forceOpenState, onViewCardDeta
   return (
     <div 
       ref={drop}
-      className={`bg-logoScheme-darkGray rounded-xl shadow-lg mb-6 overflow-hidden transition-all duration-300 ease-in-out ${isOver ? 'ring-2 ring-logoScheme-gold ring-offset-2 ring-offset-logoScheme-brown' : 'border border-logoScheme-brown'}`}
+      className={`glassmorphism-card border-slate-700/50 mb-6 overflow-hidden transition-all duration-300 ease-in-out ${isOver ? 'ring-2 ring-primary-500 ring-offset-2 ring-offset-slate-900/50 border-primary-500/50' : ''}`}
     >
       <div 
-        className="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-700 active:bg-gray-600 transition-colors duration-150"
+        className="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-800/30 active:bg-slate-800/50 transition-colors duration-150"
         onClick={toggleOpen}
       >
-        <h3 className="text-lg font-medium text-logoScheme-gold">
+        <h3 className="text-lg font-medium text-primary-400">
           {title} 
-          <span className="text-sm text-gray-400 ml-2">({categoryCardCount})</span>
+          <span className="text-sm text-slate-400 ml-2">({categoryCardCount})</span>
         </h3>
         <svg 
-          className={`w-5 h-5 text-gray-400 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 text-slate-400 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -146,7 +146,7 @@ const CardCategory = ({ title, cards, onCardMove, forceOpenState, onViewCardDeta
       </div>
       
       {isOpen && (
-        <div className="px-4 pb-4 border-t border-logoScheme-brown">
+        <div className="px-4 pb-4 border-t border-slate-700/50">
           {cards.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 pt-4"> {/* Adjusted grid for smaller cards */}
               {cards.map(card => (
@@ -160,7 +160,7 @@ const CardCategory = ({ title, cards, onCardMove, forceOpenState, onViewCardDeta
               ))}
             </div>
           ) : (
-            <div className="text-center p-6 text-gray-400 bg-gray-700 rounded-b-md mt-0">
+            <div className="text-center p-6 text-slate-400 bg-slate-800/30 rounded-lg mt-4 border border-slate-700/50">
               <p>No cards in this category. You can drag cards here.</p>
             </div>
           )}

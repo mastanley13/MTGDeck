@@ -181,7 +181,7 @@ const SearchBar = ({
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder="Search for cards..."
-              className="w-full pl-10 pr-4 py-3 border border-gray-500 rounded-l-lg shadow-sm focus:ring-logoScheme-gold focus:border-logoScheme-gold bg-gray-700 text-gray-100 placeholder-gray-400"
+              className="w-full pl-10 pr-4 py-3 border border-slate-600/50 rounded-l-xl shadow-sm focus:ring-primary-500 focus:border-primary-500 bg-slate-800/50 text-white placeholder-slate-400 transition-all duration-300"
               onFocus={() => inputValue.length >= minCharsForSuggestions && setShowSuggestions(true)}
               autoComplete="off"
               aria-autocomplete="list"
@@ -191,11 +191,11 @@ const SearchBar = ({
           </div>
           <button
             type="submit"
-            className="bg-logoScheme-gold text-logoScheme-darkGray px-5 py-3 rounded-r-lg hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-logoScheme-gold focus:ring-offset-2 focus:ring-offset-logoScheme-darkGray transition-colors"
+            className="bg-primary-500 text-white px-5 py-3 rounded-r-xl hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-300"
             disabled={isLoading}
           >
             {isLoading ? (
-              <svg className="animate-spin h-5 w-5 text-logoScheme-darkGray" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <svg className="animate-spin h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -209,23 +209,21 @@ const SearchBar = ({
         {showSuggestions && suggestions.length > 0 && (
           <div 
             ref={suggestionsRef}
-            className="absolute z-50 w-full bg-logoScheme-darkGray mt-1 border border-logoScheme-brown rounded-md shadow-lg max-h-60 overflow-y-auto"
+            className="absolute z-50 w-full glassmorphism-card border-primary-500/30 mt-1 rounded-xl shadow-modern-primary max-h-60 overflow-y-auto"
             style={{ top: '100%' }}
           >
             <ul 
               ref={suggestionListRef}
               id="suggestion-list" 
               role="listbox"
-              className="py-1 divide-y divide-logoScheme-brown text-gray-200"
+              className="py-2 divide-y divide-slate-700/50 text-slate-200"
             >
               {suggestions.map((suggestion, index) => (
                 <li
                   key={index}
                   role="option"
                   aria-selected={index === activeSuggestionIndex}
-                  className={`px-4 py-2 cursor-pointer transition-colors ${
-                    index === activeSuggestionIndex ? 'bg-logoScheme-brown text-logoScheme-gold' : 'hover:bg-gray-700'
-                  }`}
+                                    className={`px-4 py-3 cursor-pointer transition-colors ${                    index === activeSuggestionIndex ? 'bg-primary-500/20 text-primary-400' : 'hover:bg-slate-800/50'                  }`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   onMouseEnter={() => setActiveSuggestionIndex(index)}
                 >
@@ -245,15 +243,14 @@ const SearchBar = ({
           <button
             type="button"
             onClick={handleAdvancedToggle}
-            className="text-sm font-medium text-logoScheme-gold hover:text-yellow-400 transition-colors focus:outline-none focus:underline"
+            className="text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors focus:outline-none focus:underline"
           >
             {advancedMode ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
           </button>
         </div>
         
         {advancedMode && (
-          <div className="mt-3 p-4 bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow-sm text-gray-300">
-            <h3 className="text-lg font-medium text-logoScheme-gold mb-3">Advanced Filters</h3>
+                    <div className="mt-3 p-6 glassmorphism-card border-primary-500/20 text-slate-300">            <h3 className="text-lg font-medium text-primary-400 mb-4">Advanced Filters</h3>
             
             {/* Color filters */}
             <div className="mb-4">
@@ -301,7 +298,7 @@ const SearchBar = ({
                 id="cardType"
                 value={searchOptions.type || ''}
                 onChange={handleCardTypeChange}
-                className="w-full px-3 py-2 border border-gray-500 rounded-md shadow-sm focus:ring-logoScheme-gold focus:border-logoScheme-gold bg-gray-700 text-gray-100 placeholder-gray-400"
+                className="w-full px-3 py-2 border border-slate-600/50 rounded-xl shadow-sm focus:ring-primary-500 focus:border-primary-500 bg-slate-800/50 text-white placeholder-slate-400 transition-all duration-300"
               >
                 <option value="">Any Type</option>
                 <option value="creature">Creature</option>
@@ -323,44 +320,28 @@ const SearchBar = ({
                 <button
                   type="button"
                   onClick={() => updateSearchOptions({ order: 'name' })}
-                  className={`px-3 py-2 rounded-md text-sm text-center transition-colors ${
-                    searchOptions.order === 'name'
-                      ? 'bg-logoScheme-brown border border-logoScheme-gold text-logoScheme-gold'
-                      : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-                  }`}
+                                    className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${                    searchOptions.order === 'name'                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'                  }`}
                 >
                   Name
                 </button>
                 <button
                   type="button"
                   onClick={() => updateSearchOptions({ order: 'cmc' })}
-                  className={`px-3 py-2 rounded-md text-sm text-center transition-colors ${
-                    searchOptions.order === 'cmc'
-                      ? 'bg-logoScheme-brown border border-logoScheme-gold text-logoScheme-gold'
-                      : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-                  }`}
+                                    className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${                    searchOptions.order === 'cmc'                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'                  }`}
                 >
                   Mana Value
                 </button>
                 <button
                   type="button"
                   onClick={() => updateSearchOptions({ order: 'edhrec' })}
-                  className={`px-3 py-2 rounded-md text-sm text-center transition-colors ${
-                    searchOptions.order === 'edhrec' || !searchOptions.order
-                      ? 'bg-logoScheme-brown border border-logoScheme-gold text-logoScheme-gold'
-                      : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-                  }`}
+                                    className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${                    searchOptions.order === 'edhrec' || !searchOptions.order                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'                  }`}
                 >
                   Popularity
                 </button>
                 <button
                   type="button"
                   onClick={() => updateSearchOptions({ order: 'released' })}
-                  className={`px-3 py-2 rounded-md text-sm text-center transition-colors ${
-                    searchOptions.order === 'released'
-                      ? 'bg-logoScheme-brown border border-logoScheme-gold text-logoScheme-gold'
-                      : 'bg-gray-700 hover:bg-gray-600 text-gray-200'
-                  }`}
+                                    className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${                    searchOptions.order === 'released'                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'                  }`}
                 >
                   Release Date
                 </button>

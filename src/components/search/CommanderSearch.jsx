@@ -192,105 +192,111 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100] p-4">
-      <div className="commander-search bg-logoScheme-darkGray rounded-xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] flex flex-col border border-logoScheme-brown">
-        <div className="flex justify-between items-center mb-4 pb-4 border-b border-logoScheme-brown">
-            <h2 className="text-2xl font-bold text-logoScheme-gold">
-                {modalSelectedCommander ? 'Selected Commander' : 'Select a Commander'}
-            </h2>
-            <button onClick={onClose} className="text-gray-300 hover:text-logoScheme-gold text-3xl">&times;</button>
-        </div>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl"></div>
+        <div className="relative commander-search glassmorphism-card border-primary-500/30 shadow-modern-primary p-8 w-full max-w-3xl max-h-[90vh] flex flex-col">
+          <div className="flex justify-between items-center mb-6 pb-6 border-b border-slate-700/50">
+              <h2 className="text-3xl font-bold text-gradient-primary">
+                  {modalSelectedCommander ? 'Selected Commander' : 'Select a Commander'}
+              </h2>
+              <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl transition-colors duration-200 hover:bg-slate-800/50 rounded-lg p-2">&times;</button>
+          </div>
         
-        <div className="overflow-y-auto flex-grow text-gray-300">
-          {modalSelectedCommander ? (
-            <div className="commander-showcase rounded-xl overflow-hidden bg-gradient-to-r from-logoScheme-brown to-logoScheme-darkGray">
-                <div className="flex flex-col md:flex-row items-center">
-                    <div className="w-full md:w-1/3 relative p-4">
-                        {modalSelectedCommander.image_uris?.normal && (
-                            <div className="magic-card transform transition hover:scale-[1.02] hover:rotate-1">
-                                <img 
-                                    src={modalSelectedCommander.image_uris.normal} 
-                                    alt={modalSelectedCommander.name}
-                                    className="rounded-xl shadow-lg w-full h-auto border border-logoScheme-gold"
-                                />
-                            </div>
-                        )}
-                    </div>
-                    <div className="p-4 md:p-6 flex-1">
-                        <div className="flex items-center mb-2 space-x-2">
-                            <h3 className="text-2xl font-bold text-logoScheme-gold">{modalSelectedCommander.name}</h3>
-                            <div className="flex space-x-1">
-                                {renderColorIdentity(modalSelectedCommander.color_identity)}
-                            </div>
-                        </div>
-                        <div className="text-sm text-gray-300 mb-3">{modalSelectedCommander.type_line}</div>
-                        <div className="bg-gray-700 bg-opacity-80 p-3 rounded-lg shadow-sm mb-4 prose prose-sm max-w-none overflow-y-auto max-h-40 text-gray-200">
-                            <p className="whitespace-pre-line">{modalSelectedCommander.oracle_text}</p>
-                            {modalSelectedCommander.power && modalSelectedCommander.toughness && (
-                                <div className="mt-2 font-semibold">
-                                    Power/Toughness: {modalSelectedCommander.power}/{modalSelectedCommander.toughness}
-                                </div>
-                            )}
-                            {modalSelectedCommander.loyalty && (
-                                <div className="mt-2 font-semibold">
-                                    Loyalty: {modalSelectedCommander.loyalty}
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-400">
-                                {modalSelectedCommander.set_name} ({modalSelectedCommander.set.toUpperCase()})
-                            </div>
-                            <button
-                                onClick={handleChangeCommander}
-                                className="btn-danger px-4 py-2 text-sm"
-                            >
-                                Change Commander
-                            </button>
-                        </div>
-                    </div>
+          <div className="overflow-y-auto flex-grow text-slate-300">
+            {modalSelectedCommander ? (
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-blue-500/10 rounded-2xl blur-sm"></div>
+                <div className="relative commander-showcase glassmorphism-card border-primary-500/20 p-6">
+                  <div className="flex flex-col md:flex-row items-center gap-6">
+                      <div className="w-full md:w-1/3 relative">
+                          {modalSelectedCommander.image_uris?.normal && (
+                              <div className="magic-card transform transition hover:scale-[1.02] hover:rotate-1">
+                                  <img 
+                                      src={modalSelectedCommander.image_uris.normal} 
+                                      alt={modalSelectedCommander.name}
+                                      className="rounded-xl shadow-lg w-full h-auto border border-primary-500/30"
+                                  />
+                              </div>
+                          )}
+                      </div>
+                      <div className="flex-1">
+                          <div className="flex items-center mb-3 space-x-3">
+                              <h3 className="text-2xl font-bold text-primary-400">{modalSelectedCommander.name}</h3>
+                              <div className="flex space-x-1">
+                                  {renderColorIdentity(modalSelectedCommander.color_identity)}
+                              </div>
+                          </div>
+                          <div className="text-sm text-slate-400 mb-4">{modalSelectedCommander.type_line}</div>
+                          <div className="bg-slate-800/50 p-4 rounded-xl shadow-sm mb-4 max-h-40 overflow-y-auto text-slate-300 border border-slate-700/50">
+                              <p className="whitespace-pre-line leading-relaxed">{modalSelectedCommander.oracle_text}</p>
+                              {modalSelectedCommander.power && modalSelectedCommander.toughness && (
+                                  <div className="mt-3 font-semibold text-primary-400">
+                                      Power/Toughness: {modalSelectedCommander.power}/{modalSelectedCommander.toughness}
+                                  </div>
+                              )}
+                              {modalSelectedCommander.loyalty && (
+                                  <div className="mt-3 font-semibold text-primary-400">
+                                      Loyalty: {modalSelectedCommander.loyalty}
+                                  </div>
+                              )}
+                          </div>
+                          <div className="flex items-center justify-between">
+                              <div className="text-sm text-slate-500">
+                                  {modalSelectedCommander.set_name} ({modalSelectedCommander.set.toUpperCase()})
+                              </div>
+                              <button
+                                  onClick={handleChangeCommander}
+                                  className="btn-modern btn-modern-secondary btn-modern-sm"
+                              >
+                                  Change Commander
+                              </button>
+                          </div>
+                      </div>
+                  </div>
                 </div>
-            </div>
-          ) : (
-            <>
-              <div className="bg-logoScheme-brown p-4 rounded-lg mb-6">
-                <SearchBar 
-                  query={currentQuery}
-                  setQuery={handleInputChange}
-                  onSubmit={handleSearch}
-                  suggestions={suggestions}
-                  searchOptions={searchOptions}
-                  updateSearchOptions={handleUpdateSearchOptions}
-                  isLoading={isLoading || isSuggestionLoading}
-                  onSuggestionSelected={handleSuggestionSelected}
-                  minCharsForSuggestions={3}
-                  autoFocusInput={true}
-                />
               </div>
-              
-              <SearchResults 
-                results={searchResults}
-                isLoading={isLoading}
-                error={error}
-                hasMore={hasMore}
-                loadMore={handleLoadMore}
-                onCardClick={handleCommanderSelectAndClose}
-                totalCards={totalCards}
-              />
-              
-              {!searchQuery && !isLoading && searchResults.length === 0 && (
-                <div className="text-center p-8 bg-logoScheme-brown rounded-lg mt-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <p className="text-lg font-medium text-gray-200 mb-2">Search for a commander to get started</p>
-                  <p className="text-sm text-gray-400 max-w-md mx-auto">
-                    Try searching for popular commanders like "Atraxa", "Korvold", "Muldrotha" or use advanced filters
-                  </p>
+            ) : (
+              <>
+                <div className="glassmorphism-card border-primary-500/20 p-6 mb-6">
+                  <SearchBar 
+                    query={currentQuery}
+                    setQuery={handleInputChange}
+                    onSubmit={handleSearch}
+                    suggestions={suggestions}
+                    searchOptions={searchOptions}
+                    updateSearchOptions={handleUpdateSearchOptions}
+                    isLoading={isLoading || isSuggestionLoading}
+                    onSuggestionSelected={handleSuggestionSelected}
+                    minCharsForSuggestions={3}
+                    autoFocusInput={true}
+                  />
                 </div>
-              )}
-            </>
-          )}
+                
+                <SearchResults 
+                  results={searchResults}
+                  isLoading={isLoading}
+                  error={error}
+                  hasMore={hasMore}
+                  loadMore={handleLoadMore}
+                  onCardClick={handleCommanderSelectAndClose}
+                  totalCards={totalCards}
+                />
+                
+                {!searchQuery && !isLoading && searchResults.length === 0 && (
+                  <div className="text-center p-8 glassmorphism-card border-primary-500/20 mt-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-slate-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p className="text-lg font-medium text-white mb-2">Search for a commander to get started</p>
+                    <p className="text-sm text-slate-400 max-w-md mx-auto">
+                      Try searching for popular commanders like "Atraxa", "Korvold", "Muldrotha" or use advanced filters
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
