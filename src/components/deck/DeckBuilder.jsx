@@ -55,15 +55,15 @@ const formatsToShow = [
 const getLegalityClass = (status) => {
   switch (status) {
     case 'legal':
-      return 'text-logoScheme-green';
+      return 'text-green-400';
     case 'not_legal':
-      return 'text-logoScheme-red';
+      return 'text-red-400';
     case 'banned':
-      return 'text-logoScheme-red font-semibold';
+      return 'text-red-400 font-semibold';
     case 'restricted':
       return 'text-yellow-400';
     default:
-      return 'text-gray-500';
+      return 'text-slate-500';
   }
 };
 
@@ -110,9 +110,9 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
   // Check if commander is selected
   if (!commander) {
     return (
-      <div className="text-center p-8 bg-logoScheme-darkGray border border-logoScheme-brown rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-2 text-logoScheme-gold">Select a Commander First</h2>
-        <p className="text-gray-300">
+      <div className="text-center p-8 glassmorphism-card border-slate-700/50 shadow-modern-primary">
+        <h2 className="text-xl font-bold mb-2 text-primary-400">Select a Commander First</h2>
+        <p className="text-slate-300">
           You need to select a commander before building your deck.
         </p>
       </div>
@@ -124,7 +124,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
   
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-4 text-gray-300">
+      <div className="p-4 text-slate-300">
         {/* Render deckSaveControls at the top if commander is selected */}
         {commander && deckSaveControls}
 
@@ -198,7 +198,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
               </div>
 
               {/* Right Column: Details - Stacks below on mobile */}
-              <div className="md:w-2/3 flex flex-col text-gray-300">
+              <div className="md:w-2/3 flex flex-col text-slate-300">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-1">
                     <h4 className="text-2xl lg:text-3xl font-bold text-primary-400 mb-1 sm:mb-0 order-1 sm:order-none">{commander.name}</h4>
                     {/* Mana Cost using ManaSymbol */}
@@ -264,12 +264,12 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
                 </div>
                 
                 {(commander.edhrec_rank || commander.game_changer) && (
-                    <div className="my-2 py-2 border-t border-b border-logoScheme-brown/30 text-xs lg:text-sm order-9 sm:order-none">
+                    <div className="my-2 py-2 border-t border-b border-slate-700/30 text-xs lg:text-sm order-9 sm:order-none">
                       {commander.edhrec_rank && (
-                        <p>EDHREC Rank: <span className="font-semibold text-gray-100">{commander.edhrec_rank.toLocaleString()}</span></p>
+                        <p>EDHREC Rank: <span className="font-semibold text-white">{commander.edhrec_rank.toLocaleString()}</span></p>
                       )}
                       {commander.game_changer && (
-                        <p className="text-logoScheme-green font-semibold mt-0.5">★ Game Changer (Based on EDHREC data)</p>
+                        <p className="text-green-400 font-semibold mt-0.5">★ Game Changer (Based on EDHREC data)</p>
                       )}
                     </div>
                   )}
@@ -293,7 +293,7 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
                   </div>
                 )}
                 
-                <p className="text-xs text-gray-500 mt-3 pt-2 border-t border-logoScheme-brown/30 order-11 sm:order-none">
+                <p className="text-xs text-slate-500 mt-3 pt-2 border-t border-slate-700/30 order-11 sm:order-none">
                     Set: {commander.set_name ? `${commander.set_name} (${commander.set?.toUpperCase()})` : 'N/A'} - Collector #: {commander.collector_number || 'N/A'}
                 </p>
                 <p className="text-center text-sm text-primary-400 group-hover:text-primary-300 transition-colors mt-4 font-semibold order-12 sm:order-none">
@@ -325,8 +325,8 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
         ))}
         
         {cards.length === 0 && commander && (
-          <div className="text-center p-8 text-gray-600 bg-gray-100 rounded-lg">
-            <p className="text-lg mb-2">Your deck is empty</p>
+          <div className="text-center p-8 text-slate-400 glassmorphism-card border-slate-700/50">
+            <p className="text-lg mb-2 text-white">Your deck is empty</p>
             <p className="text-sm">
               Use the Search tab to add cards to your deck
             </p>

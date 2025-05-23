@@ -8,8 +8,7 @@ const DeckStats = () => {
   // so it could be passed down or imported directly where needed.
 
   return (
-  return (
-    </div>
+    <DeckStatsIndex />
   );
 };
 
