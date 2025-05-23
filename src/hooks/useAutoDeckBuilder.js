@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDeck } from '../context/DeckContext';
 import { getOpenAIApiKey } from '../utils/openaiAPI';
+import { useSubscription } from '../context/SubscriptionContext';
 
 /**
  * Hook for automatically building complete decks based on a commander
@@ -9,6 +10,8 @@ export const useAutoDeckBuilder = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
+  const [paywallBlocked, setPaywallBlocked] = useState(false);
+  const { canMakeAIRequest, incrementAIRequests, isPremium } = useSubscription();
   const deckContext = useDeck(); // Use the whole context object
   const { 
     commander, 
@@ -35,13 +38,26 @@ export const useAutoDeckBuilder = () => {
   const buildCompleteDeck = async (deckStyle = 'competitive') => {
     if (!commander) {
       setError('Please select a commander first');
-      return;
+      return false;
+    }
+
+    // Check paywall limits before making multiple AI requests
+    if (!isPremium && !canMakeAIRequest) {
+      setPaywallBlocked(true);
+      setError('AI request limit reached. Upgrade to Premium for unlimited deck building.');
+      return false;
     }
 
     try {
       setIsLoading(true);
       setError(null);
+      setPaywallBlocked(false);
       setProgress(10);
+      
+      // Increment AI request counter for the main deck building request
+      if (!isPremium) {
+        incrementAIRequests();
+      }
       
       // First clear the deck except for the commander
       resetDeckExceptCommander();
@@ -196,12 +212,15 @@ export const useAutoDeckBuilder = () => {
             console.log("Successfully created a 99-card Commander deck (as per current context count)!");
           }
         }, 1000); // Give time for state to update
+        
+        return true; // Successful completion
       } else {
         throw new Error('Invalid response from API');
       }
     } catch (error) {
       console.error('Error building deck:', error);
       setError(error.message || 'Failed to build deck');
+      return false;
     } finally {
       setIsLoading(false);
       setProgress(0);
@@ -747,10 +766,20 @@ export const useAutoDeckBuilder = () => {
     return false;
   };
 
+  // Clear paywall blocked state
+  const clearPaywallBlocked = () => {
+    setPaywallBlocked(false);
+    setError(null);
+  };
+
   return {
     buildCompleteDeck,
     isLoading,
     error,
-    progress
+    progress,
+    paywallBlocked,
+    clearPaywallBlocked,
+    canMakeAIRequest,
+    isPremium,
   };
 }; 

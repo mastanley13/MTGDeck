@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { getSuggestions, getOpenAIApiKey } from '../utils/openaiAPI';
 import { searchCardByName } from '../utils/scryfallAPI';
 import { useDeck } from '../context/DeckContext';
+import { useSubscription } from '../context/SubscriptionContext';
 
 /**
  * Custom hook for getting and managing AI-generated card suggestions
@@ -14,9 +15,11 @@ import { useDeck } from '../context/DeckContext';
  */
 export const useAISuggestions = (options = {}) => {
   const { commander, cards } = useDeck();
+  const { canMakeAIRequest, incrementAIRequests, isPremium } = useSubscription();
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [paywallBlocked, setPaywallBlocked] = useState(false);
   // Always use the hardcoded API key
   const [apiKey] = useState(getOpenAIApiKey());
   const [focusCategories, setFocusCategories] = useState(options.categories || []);
@@ -29,13 +32,26 @@ export const useAISuggestions = (options = {}) => {
   const getSuggestionsFromAI = useCallback(async () => {
     if (!commander) {
       setError('Please select a commander first');
-      return;
+      return false;
+    }
+
+    // Check paywall limits
+    if (!isPremium && !canMakeAIRequest) {
+      setPaywallBlocked(true);
+      setError('AI request limit reached. Upgrade to Premium for unlimited requests.');
+      return false;
     }
 
     setIsLoading(true);
     setError(null);
+    setPaywallBlocked(false);
 
     try {
+      // Increment AI request counter
+      if (!isPremium) {
+        incrementAIRequests();
+      }
+
       // Get the suggestions from OpenAI using the hardcoded API key
       const aiSuggestions = await getSuggestions(commander, cards, {
         apiKey: getOpenAIApiKey(), // Always use the hardcoded key
@@ -62,6 +78,7 @@ export const useAISuggestions = (options = {}) => {
       );
 
       setSuggestions(enrichedSuggestions);
+      return true;
     } catch (err) {
       console.error('Error getting AI suggestions:', err);
       
@@ -71,10 +88,11 @@ export const useAISuggestions = (options = {}) => {
       } else {
         setError(err.message || 'Failed to get AI suggestions');
       }
+      return false;
     } finally {
       setIsLoading(false);
     }
-  }, [commander, cards, focusCategories, deckTheme, maxSuggestions, options.model]);
+  }, [commander, cards, focusCategories, deckTheme, maxSuggestions, options.model, isPremium, canMakeAIRequest, incrementAIRequests]);
 
   /**
    * Update focus categories for suggestions
@@ -108,20 +126,32 @@ export const useAISuggestions = (options = {}) => {
    */
   const clearSuggestions = useCallback(() => {
     setSuggestions([]);
+    setPaywallBlocked(false);
+  }, []);
+
+  /**
+   * Clear paywall blocked state
+   */
+  const clearPaywallBlocked = useCallback(() => {
+    setPaywallBlocked(false);
   }, []);
 
   return {
     suggestions,
     isLoading,
     error,
+    paywallBlocked,
     apiKey,
     focusCategories,
     deckTheme,
+    canMakeAIRequest,
+    isPremium,
     getSuggestions: getSuggestionsFromAI,
     updateFocusCategories,
     updateDeckTheme,
     updateSuggestionCount,
     clearSuggestions,
+    clearPaywallBlocked,
   };
 };
 

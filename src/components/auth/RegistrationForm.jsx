@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setInitialSubscriptionStatus } from '../../utils/ghlSubscriptionAPI';
 
 const RegistrationForm = () => {
   const navigate = useNavigate();
@@ -47,6 +48,10 @@ const RegistrationForm = () => {
           id: "7GbpQNKTkpS3Od2U0xEl", // ID for the 'Password' custom field
           value: userData.password,
         },
+        {
+          id: "zi3peZjkU9rZmf5j41Et", // Subscription field ID
+          field_value: "no", // New free users start with "no"
+        },
       ],
       // Add other relevant fields from UpsertContactDto as needed
       // e.g., phone: userData.phone, source: 'Website Registration', etc.
@@ -66,6 +71,18 @@ const RegistrationForm = () => {
       if (response.ok) {
         const result = await response.json();
         console.log('GHL Contact upserted successfully:', result);
+        
+        // Set initial subscription status using our utility function
+        if (result.contact && result.contact.id) {
+          try {
+            await setInitialSubscriptionStatus(result.contact.id, false); // false = free plan
+            console.log('Initial subscription status set to FREE for new user');
+          } catch (error) {
+            console.error('Failed to set initial subscription status:', error);
+            // Don't fail registration if subscription status setting fails
+          }
+        }
+        
         navigate('/login');
       } else {
         const errorResult = await response.json();

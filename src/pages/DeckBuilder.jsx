@@ -12,6 +12,9 @@ import StickyCommanderHeader from '../components/deck/StickyCommanderHeader.jsx'
 import useCardSearch from '../hooks/useCardSearch';
 import { useDeck } from '../context/DeckContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useSubscription } from '../context/SubscriptionContext.jsx';
+import PaywallModal from '../components/paywall/PaywallModal.jsx';
+import UsageBanner from '../components/paywall/UsageBanner.jsx';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { validateColorIdentity, validateFormatLegality, isDeckValid } from '../utils/deckValidator';
@@ -50,7 +53,16 @@ const DeckBuilderAIPage = () => {
   const [isCardDetailModalOpen, setIsCardDetailModalOpen] = useState(false);
   const [selectedCardForDetailModal, setSelectedCardForDetailModal] = useState(null);
 
+  // State for PaywallModal
+  const [isPaywallModalOpen, setIsPaywallModalOpen] = useState(false);
+  const [paywallModalConfig, setPaywallModalConfig] = useState({
+    type: 'deck',
+    title: '',
+    message: '',
+  });
+
   const { currentUser } = useAuth();
+  const { canSaveMoreDecks, isPremium } = useSubscription();
 
   const {
     commander,
@@ -61,6 +73,7 @@ const DeckBuilderAIPage = () => {
     currentDeckName,
     setDeckName,
     saveCurrentDeckToGHL,
+    savedDecks,
     loading: deckContextLoading,
     error: deckContextError,
   } = useDeck();
@@ -167,7 +180,7 @@ const DeckBuilderAIPage = () => {
     };
   };
 
-  // Refined handleSaveDeck
+  // Enhanced handleSaveDeck with paywall integration
   const handleSaveDeck = async (isFabClick = false) => {
     if (!commander) {
         setAlertModalConfig({
@@ -188,6 +201,20 @@ const DeckBuilderAIPage = () => {
         return;
     }
 
+    // Check paywall limits before proceeding
+    const existingDeck = savedDecks.find(deck => deck.name === currentDeckName.trim());
+    const isNewDeck = !existingDeck;
+    
+    if (isNewDeck && !isPremium && !canSaveMoreDecks) {
+      setPaywallModalConfig({
+        type: 'deck',
+        title: 'Deck Save Limit Reached',
+        message: `You've reached the maximum of 5 saved decks on the free plan. Upgrade to Premium for unlimited deck saves.`,
+      });
+      setIsPaywallModalOpen(true);
+      return;
+    }
+
     const deckValidation = isDeckValid(commander, cards);
 
     const performSaveFlow = async (deckNameToSaveLocally) => {
@@ -201,12 +228,28 @@ const DeckBuilderAIPage = () => {
         return;
       }
 
+      // Check paywall limits again with the final deck name
+      const finalExistingDeck = savedDecks.find(deck => deck.name === deckNameToSaveLocally.trim());
+      const finalIsNewDeck = !finalExistingDeck;
+      
+      if (finalIsNewDeck && !isPremium && !canSaveMoreDecks) {
+        setPaywallModalConfig({
+          type: 'deck',
+          title: 'Deck Save Limit Reached',
+          message: `You've reached the maximum of 5 saved decks on the free plan. Upgrade to Premium for unlimited deck saves.`,
+        });
+        setIsPaywallModalOpen(true);
+        return;
+      }
+
       // Call the GHL save function
       // commander.name will be the name stored in the GHL 'Decks' field
       // deckNameToSaveLocally will be stored in localStorage and within the GHL JSON payload
       const success = await saveCurrentDeckToGHL(currentUser.id, commander.name, deckNameToSaveLocally.trim());
 
       if (success) {
+        // Note: Deck count tracking is now handled automatically by the useDeckWithPaywall hook
+        
         setAlertModalConfig({
           title: 'Deck Saved!',
           message: `Deck "${deckNameToSaveLocally.trim()}" (Commander: ${commander.name}) saved to cloud and locally!`,
@@ -357,6 +400,15 @@ const DeckBuilderAIPage = () => {
           onConfirm={inputModalConfig.onConfirm}
           onClose={() => setIsInputModalOpen(false)}
           confirmText={inputModalConfig.confirmText}
+        />
+
+        {/* Paywall Modal */}
+        <PaywallModal
+          isOpen={isPaywallModalOpen}
+          onClose={() => setIsPaywallModalOpen(false)}
+          type={paywallModalConfig.type}
+          title={paywallModalConfig.title}
+          message={paywallModalConfig.message}
         />
 
         {/* Render CardDetailModal */}

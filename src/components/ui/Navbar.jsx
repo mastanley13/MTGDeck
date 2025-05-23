@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscription } from '../../context/SubscriptionContext';
 
 // Placeholder - replace with the same ID used in UserProfilePage.jsx
 const PROFILE_PIC_CUSTOM_FIELD_ID = "hPIWnTEsvK1pVbATGLS5";
@@ -10,6 +11,7 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, logout, loadingAuth } = useAuth();
+  const { isPremium } = useSubscription();
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -116,6 +118,28 @@ const Navbar = () => {
           </div>
           
           <div className="hidden sm:flex sm:items-center">
+            {/* Clean subscription badge */}
+            <Link 
+              to="/subscription" 
+              className={`mr-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                isPremium 
+                  ? 'bg-gradient-to-r from-theme-accent-blue to-theme-accent-purple text-white hover:opacity-90'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              {isPremium ? (
+                <>
+                  <span className="mr-1">⭐</span>
+                  Premium
+                </>
+              ) : (
+                <>
+                  <span className="mr-1">🆓</span>
+                  Free Plan
+                </>
+              )}
+            </Link>
+
             {isAuthenticated ? (
               <>
                 {currentUser && <span className="text-sm text-gray-200 mr-4">Welcome, {currentUser.firstName || currentUser.email}!</span>}
@@ -207,6 +231,19 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="sm:hidden bg-logoScheme-darkGray border-t border-logoScheme-brown">
           <div className="pt-2 pb-3 space-y-1">
+            {/* Clean subscription link in mobile menu */}
+            <Link
+              to="/subscription"
+              onClick={() => setIsMenuOpen(false)}
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                isActive('/subscription')
+                  ? 'bg-logoScheme-brown border-logoScheme-gold text-gray-100'
+                  : 'border-transparent text-gray-300 hover:bg-logoScheme-brown hover:border-logoScheme-gold hover:text-gray-100'
+              }`}
+            >
+              {isPremium ? '⭐ Premium Plan' : '🆓 Free Plan'}
+            </Link>
+            
             <Link
               to="/"
               onClick={() => setIsMenuOpen(false)}
