@@ -10,12 +10,16 @@ const PROFILE_PIC_CUSTOM_FIELD_ID = "hPIWnTEsvK1pVbATGLS5";
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isAiDropdownOpen, setIsAiDropdownOpen] = useState(false);
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, logout, loadingAuth } = useAuth();
   const { isPremium } = useSubscription();
   
   const profileDropdownRef = useRef(null);
+  const aiDropdownRef = useRef(null);
+  const toolsDropdownRef = useRef(null);
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -25,6 +29,8 @@ const Navbar = () => {
     logout();
     setIsMenuOpen(false);
     setIsProfileDropdownOpen(false);
+    setIsAiDropdownOpen(false);
+    setIsToolsDropdownOpen(false);
     navigate('/');
   };
 
@@ -33,6 +39,12 @@ const Navbar = () => {
     const handleClickOutside = (event) => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
         setIsProfileDropdownOpen(false);
+      }
+      if (aiDropdownRef.current && !aiDropdownRef.current.contains(event.target)) {
+        setIsAiDropdownOpen(false);
+      }
+      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target)) {
+        setIsToolsDropdownOpen(false);
       }
     };
 
@@ -84,8 +96,8 @@ const Navbar = () => {
               </span>
             </Link>
             
-            {/* Primary navigation - hidden on mobile, increased min-width for proper spacing */}
-            <div className="hidden xl:flex items-center space-x-2">
+            {/* Primary navigation - clean and uncluttered */}
+            <div className="hidden xl:flex items-center space-x-3">
               <Link 
                 to="/" 
                 className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
@@ -130,48 +142,121 @@ const Navbar = () => {
                 </Link>
               )}
               
-              {/* AI Tools - with proper spacing to prevent text wrapping */}
-              <Link
-                to="/commander-ai"
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
-                  isActive('/commander-ai')
-                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
-                }`}
-              >
-                <span className="relative z-10">Commander AI</span>
-                {!isActive('/commander-ai') && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {/* AI Tools Dropdown */}
+              <div className="relative" ref={aiDropdownRef}>
+                <button
+                  onClick={() => setIsAiDropdownOpen(!isAiDropdownOpen)}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap flex items-center ${
+                    (isActive('/commander-ai') || isActive('/tutor-ai'))
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <span className="relative z-10 mr-1">AI Tools</span>
+                  <svg 
+                    className={`w-4 h-4 transition-transform duration-300 ${isAiDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {!(isActive('/commander-ai') || isActive('/tutor-ai')) && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  )}
+                </button>
+
+                {isAiDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-50">
+                    <Link
+                      to="/commander-ai"
+                      onClick={() => setIsAiDropdownOpen(false)}
+                      className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
+                        isActive('/commander-ai')
+                          ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span>⚔️</span>
+                        <span>Commander AI</span>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/tutor-ai"
+                      onClick={() => setIsAiDropdownOpen(false)}
+                      className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
+                        isActive('/tutor-ai')
+                          ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span>🎯</span>
+                        <span>Tutor AI</span>
+                      </div>
+                    </Link>
+                  </div>
                 )}
-              </Link>
+              </div>
               
-              <Link
-                to="/tutor-ai"
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
-                  isActive('/tutor-ai')
-                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
-                }`}
-              >
-                <span className="relative z-10">Tutor AI</span>
-                {!isActive('/tutor-ai') && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {/* Tools Dropdown */}
+              <div className="relative" ref={toolsDropdownRef}>
+                <button
+                  onClick={() => setIsToolsDropdownOpen(!isToolsDropdownOpen)}
+                  className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap flex items-center ${
+                    (isActive('/card-search') || isActive('/how-to-play'))
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <span className="relative z-10 mr-1">Tools</span>
+                  <svg 
+                    className={`w-4 h-4 transition-transform duration-300 ${isToolsDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  {!(isActive('/card-search') || isActive('/how-to-play')) && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  )}
+                </button>
+
+                {isToolsDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-50">
+                    <Link
+                      to="/card-search"
+                      onClick={() => setIsToolsDropdownOpen(false)}
+                      className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
+                        isActive('/card-search')
+                          ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span>🔍</span>
+                        <span>Card Search</span>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/how-to-play"
+                      onClick={() => setIsToolsDropdownOpen(false)}
+                      className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
+                        isActive('/how-to-play')
+                          ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span>📚</span>
+                        <span>How to Play</span>
+                      </div>
+                    </Link>
+                  </div>
                 )}
-              </Link>
-              
-              <Link
-                to="/card-search"
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
-                  isActive('/card-search')
-                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
-                }`}
-              >
-                <span className="relative z-10">Card Search</span>
-                {!isActive('/card-search') && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                )}
-              </Link>
+              </div>
             </div>
           </div>
           
@@ -530,6 +615,27 @@ const Navbar = () => {
                   <div className="flex items-center space-x-3">
                     <span>🔍</span>
                     <span>Card Search</span>
+                  </div>
+                </Link>
+              </div>
+
+              {/* How to Play section */}
+              <div className="pt-2">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 px-3">
+                  Learning
+                </div>
+                <Link
+                  to="/how-to-play"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/how-to-play')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>📚</span>
+                    <span>How to Play</span>
                   </div>
                 </Link>
               </div>

@@ -196,86 +196,112 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl"></div>
         <div className={`relative commander-search glassmorphism-card border-primary-500/30 shadow-modern-primary p-8 w-full max-w-3xl flex flex-col ${modalSelectedCommander ? 'max-h-[90vh]' : 'max-h-[95vh]'}`}>
-          <div className="flex justify-between items-center mb-6 pb-6 border-b border-slate-700/50">
-              <h2 className="text-3xl font-bold text-gradient-primary">
-                  {modalSelectedCommander ? 'Selected Commander' : 'Select a Commander'}
-              </h2>
-              <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl transition-colors duration-200 hover:bg-slate-800/50 rounded-lg p-2">&times;</button>
+          <div className="flex justify-between items-center mb-6 pb-6 border-b border-slate-700/50 flex-shrink-0">
+            <h2 className="text-3xl font-bold text-gradient-primary">
+              {modalSelectedCommander ? 'Selected Commander' : 'Select a Commander'}
+            </h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl transition-colors duration-200 hover:bg-slate-800/50 rounded-lg p-2">&times;</button>
           </div>
         
-          <div className="flex-grow text-slate-300" style={{ overflow: modalSelectedCommander ? 'auto' : 'visible' }}>
+          <div className="flex-grow text-slate-300 min-h-0 flex flex-col">
             {modalSelectedCommander ? (
-              <div className="relative">
+              <div className="relative overflow-y-auto flex-grow">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-blue-500/10 rounded-2xl blur-sm"></div>
                 <div className="relative commander-showcase glassmorphism-card border-primary-500/20 p-6">
                   <div className="flex flex-col md:flex-row items-center gap-6">
-                      <div className="w-full md:w-1/3 relative">
-                          {modalSelectedCommander.image_uris?.normal && (
-                              <div className="magic-card transform transition hover:scale-[1.02] hover:rotate-1">
-                                  <img 
-                                      src={modalSelectedCommander.image_uris.normal} 
-                                      alt={modalSelectedCommander.name}
-                                      className="rounded-xl shadow-lg w-full h-auto border border-primary-500/30"
-                                  />
-                              </div>
-                          )}
+                    <div className="w-full md:w-1/3 relative">
+                      {modalSelectedCommander.image_uris?.normal && (
+                        <div className="magic-card transform transition hover:scale-[1.02] hover:rotate-1">
+                          <img 
+                            src={modalSelectedCommander.image_uris.normal} 
+                            alt={modalSelectedCommander.name}
+                            className="rounded-xl shadow-lg w-full h-auto border border-primary-500/30"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center mb-3 space-x-3">
+                        <h3 className="text-2xl font-bold text-primary-400">{modalSelectedCommander.name}</h3>
+                        <div className="flex space-x-1">
+                          {renderColorIdentity(modalSelectedCommander.color_identity)}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                          <div className="flex items-center mb-3 space-x-3">
-                              <h3 className="text-2xl font-bold text-primary-400">{modalSelectedCommander.name}</h3>
-                              <div className="flex space-x-1">
-                                  {renderColorIdentity(modalSelectedCommander.color_identity)}
-                              </div>
+                      <div className="text-sm text-slate-400 mb-4">{modalSelectedCommander.type_line}</div>
+                      <div className="bg-slate-800/50 p-4 rounded-xl shadow-sm mb-4 max-h-40 overflow-y-auto text-slate-300 border border-slate-700/50">
+                        <p className="whitespace-pre-line leading-relaxed">{modalSelectedCommander.oracle_text}</p>
+                        {modalSelectedCommander.power && modalSelectedCommander.toughness && (
+                          <div className="mt-3 font-semibold text-primary-400">
+                            Power/Toughness: {modalSelectedCommander.power}/{modalSelectedCommander.toughness}
                           </div>
-                          <div className="text-sm text-slate-400 mb-4">{modalSelectedCommander.type_line}</div>
-                          <div className="bg-slate-800/50 p-4 rounded-xl shadow-sm mb-4 max-h-40 overflow-y-auto text-slate-300 border border-slate-700/50">
-                              <p className="whitespace-pre-line leading-relaxed">{modalSelectedCommander.oracle_text}</p>
-                              {modalSelectedCommander.power && modalSelectedCommander.toughness && (
-                                  <div className="mt-3 font-semibold text-primary-400">
-                                      Power/Toughness: {modalSelectedCommander.power}/{modalSelectedCommander.toughness}
-                                  </div>
-                              )}
-                              {modalSelectedCommander.loyalty && (
-                                  <div className="mt-3 font-semibold text-primary-400">
-                                      Loyalty: {modalSelectedCommander.loyalty}
-                                  </div>
-                              )}
+                        )}
+                        {modalSelectedCommander.loyalty && (
+                          <div className="mt-3 font-semibold text-primary-400">
+                            Loyalty: {modalSelectedCommander.loyalty}
                           </div>
-                          <div className="flex items-center justify-between">
-                              <div className="text-sm text-slate-500">
-                                  {modalSelectedCommander.set_name} ({modalSelectedCommander.set.toUpperCase()})
-                              </div>
-                              <button
-                                  onClick={handleChangeCommander}
-                                  className="btn-modern btn-modern-secondary btn-modern-sm"
-                              >
-                                  Change Commander
-                              </button>
-                          </div>
+                        )}
                       </div>
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-slate-500">
+                          {modalSelectedCommander.set_name} ({modalSelectedCommander.set.toUpperCase()})
+                        </div>
+                        <button
+                          onClick={handleChangeCommander}
+                          className="btn-modern btn-modern-secondary btn-modern-sm"
+                        >
+                          Change Commander
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
               <>
-                <div className={`glassmorphism-card border-primary-500/20 p-6 ${suggestions.length > 0 ? 'mb-2' : 'mb-6'}`}>
-                  <SearchBar 
-                    query={currentQuery}
-                    setQuery={handleInputChange}
-                    onSubmit={handleSearch}
-                    suggestions={suggestions}
-                    searchOptions={searchOptions}
-                    updateSearchOptions={handleUpdateSearchOptions}
-                    isLoading={isLoading || isSuggestionLoading}
-                    onSuggestionSelected={handleSuggestionSelected}
-                    minCharsForSuggestions={3}
-                    autoFocusInput={true}
-                    showAdvancedFilters={false}
-                    placeholder="Search for commanders..."
-                  />
+                {/* Search Bar - Fixed at top with higher z-index */}
+                <div className="flex-shrink-0 mb-4 relative z-10">
+                  <div className="glassmorphism-card border-primary-500/20 p-6 relative overflow-visible">
+                    <SearchBar 
+                      query={currentQuery}
+                      setQuery={handleInputChange}
+                      onSubmit={handleSearch}
+                      suggestions={suggestions}
+                      searchOptions={searchOptions}
+                      updateSearchOptions={handleUpdateSearchOptions}
+                      isLoading={isLoading || isSuggestionLoading}
+                      onSuggestionSelected={handleSuggestionSelected}
+                      minCharsForSuggestions={3}
+                      autoFocusInput={true}
+                      showAdvancedFilters={false}
+                      placeholder="Search for commanders..."
+                    />
+                  </div>
                 </div>
                 
-                                <SearchResults                   results={searchResults}                  isLoading={isLoading}                  error={error}                  hasMore={hasMore}                  loadMore={handleLoadMore}                  onCardClick={handleCommanderSelectAndClose}                  totalCards={totalCards}                />                                {!searchQuery && !isLoading && searchResults.length === 0 && suggestions.length === 0 && (                  <div className="text-center p-8 glassmorphism-card border-primary-500/20 mt-4">                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-slate-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />                    </svg>                    <p className="text-lg font-medium text-white mb-2">Search for a commander to get started</p>                    <p className="text-sm text-slate-400 max-w-md mx-auto">                      Try searching for popular commanders like "Atraxa", "Korvold", or "Muldrotha"                    </p>                  </div>                )}
+                {/* Scrollable Results Area */}
+                <div className="flex-grow min-h-0 overflow-y-auto relative">
+                  <SearchResults
+                    results={searchResults}
+                    isLoading={isLoading}
+                    error={error}
+                    hasMore={hasMore}
+                    loadMore={handleLoadMore}
+                    onCardClick={handleCommanderSelectAndClose}
+                    totalCards={totalCards}
+                  />
+                  
+                  {!searchQuery && !isLoading && searchResults.length === 0 && suggestions.length === 0 && (
+                    <div className="text-center p-8 glassmorphism-card border-primary-500/20">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-slate-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <p className="text-lg font-medium text-white mb-2">Search for a commander to get started</p>
+                      <p className="text-sm text-slate-400 max-w-md mx-auto">
+                        Try searching for popular commanders like "Atraxa", "Korvold", or "Muldrotha"
+                      </p>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>
