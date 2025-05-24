@@ -2,150 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { searchCards } from '../utils/scryfallAPI';
 import { useDeck } from '../context/DeckContext';
 import CardDetailModal from '../components/ui/CardDetailModal';
+import EnhancedCardImage from '../components/ui/EnhancedCardImage';
 
-// Enhanced CardImage component for double-faced cards
-const CardImageLocal = ({ card, className }) => {
-  const [imageState, setImageState] = useState('loading');
-  const [retryCount, setRetryCount] = useState(0);
-  const [currentFace, setCurrentFace] = useState(0);
-  const maxRetries = 2;
-
-  // Enhanced function to get all card face image URIs
-  const getAllCardFaceImages = (card) => {
-    if (!card) return [];
-
-    try {
-      const faces = [];
-
-      // Single-faced card with direct image_uris
-      if (card.image_uris && !card.card_faces) {
-        faces.push({
-          name: card.name,
-          imageUrl: card.image_uris.normal || card.image_uris.large || card.image_uris.small || card.image_uris.png,
-          uris: card.image_uris,
-          faceIndex: 0
-        });
-      }
-      // Multi-faced card
-      else if (card.card_faces && card.card_faces.length > 0) {
-        card.card_faces.forEach((face, index) => {
-          if (face.image_uris) {
-            const imageUrl = face.image_uris.normal || face.image_uris.large || face.image_uris.small || face.image_uris.png;
-            if (imageUrl) {
-              faces.push({
-                name: face.name || `${card.name} (Face ${index + 1})`,
-                imageUrl: imageUrl,
-                uris: face.image_uris,
-                faceIndex: index
-              });
-            }
-          }
-        });
-      }
-
-      return faces;
-    } catch (error) {
-      console.error('CardImageLocal: Error processing card image URIs:', error, card);
-      return [];
-    }
-  };
-
-  const cardFaces = getAllCardFaceImages(card);
-  const isDoubleFaced = cardFaces.length > 1;
-  const currentFaceData = cardFaces[currentFace] || cardFaces[0];
-
-  const handleImageLoad = () => {
-    setImageState('loaded');
-  };
-
-  const handleImageError = () => {
-    if (retryCount < maxRetries) {
-      setImageState('retrying');
-      setRetryCount(prev => prev + 1);
-      setTimeout(() => {
-        setImageState('loading');
-      }, 1000);
-    } else {
-      setImageState('error');
-    }
-  };
-
-  const toggleFace = () => {
-    if (isDoubleFaced) {
-      setCurrentFace(prev => (prev + 1) % cardFaces.length);
-      setImageState('loading');
-      setRetryCount(0);
-    }
-  };
-
-  if (!currentFaceData || imageState === 'error') {
-    return (
-      <div className="w-full bg-slate-800 rounded-xl shadow-lg flex items-center justify-center aspect-[5/7] mb-3">
-        <div className="text-center">
-          <svg className="h-12 w-12 mx-auto mb-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span className="text-slate-500 text-xs">
-            {!currentFaceData ? 'No Image Found' : 'Image Unavailable'}
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative group">
-      {/* Loading State */}
-      {imageState === 'loading' || imageState === 'retrying' ? (
-        <div className="w-full bg-slate-800 rounded-xl shadow-lg flex items-center justify-center aspect-[5/7] mb-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-400"></div>
-          {imageState === 'retrying' && (
-            <span className="absolute bottom-2 text-xs text-slate-400">Retrying...</span>
-          )}
-        </div>
-      ) : null}
-      
-      {/* Main Card Image */}
-      <img 
-        src={currentFaceData.imageUrl}
-        alt={currentFaceData.name}
-        className={`${className} ${imageState === 'loaded' ? 'opacity-100' : 'opacity-0 absolute inset-0'} transition-opacity duration-300`}
-        onLoad={handleImageLoad}
-        onError={handleImageError}
-      />
-
-      {/* Double-faced indicator and toggle button */}
-      {isDoubleFaced && imageState === 'loaded' && (
-        <>
-          {/* Double-faced indicator */}
-          <div className="absolute top-2 left-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg">
-            DFC
-          </div>
-
-          {/* Face counter */}
-          <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
-            {currentFace + 1}/{cardFaces.length}
-          </div>
-
-          {/* Flip button - positioned at top center */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleFace();
-            }}
-            className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center space-x-1 shadow-lg z-30 transition-all duration-200 hover:scale-105"
-            title={`Click to flip to ${cardFaces[(currentFace + 1) % cardFaces.length]?.name || 'other side'}`}
-          >
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>Flip</span>
-          </button>
-        </>
-      )}
-    </div>
-  );
-};
+// Using EnhancedCardImage component for optimized image handling
 
 // Debounce function
 const debounce = (func, delay) => {
@@ -171,6 +30,26 @@ const CardSearchPage = () => {
 
   const { addCard, savedDecks, currentDeckName } = useDeck();
 
+  // Function to sort results prioritizing original cards over Arena cards
+  const sortResultsByCardType = (cards) => {
+    if (!cards || cards.length === 0) return cards;
+    
+    // Separate Arena cards from original cards
+    const originalCards = [];
+    const arenaCards = [];
+    
+    cards.forEach(card => {
+      if (card.name && card.name.startsWith('A-')) {
+        arenaCards.push(card);
+      } else {
+        originalCards.push(card);
+      }
+    });
+    
+    // Return original cards first, then Arena cards
+    return [...originalCards, ...arenaCards];
+  };
+
   const performSearch = async (currentQuery) => {
     if (!currentQuery.trim()) {
       setResults([]);
@@ -181,7 +60,8 @@ const CardSearchPage = () => {
     setError(null);
     try {
       const response = await searchCards(currentQuery);
-      setResults(response.data || []);
+      const sortedResults = sortResultsByCardType(response.data || []);
+      setResults(sortedResults);
     } catch (err) {
       setError('Failed to fetch cards. Please try again.');
       setResults([]);
@@ -388,7 +268,14 @@ const CardSearchPage = () => {
                         {card.name}
                       </h3>
                       
-                      <CardImageLocal card={card} className="w-full rounded-xl shadow-lg object-cover aspect-[5/7] group-hover:scale-105 transition-transform duration-300 mb-3" />
+                      <EnhancedCardImage 
+                  card={card} 
+                  context="GRID_VIEW"
+                  aspectRatio="card"
+                  className="w-full rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-300 mb-3" 
+                  showDoubleFaceToggle={true}
+                  alt={`${card.name} Magic: The Gathering card`}
+                />
                       
                       <div className="space-y-1 mb-4">
                         <p className="text-xs text-slate-400 truncate" title={card.type_line}>{card.type_line}</p>

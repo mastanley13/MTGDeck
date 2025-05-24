@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { parseManaSymbols } from '../../utils/manaSymbols';
+import { getOptimalImageUrl, IMAGE_CONTEXTS } from '../../utils/imageUtils.jsx';
 import axios from 'axios'; // Import axios for API calls
 
 const CardDetailModal = ({ card, onClose }) => {
@@ -19,32 +20,33 @@ const CardDetailModal = ({ card, onClose }) => {
 
       // Single-faced card with direct image_uris
       if (card.image_uris && !card.card_faces) {
-        faces.push({
-          name: card.name,
-          imageUrl: card.image_uris.png || card.image_uris.large || card.image_uris.normal,
-          uris: card.image_uris,
-          faceIndex: 0
-        });
+        const imageUrl = getOptimalImageUrl(card, 'DETAIL_MODAL');
+        if (imageUrl) {
+          faces.push({
+            name: card.name,
+            imageUrl: imageUrl,
+            uris: card.image_uris,
+            faceIndex: 0
+          });
+        }
       }
       // Multi-faced card
       else if (card.card_faces && card.card_faces.length > 0) {
         card.card_faces.forEach((face, index) => {
-          if (face.image_uris) {
-            const imageUrl = face.image_uris.png || face.image_uris.large || face.image_uris.normal;
-            if (imageUrl) {
-              faces.push({
-                name: face.name || `${card.name} (Face ${index + 1})`,
-                imageUrl: imageUrl,
-                uris: face.image_uris,
-                faceIndex: index,
-                oracle_text: face.oracle_text,
-                mana_cost: face.mana_cost,
-                type_line: face.type_line,
-                power: face.power,
-                toughness: face.toughness,
-                loyalty: face.loyalty
-              });
-            }
+          const imageUrl = getOptimalImageUrl(card, 'DETAIL_MODAL', index);
+          if (imageUrl) {
+            faces.push({
+              name: face.name || `${card.name} (Face ${index + 1})`,
+              imageUrl: imageUrl,
+              uris: face.image_uris,
+              faceIndex: index,
+              oracle_text: face.oracle_text,
+              mana_cost: face.mana_cost,
+              type_line: face.type_line,
+              power: face.power,
+              toughness: face.toughness,
+              loyalty: face.loyalty
+            });
           }
         });
       }
@@ -67,8 +69,13 @@ const CardDetailModal = ({ card, onClose }) => {
   };
 
   const fetchArtworks = useCallback(async () => {
-    if (!card || !card.oracle_id) {
-      // For cards without oracle_id, use current face data if it's a double-faced card
+    if (!card) return;
+
+    setArtLoading(true);
+
+    // For cards without oracle_id, use current card image only
+    if (!card.oracle_id) {
+      console.log("Card has no oracle_id, using single artwork:", card.name);
       let initialArtUri;
       if (isDoubleFaced && currentFaceData) {
         initialArtUri = currentFaceData.imageUrl;
@@ -83,44 +90,146 @@ const CardDetailModal = ({ card, onClose }) => {
           artist: card.artist,
           collector_number: card.collector_number
         }]);
+        setCurrentArtIndex(0);
       }
+      setArtLoading(false);
       return;
     }
 
-    setArtLoading(true);
     try {
-      const response = await axios.get(`https://api.scryfall.com/cards/search?order=released&q=oracleid%3A${card.oracle_id}&unique=prints&include_extras=true`);
-      const prints = response.data.data;
+      console.log("Fetching artworks for card:", card.name, "Oracle ID:", card.oracle_id);
+      
+      // Use comprehensive name-based search to capture ALL visual variants
+      // Name-based searches find cards with different oracle_ids (like Art Series)
+      const cardName = card.name.replace(/^A-/, ''); // Remove A- prefix for Arena cards
+      
+      console.log("Performing comprehensive search for all variants...");
+      let allPrints = [];
+      
+      // Helper function to get all pages from a search  
+      const getAllPages = async (searchUrl) => {
+        let allResults = [];
+        let nextPageUrl = searchUrl;
+        let pageCount = 0;
+        const maxPages = 50; // Increased to handle unique=prints results
+        
+        while (nextPageUrl && pageCount < maxPages) {
+          try {
+            console.log(`  Fetching page ${pageCount + 1}...`);
+            const response = await axios.get(nextPageUrl);
+            
+            if (response.data && response.data.data) {
+              allResults = allResults.concat(response.data.data);
+              console.log(`  Page ${pageCount + 1}: ${response.data.data.length} results`);
+              
+              // Get next page URL if it exists
+              nextPageUrl = response.data.next_page || null;
+              pageCount++;
+            } else {
+              console.log(`  Page ${pageCount + 1}: No data found`);
+              break;
+            }
+          } catch (e) {
+            console.log(`  Page ${pageCount + 1}: Failed (${e.response?.status || 'network error'})`);
+            break;
+          }
+        }
+        
+        console.log(`  Total pages fetched: ${pageCount}, total results: ${allResults.length}`);
+        return allResults;
+      };
+      
+      // Search 1: Comprehensive prints search (gets ALL printings - this is the key!)
+      try {
+        console.log("Primary search: All unique prints...");
+        const primaryResults = await getAllPages(`https://api.scryfall.com/cards/search?order=released&q="${encodeURIComponent(cardName)}"&include_extras=true&unique=prints`);
+        allPrints = allPrints.concat(primaryResults);
+        console.log(`Primary search: ${primaryResults.length} total prints found`);
+      } catch (e) {
+        console.log("Primary prints search failed, trying fallbacks...");
+        
+        // Fallback 1: Name-based search with unique=prints
+        try {
+          console.log("Fallback 1: Name field with unique prints...");
+          const nameResults = await getAllPages(`https://api.scryfall.com/cards/search?order=released&q=name:${encodeURIComponent(cardName)}&include_extras=true&unique=prints`);
+          allPrints = allPrints.concat(nameResults);
+          console.log(`Name search: ${nameResults.length} prints found`);
+        } catch (e2) {
+          console.log("Name field search also failed");
+        }
+      }
+      
+      // Search 2: Oracle-based search with unique=prints (for functional reprints)
+      if (card.oracle_id && allPrints.length < 50) { // Only if we haven't found many prints yet
+        try {
+          console.log("Oracle-based search for functional reprints...");
+          const oracleResults = await getAllPages(`https://api.scryfall.com/cards/search?order=released&q=oracleid:${card.oracle_id}&include_extras=true&unique=prints`);
+          allPrints = allPrints.concat(oracleResults);
+          console.log(`Oracle search: ${oracleResults.length} additional prints found`);
+        } catch (e) {
+          console.log("Oracle search failed");
+        }
+      }
+      
+      // Search 3: Broader fuzzy search (only if still limited results)
+      if (allPrints.length < 10) {
+        try {
+          console.log("Fallback: Broader search for variants...");
+          const fuzzyResults = await getAllPages(`https://api.scryfall.com/cards/search?order=released&q=${encodeURIComponent(cardName)}&include_extras=true&unique=prints`);
+          allPrints = allPrints.concat(fuzzyResults);
+          console.log(`Fuzzy search: ${fuzzyResults.length} additional prints found`);
+        } catch (e) {
+          console.log("Fuzzy search failed");
+        }
+      }
+      
+      // Remove duplicates based on card ID (handle missing IDs)
+      const uniquePrints = [];
+      const seenIds = new Set();
+      allPrints.forEach(print => {
+        if (print && print.id && !seenIds.has(print.id)) {
+          seenIds.add(print.id);
+          uniquePrints.push(print);
+        }
+      });
+      
+      const prints = uniquePrints;
+      console.log("Found", prints.length, "total unique prints for", card.name, "after combining all searches");
       
       const uniqueArtworks = [];
-      const seenImageUris = new Set(); // Renamed from seenArtCropUris
+      const seenCombinations = new Set(); // Track unique combinations of art + treatment
 
-      // For the initial card, use the current face if it's a double-faced card
-      let initialCardFullImageUri;
-      if (isDoubleFaced && currentFaceData) {
-        initialCardFullImageUri = currentFaceData.imageUrl;
-      } else {
-        initialCardFullImageUri = card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
-      }
+      // Filter to only include cards that are actually variants of our target card
+      const relevantPrints = prints.filter(print => {
+        if (!print || !print.name) return false;
+        
+        const printName = print.name.replace(/^A-/, '').replace(/ \/\/ .*$/, ''); // Remove A- prefix and // suffix  
+        const targetName = cardName;
+        const isMatch = printName.toLowerCase() === targetName.toLowerCase();
+        
+        if (!isMatch) {
+          console.log(`Filtered out: "${print.name}" (doesn't match "${cardName}")`);
+        }
+        
+        return isMatch;
+      });
       
-      if (initialCardFullImageUri) {
-        uniqueArtworks.push({
-          uri: initialCardFullImageUri,
-          setName: card.set_name,
-          artist: card.artist,
-          collector_number: card.collector_number
-        });
-        seenImageUris.add(initialCardFullImageUri);
-      }
-
-      prints.forEach(print => {
+      console.log(`Filtered to ${relevantPrints.length} relevant prints from ${prints.length} total`);
+      
+      // Process all relevant prints to find unique artworks and treatments
+      relevantPrints.forEach(print => {
         let artUri = null;
+        // Use a more robust artId that handles undefined illustration_id
+        let artId = print.illustration_id || `card_${print.id}`;
 
-        if (print.image_uris) {
-          artUri = print.image_uris.png || print.image_uris.large || print.image_uris.normal;
-        } else if (print.card_faces && print.card_faces.length > 0) {
+        // For single-faced cards - prioritize higher quality
+        if (print.image_uris && !isDoubleFaced) {
+          artUri = print.image_uris.png || print.image_uris.large || print.image_uris.normal || print.image_uris.small;
+        }
+        // For double-faced cards
+        else if (print.card_faces && print.card_faces.length > 0 && isDoubleFaced) {
           // For double-faced cards, try to match the current face we're viewing
-          if (isDoubleFaced && currentFace < print.card_faces.length && print.card_faces[currentFace]?.image_uris) {
+          if (currentFace < print.card_faces.length && print.card_faces[currentFace]?.image_uris) {
             artUri = print.card_faces[currentFace].image_uris.png || 
                      print.card_faces[currentFace].image_uris.large || 
                      print.card_faces[currentFace].image_uris.normal;
@@ -132,41 +241,159 @@ const CardDetailModal = ({ card, onClose }) => {
           }
         }
 
-        if (artUri && !seenImageUris.has(artUri)) {
+        if (artUri) {
+          // Determine treatment type for display
+          let treatmentType = 'Regular';
+          if (print.frame_effects?.includes('extendedart')) {
+            treatmentType = 'Extended Art';
+          } else if (print.border_color === 'borderless') {
+            treatmentType = 'Borderless';
+          } else if (print.set_type === 'art_series') {
+            treatmentType = 'Art Series';
+          } else if (print.name && print.name.startsWith('A-')) {
+            treatmentType = 'Arena';
+          } else if (print.promo) {
+            treatmentType = 'Promo';
+          } else if (print.frame_effects?.includes('showcase')) {
+            treatmentType = 'Showcase';
+          } else if (print.finishes?.includes('foil') && !print.finishes?.includes('nonfoil')) {
+            treatmentType = 'Foil Only';
+          }
+
+          // Smart deduplication: Show unique artworks and significant treatments
+          // Primary key: illustration_id (if available) - this groups cards with same artwork
+          // Secondary key: treatment type + set type for variants
+          const primaryArtKey = artId; // This is illustration_id or fallback
+          const treatmentSignature = `${treatmentType}_${print.set_type || 'normal'}_${print.frame_effects?.join(',') || 'regular'}`;
+          
+          // Create a combined key that allows some duplicates for different treatments
+          const dedupeKey = `${primaryArtKey}_${treatmentSignature}`;
+          
+          // For special treatments, always include them
+          const isSpecialTreatment = treatmentType !== 'Regular';
+          
+          // For regular treatments, only keep the most recent printing of each artwork
+          if (!isSpecialTreatment && seenCombinations.has(dedupeKey)) {
+            console.log(`⏭️  Skipped regular duplicate: ${print.set_name} #${print.collector_number} (${treatmentType})`);
+            return;
+          }
+          
+          // For special treatments, check if we already have this exact treatment
+          if (isSpecialTreatment && seenCombinations.has(dedupeKey)) {
+            console.log(`⏭️  Skipped special duplicate: ${print.set_name} #${print.collector_number} (${treatmentType})`);
+            return;
+          }
+          
+          seenCombinations.add(dedupeKey);
+          console.log(`✅ Added artwork: ${print.set_name} #${print.collector_number} (${treatmentType}) - Art ID: ${artId.substring(0, 8)}...`);
+
           uniqueArtworks.push({
             uri: artUri,
             setName: print.set_name,
             artist: print.artist,
-            collector_number: print.collector_number
+            collector_number: print.collector_number,
+            set: print.set,
+            artId: artId,
+            oracleId: print.oracle_id,
+            released_at: print.released_at,
+            treatmentType: treatmentType,
+            frameEffects: print.frame_effects,
+            borderColor: print.border_color,
+            setType: print.set_type
           });
-          seenImageUris.add(artUri);
+        } else {
+          console.log(`❌ No image found for: ${print.set_name} #${print.collector_number}`);
         }
       });
 
+      // Sort by release date (newest first) to show recent arts first
+      uniqueArtworks.sort((a, b) => new Date(b.released_at || 0) - new Date(a.released_at || 0));
+
+      console.log("Found", uniqueArtworks.length, "unique artworks after processing");
+      console.log("Processed artworks:", uniqueArtworks.map(art => ({
+        setName: art.setName,
+        artist: art.artist,
+        artId: art.artId,
+        uri: art.uri.substring(0, 50) + '...'
+      })));
       setAllArtworks(uniqueArtworks);
-      const initialIndex = uniqueArtworks.findIndex(art => art.uri === initialCardFullImageUri);
+      
+      // Find the index of the current card's artwork to start with
+      const currentCardImageUri = !isDoubleFaced 
+        ? (card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal)
+        : (currentFaceData?.imageUrl);
+      
+      const initialIndex = uniqueArtworks.findIndex(art => art.uri === currentCardImageUri);
       setCurrentArtIndex(initialIndex !== -1 ? initialIndex : 0);
 
     } catch (error) {
       console.error("Error fetching card artworks:", error);
-      const fallbackArtUri = card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
-      if (fallbackArtUri && allArtworks.length === 0) {
-         setAllArtworks([{
-          uri: fallbackArtUri,
-          setName: card.set_name,
-          artist: card.artist,
-          collector_number: card.collector_number
-        }]);
+      
+      // Try fallback search without unique=art parameter
+      try {
+        console.log("Trying fallback search without unique=art...");
+        const fallbackResponse = await axios.get(`https://api.scryfall.com/cards/search?order=released&q=oracleid%3A${card.oracle_id}&include_extras=true`);
+        const fallbackPrints = fallbackResponse.data.data;
+        console.log("Fallback found", fallbackPrints.length, "prints");
+        
+        const fallbackArtworks = [];
+        const seenImages = new Set();
+        
+        fallbackPrints.forEach(print => {
+          let artUri = null;
+          
+          if (print.image_uris && !isDoubleFaced) {
+            artUri = print.image_uris.png || print.image_uris.large || print.image_uris.normal;
+          } else if (print.card_faces && isDoubleFaced && print.card_faces[currentFace]?.image_uris) {
+            artUri = print.card_faces[currentFace].image_uris.png || 
+                     print.card_faces[currentFace].image_uris.large || 
+                     print.card_faces[currentFace].image_uris.normal;
+          }
+          
+          if (artUri && !seenImages.has(artUri)) {
+            fallbackArtworks.push({
+              uri: artUri,
+              setName: print.set_name,
+              artist: print.artist,
+              collector_number: print.collector_number,
+              set: print.set
+            });
+            seenImages.add(artUri);
+          }
+        });
+        
+        if (fallbackArtworks.length > 0) {
+          setAllArtworks(fallbackArtworks);
+          setCurrentArtIndex(0);
+        }
+      } catch (fallbackError) {
+        console.error("Fallback search also failed:", fallbackError);
+        
+        // Final fallback to card's own image
+        const fallbackArtUri = isDoubleFaced && currentFaceData 
+          ? currentFaceData.imageUrl 
+          : card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
+        
+        if (fallbackArtUri) {
+          setAllArtworks([{
+            uri: fallbackArtUri,
+            setName: card.set_name,
+            artist: card.artist,
+            collector_number: card.collector_number
+          }]);
+          setCurrentArtIndex(0);
+        }
       }
     }
     setArtLoading(false);
-  }, [card, allArtworks.length, isDoubleFaced, currentFace, currentFaceData]);
+  }, [card?.id, card?.oracle_id, isDoubleFaced, currentFace, currentFaceData?.imageUrl]);
 
+  // Initial fetch when modal opens or card changes
   useEffect(() => {
     fetchArtworks();
   }, [fetchArtworks]);
 
-  // Refetch artworks when face changes for double-faced cards
+  // Refetch artworks when face changes for double-faced cards only
   useEffect(() => {
     if (isDoubleFaced) {
       fetchArtworks();
@@ -294,6 +521,9 @@ const CardDetailModal = ({ card, onClose }) => {
                 {currentArtIndex + 1} of {allArtworks.length}<br/>
                 {isDoubleFaced && <span className="block text-yellow-400 font-semibold">{currentFaceData?.name}</span>}
                 <span className="block truncate max-w-[120px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
+                {currentArtwork.treatmentType && currentArtwork.treatmentType !== 'Regular' && (
+                  <span className="block text-blue-300 font-semibold text-2xs">{currentArtwork.treatmentType}</span>
+                )}
                 <span className="block truncate max-w-[120px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
               </p>
               <button onClick={handleNextArt} className="bg-gray-600 hover:bg-gray-500 text-white text-xs py-1 px-2 rounded-md">Next Art</button>
@@ -303,6 +533,9 @@ const CardDetailModal = ({ card, onClose }) => {
              <p className="text-xs text-gray-400 mt-2 text-center">
                 {isDoubleFaced && <span className="block text-yellow-400 font-semibold truncate max-w-[180px]">{currentFaceData?.name}</span>}
                 <span className="block truncate max-w-[180px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
+                {currentArtwork.treatmentType && currentArtwork.treatmentType !== 'Regular' && (
+                  <span className="block text-blue-300 font-semibold text-2xs">{currentArtwork.treatmentType}</span>
+                )}
                 <span className="block truncate max-w-[180px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
               </p>
            )}

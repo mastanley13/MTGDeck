@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useDeck } from '../../context/DeckContext';
 import { getCardImageUris } from '../../utils/scryfallAPI';
 import { useDrag, useDrop } from 'react-dnd';
+import EnhancedCardImage from '../ui/EnhancedCardImage';
 
-// Enhanced DraggableCard with double-faced card support
+// Enhanced DraggableCard with optimized image handling
 const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCardDetails }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'CARD',
@@ -12,58 +13,6 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
       isDragging: !!monitor.isDragging(),
     }),
   }));
-
-  const [currentFace, setCurrentFace] = useState(0);
-
-  // Enhanced function to get all card face images
-  const getAllCardFaceImages = (card) => {
-    if (!card) return [];
-
-    try {
-      const faces = [];
-
-      // Single-faced card with direct image_uris
-      if (card.image_uris && !card.card_faces) {
-        faces.push({
-          name: card.name,
-          imageUrl: card.image_uris.normal || card.image_uris.large || card.image_uris.small || card.image_uris.png,
-          uris: card.image_uris,
-          faceIndex: 0
-        });
-      }
-      // Multi-faced card
-      else if (card.card_faces && card.card_faces.length > 0) {
-        card.card_faces.forEach((face, index) => {
-          if (face.image_uris) {
-            const imageUrl = face.image_uris.normal || face.image_uris.large || face.image_uris.small || face.image_uris.png;
-            if (imageUrl) {
-              faces.push({
-                name: face.name || `${card.name} (Face ${index + 1})`,
-                imageUrl: imageUrl,
-                uris: face.image_uris,
-                faceIndex: index
-              });
-            }
-          }
-        });
-      }
-
-      return faces;
-    } catch (error) {
-      console.error('DraggableCard: Error processing card image URIs:', error, card);
-      return [];
-    }
-  };
-
-  const cardFaces = getAllCardFaceImages(card);
-  const isDoubleFaced = cardFaces.length > 1;
-  const currentFaceData = cardFaces[currentFace] || cardFaces[0];
-
-  const toggleFace = () => {
-    if (isDoubleFaced) {
-      setCurrentFace(prev => (prev + 1) % cardFaces.length);
-    }
-  };
   
   const handleViewDetailsClick = (e) => {
     e.stopPropagation(); // Prevent card drag/drop or other parent clicks if necessary
@@ -77,56 +26,19 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
       ref={drag}
       className={`card-item flex flex-col h-full ${isDragging ? 'opacity-50' : ''} group`}
     >
-      {/* Card Image Area - Now clickable for details */}
+      {/* Enhanced Card Image Area - Clickable for details */}
       <div 
         className="relative w-full cursor-pointer group/image" 
         onClick={handleViewDetailsClick} // Open modal on image click
       >
-        {currentFaceData ? (
-          <>
-            <img
-              src={currentFaceData.imageUrl}
-              alt={currentFaceData.name}
-              className="rounded-t-lg shadow-md w-full object-cover aspect-[63/88] group-hover:opacity-80 transition-opacity duration-150 border border-slate-700/50"
-            />
-            
-            {/* Double-faced card indicators */}
-            {isDoubleFaced && (
-              <>
-                {/* DFC indicator */}
-                <div className="absolute top-1 left-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-1 py-0.5 rounded-full font-semibold shadow-lg z-10">
-                  DFC
-                </div>
-                
-                {/* Face counter */}
-                <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded-full z-10">
-                  {currentFace + 1}/{cardFaces.length}
-                </div>
-                
-                {/* Flip button - shows on hover */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFace();
-                  }}
-                  className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center z-5"
-                  title={`Click to flip to ${cardFaces[(currentFace + 1) % cardFaces.length]?.name || 'other side'}`}
-                >
-                  <div className="bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1 text-white font-semibold flex items-center space-x-1 text-xs">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    <span>Flip</span>
-                  </div>
-                </button>
-              </>
-            )}
-          </>
-        ) : (
-          <div className="bg-gray-700 rounded-t-lg shadow-md w-full aspect-[63/88] flex items-center justify-center p-2 group-hover:opacity-80 transition-opacity duration-150">
-            <span className="text-xs text-center text-gray-200">{card.name}</span>
-          </div>
-        )}
+        <EnhancedCardImage
+          card={card}
+          context="LIST_VIEW"
+          aspectRatio="card"
+          className="rounded-t-lg shadow-md w-full border border-slate-700/50 group-hover:opacity-80 transition-opacity duration-150"
+          showDoubleFaceToggle={true}
+          alt={`${card.name} card in deck`}
+        />
       </div>
 
       {/* Controls Bar - Below Image */}
