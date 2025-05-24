@@ -13,6 +13,8 @@ import React, { useState, useRef, useEffect } from 'react';
  * @param {boolean} props.isLoading - Loading state
  * @param {Function} props.onSuggestionSelected - Callback when suggestion is selected
  * @param {number} props.minCharsForSuggestions - Minimum characters required to show suggestions (default: 2)
+ * @param {boolean} props.showAdvancedFilters - Whether to show advanced filters (default: true)
+ * @param {string} props.placeholder - Custom placeholder text (default: "Search for cards...")
  */
 const SearchBar = ({ 
   query, 
@@ -23,7 +25,9 @@ const SearchBar = ({
   updateSearchOptions,
   isLoading,
   onSuggestionSelected,
-  minCharsForSuggestions = 2
+  minCharsForSuggestions = 2,
+  showAdvancedFilters = true,
+  placeholder = "Search for cards..."
 }) => {
   const [inputValue, setInputValue] = useState(query || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -180,7 +184,7 @@ const SearchBar = ({
               value={inputValue}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Search for cards..."
+              placeholder={placeholder}
               className="w-full pl-10 pr-4 py-3 border border-slate-600/50 rounded-l-xl shadow-sm focus:ring-primary-500 focus:border-primary-500 bg-slate-800/50 text-white placeholder-slate-400 transition-all duration-300"
               onFocus={() => inputValue.length >= minCharsForSuggestions && setShowSuggestions(true)}
               autoComplete="off"
@@ -195,7 +199,7 @@ const SearchBar = ({
             disabled={isLoading}
           >
             {isLoading ? (
-                              <svg className="animate-spin h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-5 w-5 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -205,13 +209,7 @@ const SearchBar = ({
           </button>
         </div>
         
-        {/* Custom suggestion dropdown with keyboard navigation */}
-        {showSuggestions && suggestions.length > 0 && (
-          <div 
-            ref={suggestionsRef}
-            className="absolute z-50 w-full glassmorphism-card border-primary-500/30 mt-1 rounded-xl shadow-modern-primary max-h-60 overflow-y-auto"
-            style={{ top: '100%' }}
-          >
+                {/* Suggestions dropdown positioned relative to the input field */}        {showSuggestions && suggestions.length > 0 && (          <div             ref={suggestionsRef}            className="absolute z-[200] w-full glassmorphism-card border-primary-500/30 rounded-xl shadow-modern-primary max-h-60 overflow-y-auto"            style={{               top: '100%',               marginTop: '4px'            }}          >
             <ul 
               ref={suggestionListRef}
               id="suggestion-list" 
@@ -223,7 +221,9 @@ const SearchBar = ({
                   key={index}
                   role="option"
                   aria-selected={index === activeSuggestionIndex}
-                                    className={`px-4 py-3 cursor-pointer transition-colors ${                    index === activeSuggestionIndex ? 'bg-primary-500/20 text-primary-400' : 'hover:bg-slate-800/50'                  }`}
+                  className={`px-4 py-3 cursor-pointer transition-colors ${
+                    index === activeSuggestionIndex ? 'bg-primary-500/20 text-primary-400' : 'hover:bg-slate-800/50'
+                  }`}
                   onClick={() => handleSuggestionClick(suggestion)}
                   onMouseEnter={() => setActiveSuggestionIndex(index)}
                 >
@@ -239,18 +239,23 @@ const SearchBar = ({
           </div>
         )}
         
-        <div className="mt-2 text-right">
-          <button
-            type="button"
-            onClick={handleAdvancedToggle}
-            className="text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors focus:outline-none focus:underline"
-          >
-            {advancedMode ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
-          </button>
-        </div>
+        {/* Advanced filters toggle - only show if showAdvancedFilters is true */}
+        {showAdvancedFilters && (
+          <div className="mt-2 text-right">
+            <button
+              type="button"
+              onClick={handleAdvancedToggle}
+              className="text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors focus:outline-none focus:underline"
+            >
+              {advancedMode ? 'Hide Advanced Filters' : 'Show Advanced Filters'}
+            </button>
+          </div>
+        )}
         
-        {advancedMode && (
-                    <div className="mt-3 p-6 glassmorphism-card border-primary-500/20 text-slate-300">            <h3 className="text-lg font-medium text-primary-400 mb-4">Advanced Filters</h3>
+        {/* Advanced filters content - only show if showAdvancedFilters is true and advancedMode is true */}
+        {showAdvancedFilters && advancedMode && (
+          <div className="mt-3 p-6 glassmorphism-card border-primary-500/20 text-slate-300">
+            <h3 className="text-lg font-medium text-primary-400 mb-4">Advanced Filters</h3>
             
             {/* Color filters */}
             <div className="mb-4">
@@ -320,28 +325,44 @@ const SearchBar = ({
                 <button
                   type="button"
                   onClick={() => updateSearchOptions({ order: 'name' })}
-                                    className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${                    searchOptions.order === 'name'                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'                  }`}
+                  className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${
+                    searchOptions.order === 'name'
+                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'
+                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'
+                  }`}
                 >
                   Name
                 </button>
                 <button
                   type="button"
                   onClick={() => updateSearchOptions({ order: 'cmc' })}
-                                    className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${                    searchOptions.order === 'cmc'                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'                  }`}
+                  className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${
+                    searchOptions.order === 'cmc'
+                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'
+                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'
+                  }`}
                 >
                   Mana Value
                 </button>
                 <button
                   type="button"
                   onClick={() => updateSearchOptions({ order: 'edhrec' })}
-                                    className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${                    searchOptions.order === 'edhrec' || !searchOptions.order                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'                  }`}
+                  className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${
+                    searchOptions.order === 'edhrec' || !searchOptions.order
+                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'
+                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'
+                  }`}
                 >
                   Popularity
                 </button>
                 <button
                   type="button"
                   onClick={() => updateSearchOptions({ order: 'released' })}
-                                    className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${                    searchOptions.order === 'released'                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'                  }`}
+                  className={`px-3 py-2 rounded-xl text-sm text-center transition-colors ${
+                    searchOptions.order === 'released'
+                      ? 'bg-primary-500/20 border border-primary-500/50 text-primary-400'
+                      : 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200'
+                  }`}
                 >
                   Release Date
                 </button>

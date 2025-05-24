@@ -195,7 +195,7 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl"></div>
-        <div className="relative commander-search glassmorphism-card border-primary-500/30 shadow-modern-primary p-8 w-full max-w-3xl max-h-[90vh] flex flex-col">
+        <div className={`relative commander-search glassmorphism-card border-primary-500/30 shadow-modern-primary p-8 w-full max-w-3xl flex flex-col ${modalSelectedCommander ? 'max-h-[90vh]' : 'max-h-[95vh]'}`}>
           <div className="flex justify-between items-center mb-6 pb-6 border-b border-slate-700/50">
               <h2 className="text-3xl font-bold text-gradient-primary">
                   {modalSelectedCommander ? 'Selected Commander' : 'Select a Commander'}
@@ -203,7 +203,7 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
               <button onClick={onClose} className="text-slate-400 hover:text-white text-3xl transition-colors duration-200 hover:bg-slate-800/50 rounded-lg p-2">&times;</button>
           </div>
         
-          <div className="overflow-y-auto flex-grow text-slate-300">
+          <div className="flex-grow text-slate-300" style={{ overflow: modalSelectedCommander ? 'auto' : 'visible' }}>
             {modalSelectedCommander ? (
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary-500/10 to-blue-500/10 rounded-2xl blur-sm"></div>
@@ -258,7 +258,7 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
               </div>
             ) : (
               <>
-                <div className="glassmorphism-card border-primary-500/20 p-6 mb-6">
+                <div className={`glassmorphism-card border-primary-500/20 p-6 ${suggestions.length > 0 ? 'mb-2' : 'mb-6'}`}>
                   <SearchBar 
                     query={currentQuery}
                     setQuery={handleInputChange}
@@ -270,30 +270,12 @@ const CommanderSearch = ({ isOpen, onClose, onCommanderSelect, selectedCommander
                     onSuggestionSelected={handleSuggestionSelected}
                     minCharsForSuggestions={3}
                     autoFocusInput={true}
+                    showAdvancedFilters={false}
+                    placeholder="Search for commanders..."
                   />
                 </div>
                 
-                <SearchResults 
-                  results={searchResults}
-                  isLoading={isLoading}
-                  error={error}
-                  hasMore={hasMore}
-                  loadMore={handleLoadMore}
-                  onCardClick={handleCommanderSelectAndClose}
-                  totalCards={totalCards}
-                />
-                
-                {!searchQuery && !isLoading && searchResults.length === 0 && (
-                  <div className="text-center p-8 glassmorphism-card border-primary-500/20 mt-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-slate-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <p className="text-lg font-medium text-white mb-2">Search for a commander to get started</p>
-                    <p className="text-sm text-slate-400 max-w-md mx-auto">
-                      Try searching for popular commanders like "Atraxa", "Korvold", "Muldrotha" or use advanced filters
-                    </p>
-                  </div>
-                )}
+                                <SearchResults                   results={searchResults}                  isLoading={isLoading}                  error={error}                  hasMore={hasMore}                  loadMore={handleLoadMore}                  onCardClick={handleCommanderSelectAndClose}                  totalCards={totalCards}                />                                {!searchQuery && !isLoading && searchResults.length === 0 && suggestions.length === 0 && (                  <div className="text-center p-8 glassmorphism-card border-primary-500/20 mt-4">                    <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-slate-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />                    </svg>                    <p className="text-lg font-medium text-white mb-2">Search for a commander to get started</p>                    <p className="text-sm text-slate-400 max-w-md mx-auto">                      Try searching for popular commanders like "Atraxa", "Korvold", or "Muldrotha"                    </p>                  </div>                )}
               </>
             )}
           </div>
