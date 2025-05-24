@@ -373,11 +373,15 @@ const CommanderAiPage = () => {
         {/* Hero Header */}
         <div className="text-center">
           <div className="mb-6">
-            <h1 className="text-5xl lg:text-6xl font-bold text-gradient-primary mb-4">
-              👑 Commander AI
+            <h1 className="text-5xl lg:text-6xl font-bold text-gradient-primary mb-4 flex items-center justify-center space-x-4">
+              <svg className="w-12 h-12 lg:w-16 lg:h-16 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4z" />
+              </svg>
+              <span>Commander AI</span>
             </h1>
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-primary-500/20 to-blue-500/20 rounded-full px-6 py-3 border border-primary-500/30">
-              <span className="text-primary-400 text-lg font-semibold">✨ Find Your Perfect Leader</span>
+              <span className="text-primary-400 text-lg font-semibold">Find Your Perfect Leader</span>
             </div>
           </div>
           <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
@@ -485,7 +489,12 @@ const CommanderAiPage = () => {
                 </span>
               ) : (
                 <span className="flex items-center justify-center space-x-3">
-                  <span>🤖 Get AI Suggestions</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M9 16a5 5 0 116 0a3.5 3.5 0 00-1 3h-4a3.5 3.5 0 00-1-3" />
+                    <path d="M9.7 17h4.6" />
+                  </svg>
+                  <span>Get AI Suggestions</span>
                   <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
@@ -496,7 +505,16 @@ const CommanderAiPage = () => {
 
           {/* Features List */}
           <div className="mt-12 pt-8 border-t border-slate-700/50">
-            <h3 className="text-xl font-bold text-white mb-6 text-center">✨ What You Get</h3>
+            <h3 className="text-xl font-bold text-white mb-6 text-center flex items-center justify-center space-x-2">
+              <svg className="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M9.5 2l.5 5l5 .5l-5 .5l-.5 5l-.5 -5l-5 -.5l5 -.5z" />
+                <path d="M4 12l2 2l2 -2l-2 -2z" />
+                <path d="M16 12l2 2l2 -2l-2 -2z" />
+                <path d="M11 19l1 1l1 -1l-1 -1z" />
+              </svg>
+              <span>What You Get</span>
+            </h3>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="flex items-start space-x-3">
                 <div className="w-6 h-6 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -550,8 +568,12 @@ const CommanderAiPage = () => {
         {suggestions.length > 0 && !isLoading && (
           <div className="space-y-8">
             <div className="text-center">
-              <h2 className="text-4xl font-bold text-gradient-primary mb-4">
-                👑 Commander Suggestions
+              <h2 className="text-4xl font-bold text-gradient-primary mb-4 flex items-center justify-center space-x-3">
+                <svg className="w-10 h-10 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4z" />
+                </svg>
+                <span>Commander Suggestions</span>
               </h2>
               <p className="text-xl text-slate-400">
                 Click on any commander to view detailed information

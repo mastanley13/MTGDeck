@@ -201,8 +201,12 @@ const DeckViewer = () => {
           /* Empty State */
           <div className="space-y-8">
             <div className="text-center">
-              <h1 className="text-5xl font-bold text-gradient-primary mb-4">
-                🃏 Your Deck Collection
+              <h1 className="text-5xl font-bold text-gradient-primary mb-4 flex items-center justify-center space-x-4">
+                <svg className="w-12 h-12 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>Your Deck Collection</span>
               </h1>
               <p className="text-xl text-slate-400">
                 Build and manage your Magic: The Gathering decks
@@ -220,7 +224,13 @@ const DeckViewer = () => {
                 </p>
                 <Link to="/builder" className="btn-modern btn-modern-primary btn-modern-xl premium-glow group">
                   <span className="flex items-center space-x-3">
-                    <span>🚀 Start Building</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M4 13a8 8 0 017 7a6 6 0 003 -5l3.5 -3.5a9 9 0 01 -7 -7a6 6 0 00-3 5l-3.5 3.5" />
+                      <path d="M7 14a6 6 0 003 -5l3.5 -3.5a9 9 0 01 7 7a6 6 0 00-3 5l-3.5 3.5a9 9 0 01-7 -7" />
+                      <path d="M15 9h.01" />
+                    </svg>
+                    <span>Start Building</span>
                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -264,8 +274,25 @@ const DeckViewer = () => {
                         <p className="text-slate-300 text-lg leading-relaxed">{selectedDeck.description}</p>
                       )}
                       <div className="flex items-center space-x-4 text-sm text-slate-400">
-                        <span>📅 Last updated: {new Date(selectedDeck.lastUpdated).toLocaleDateString()}</span>
-                        <span>🃏 {selectedDeck.cards.length + (selectedDeck.commander ? 1 : 0)} cards</span>
+                        <span className="flex items-center space-x-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M4 7a2 2 0 012 -2h12a2 2 0 012 2v12a2 2 0 01-2 2h-12a2 2 0 01-2 -2v-12z" />
+                            <path d="M16 3v4" />
+                            <path d="M8 3v4" />
+                            <path d="M4 11h16" />
+                            <path d="M11 15h1" />
+                            <path d="M12 15v3" />
+                          </svg>
+                          <span>Last updated: {new Date(selectedDeck.lastUpdated).toLocaleDateString()}</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          <span>{selectedDeck.cards.length + (selectedDeck.commander ? 1 : 0)} cards</span>
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -340,8 +367,12 @@ const DeckViewer = () => {
           /* Deck List View */
           <div className="space-y-8">
             <div className="text-center">
-              <h1 className="text-5xl font-bold text-gradient-primary mb-4">
-                🃏 Your Deck Collection
+              <h1 className="text-5xl font-bold text-gradient-primary mb-4 flex items-center justify-center space-x-4">
+                <svg className="w-12 h-12 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>Your Deck Collection</span>
               </h1>
               <p className="text-xl text-slate-400">
                 {savedDecks.length} {savedDecks.length === 1 ? 'deck' : 'decks'} in your collection
@@ -375,8 +406,25 @@ const DeckViewer = () => {
                         <span className="font-medium">Commander:</span> {deck.commander ? deck.commander.name : 'Unknown'}
                       </div>
                       <div className="flex items-center space-x-4 text-xs text-slate-500">
-                        <span>🃏 {deck.cards.length} cards</span>
-                        <span>📅 {new Date(deck.lastUpdated).toLocaleDateString()}</span>
+                        <span className="flex items-center space-x-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          <span>{deck.cards.length} cards</span>
+                        </span>
+                        <span className="flex items-center space-x-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M4 7a2 2 0 012 -2h12a2 2 0 012 2v12a2 2 0 01-2 2h-12a2 2 0 01-2 -2v-12z" />
+                            <path d="M16 3v4" />
+                            <path d="M8 3v4" />
+                            <path d="M4 11h16" />
+                            <path d="M11 15h1" />
+                            <path d="M12 15v3" />
+                          </svg>
+                          <span>{new Date(deck.lastUpdated).toLocaleDateString()}</span>
+                        </span>
                       </div>
                     </div>
                   </div>

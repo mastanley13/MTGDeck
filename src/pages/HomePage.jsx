@@ -86,7 +86,10 @@ const HomePage = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
                 <div className="relative card-modern p-10 hover-glow animate-fade-in delay-300 border-primary-500/20 group-hover:border-primary-400/30 transition-all duration-500 h-full flex flex-col">
                   <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mb-8 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
-                    <img src="/images/cards.png" alt="Deck Builder AI Icon" className="w-10 h-10 filter brightness-0 invert" />
+                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.77 3.77z" />
+                    </svg>
                   </div>
                   <h3 className="text-3xl font-bold text-white mb-6">Deck Builder AI</h3>
                   <p className="text-slate-300 leading-relaxed mb-8 text-lg flex-grow">
@@ -106,7 +109,10 @@ const HomePage = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
                 <div className="relative card-modern p-10 hover-glow animate-fade-in delay-400 border-primary-500/20 group-hover:border-primary-400/30 transition-all duration-500 h-full flex flex-col">
                   <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mb-8 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
-                    <img src="/images/Flashicon.png" alt="Commander AI Icon" className="w-10 h-10 filter brightness-0 invert" />
+                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4z" />
+                    </svg>
                   </div>
                   <h3 className="text-3xl font-bold text-white mb-6">Commander AI</h3>
                   <p className="text-slate-300 leading-relaxed mb-8 text-lg flex-grow">
@@ -126,7 +132,14 @@ const HomePage = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
                 <div className="relative card-modern p-10 hover-glow animate-fade-in delay-500 border-primary-500/20 group-hover:border-primary-400/30 transition-all duration-500 h-full flex flex-col">
                   <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mb-8 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
-                    <img src="/images/aitutoricon.png" alt="Tutor AI Icon" className="w-10 h-10 filter brightness-0 invert" />
+                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M3 19a9 9 0 019 0a9 9 0 019 0" />
+                      <path d="M3 6a9 9 0 019 0a9 9 0 019 0" />
+                      <path d="M3 6v13" />
+                      <path d="M12 6v13" />
+                      <path d="M21 6v13" />
+                    </svg>
                   </div>
                   <h3 className="text-3xl font-bold text-white mb-6">Tutor AI</h3>
                   <p className="text-slate-300 leading-relaxed mb-8 text-lg flex-grow">
