@@ -5,39 +5,23 @@ import ManaCurve from './charts/ManaCurve';
 import TypeBar from './charts/TypeBar';
 import { calculateManaSources, calculatePipRequirements } from './analyzers/manaSources';
 import { getFunctionalBuckets } from './analyzers/bucketClassify';
+import ManaSymbolSVG from '../ui/ManaSymbolSVG';
 import * as Comlink from 'comlink';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend as RechartsLegend } from 'recharts';
-
-// MTG Mana Symbol Component with white background for visibility
-const ManaSymbol = ({ color, size = 'sm' }) => {
-  const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-5 h-5',
-    lg: 'w-6 h-6'
-  };
-
-  const colorMap = {
-    W: { name: 'White', path: '/Icons/svg/w.svg' },
-    U: { name: 'Blue', path: '/Icons/svg/u.svg' },
-    B: { name: 'Black', path: '/Icons/svg/b.svg' },
-    R: { name: 'Red', path: '/Icons/svg/r.svg' },
-    G: { name: 'Green', path: '/Icons/svg/g.svg' },
-    C: { name: 'Colorless', path: '/Icons/svg/c.svg' }
-  };
-
-  const symbol = colorMap[color];
-  if (!symbol) return <span className="text-slate-400">({color})</span>;
-
-  return (
-    <div className={`${sizeClasses[size]} inline-flex items-center justify-center bg-white rounded-full p-0.5 shadow-sm`} title={symbol.name}>
-      <img 
-        src={symbol.path} 
-        alt={symbol.name}
-        className="w-full h-full"
-      />
-    </div>
-  );
-};
+// Tabler Icons
+import { 
+  IconChartPie, 
+  IconChartBar, 
+  IconCards, 
+  IconBolt, 
+  IconTarget,
+  IconFlask,
+  IconTrendingUp,
+  IconAlertTriangle,
+  IconInfoCircle,
+  IconCheck,
+  IconSearch
+} from '@tabler/icons-react';
 
 // Define a modern color palette for the charts
 const MODERN_CHART_COLORS = [
@@ -131,7 +115,7 @@ const DeckStatsIndex = () => {
   const renderManaSourceItem = (label, value, manaColor = null) => (
     <li className="flex justify-between items-center py-2 px-3 hover:bg-slate-700/30 rounded-lg transition-colors duration-200">
       <span className="text-slate-300 flex items-center space-x-2">
-        {manaColor && <ManaSymbol color={manaColor} size="sm" />}
+        {manaColor && <ManaSymbolSVG symbol={`{${manaColor}}`} size="sm" />}
         <span>{label}:</span>
       </span>
       <span className="font-semibold text-primary-400">{value}</span>
@@ -146,264 +130,299 @@ const DeckStatsIndex = () => {
   }, [simulationResults]);
 
   return (
-    <div className="glassmorphism-card border-primary-500/20 shadow-modern-primary p-6">
-      <div className="mb-6 border-b border-slate-700/50">
-        <nav className="flex space-x-2 md:space-x-4 overflow-x-auto pb-1" aria-label="Tabs">
-          {[
-            { name: 'Overview', tabKey: 'overview' },
-            { name: 'Mana', tabKey: 'mana' },
-            { name: 'Curve/Types', tabKey: 'curve' },
-            { name: 'Simulation', tabKey: 'simulation' },
-          ].map((tab) => (
-            <button
-              key={tab.name}
-              onClick={() => setActiveTab(tab.tabKey)}
-              className={`${ 
-                activeTab === tab.tabKey
-                  ? 'border-primary-500 text-primary-400 bg-primary-500/10'
-                  : 'border-transparent text-slate-400 hover:text-primary-400 hover:border-primary-500/50'
-              } whitespace-nowrap py-3 px-4 text-xs sm:text-sm font-medium focus:outline-none transition-all rounded-t-xl border-b-2`}
-            >
-              {tab.name}
-            </button>
-          ))}
-        </nav>
-      </div>
+    <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/80 via-slate-800/60 to-slate-900/80 backdrop-blur-sm shadow-xl p-6">
+      {/* Animated background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+      
+      <div className="relative z-10">
+        <div className="mb-6 border-b border-slate-700/50">
+          <nav className="flex space-x-2 md:space-x-4 overflow-x-auto pb-1" aria-label="Tabs">
+            {[
+              { name: 'Overview', tabKey: 'overview', icon: <IconChartPie size={16} /> },
+              { name: 'Mana', tabKey: 'mana', icon: <IconBolt size={16} /> },
+              { name: 'Curve/Types', tabKey: 'curve', icon: <IconChartBar size={16} /> },
+              { name: 'Simulation', tabKey: 'simulation', icon: <IconFlask size={16} /> },
+            ].map((tab) => (
+              <button
+                key={tab.name}
+                onClick={() => setActiveTab(tab.tabKey)}
+                className={`${ 
+                  activeTab === tab.tabKey
+                    ? 'border-primary-500 text-primary-400 bg-primary-500/10'
+                    : 'border-transparent text-slate-400 hover:text-primary-400 hover:border-primary-500/50'
+                } whitespace-nowrap py-3 px-4 text-xs sm:text-sm font-medium focus:outline-none transition-all rounded-t-xl border-b-2 flex items-center space-x-2`}
+              >
+                {tab.icon}
+                <span>{tab.name}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
 
-      <div>
-        {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
-                </svg>
-                <span>Mana Color Pie</span>
-              </h3>
-              <ColorPie />
-            </div>
-            <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span>Mana Curve</span>
-              </h3>
-              <ManaCurve />
-            </div>
-            <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                <span>Card Type Distribution</span>
-              </h3>
-              <TypeBar />
-            </div>
-            <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>Functional Roles</span>
-              </h3>
-              {Object.keys(functionalBuckets).length > 0 ? (
-                <ul className="space-y-1 text-sm">
-                  {renderManaSourceItem('Ramp', functionalBuckets.Ramp || 0)}
-                  {renderManaSourceItem('Draw', functionalBuckets.Draw || 0)}
-                  {/* Add other buckets as they are implemented */}
-                </ul>
-              ) : (
-                <p className="text-slate-400 text-sm">No functional roles calculated yet.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'mana' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4 4 4 0 004-4V5z" />
-                </svg>
-                <span>Mana Sources</span>
-              </h3>
-              {Object.keys(manaSources).length > 0 ? (
-                <ul className="space-y-2 text-sm">
-                  {renderManaSourceItem('White', manaSources.W || 0, 'W')}
-                  {renderManaSourceItem('Blue', manaSources.U || 0, 'U')}
-                  {renderManaSourceItem('Black', manaSources.B || 0, 'B')}
-                  {renderManaSourceItem('Red', manaSources.R || 0, 'R')}
-                  {renderManaSourceItem('Green', manaSources.G || 0, 'G')}
-                  {renderManaSourceItem('Colorless', manaSources.C || 0, 'C')}
-                  {renderManaSourceItem('Multi-color', manaSources.Multi || 0)}
-                </ul>
-              ) : (
-                <p className="text-slate-400 text-sm">No mana sources calculated yet.</p>
-              )}
-            </div>
-            <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Colored Pip Requirements</span>
-              </h3>
-              {Object.keys(pipRequirements).length > 0 ? (
-                <ul className="space-y-2 text-sm">
-                  {renderManaSourceItem('White Pips', pipRequirements.W || 0, 'W')}
-                  {renderManaSourceItem('Blue Pips', pipRequirements.U || 0, 'U')}
-                  {renderManaSourceItem('Black Pips', pipRequirements.B || 0, 'B')}
-                  {renderManaSourceItem('Red Pips', pipRequirements.R || 0, 'R')}
-                  {renderManaSourceItem('Green Pips', pipRequirements.G || 0, 'G')}
-                </ul>
-              ) : (
-                <p className="text-slate-400 text-sm">No pip requirements calculated yet.</p>
-              )}
-              <p className='text-slate-500 text-xs mt-4 italic leading-relaxed'>Note: Hybrid/Phyrexian pips are counted towards each of their colored components.</p>
-              <p className='text-slate-400 text-sm mt-3 font-semibold'>Karsten-style land health check (coming soon).</p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'curve' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span>Detailed Mana Curve</span>
-              </h3>
-              <ManaCurve />
-            </div>
-             <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-xl shadow-sm">
-              <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                <span>Detailed Card Types</span>
-              </h3>
-              <TypeBar />
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'simulation' && (
-          <div className="bg-slate-800/30 border border-slate-700/50 p-6 rounded-xl shadow-sm space-y-6">
-            <h3 className="text-xl font-semibold text-primary-400 mb-4 flex items-center space-x-2">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-              <span>Mulligan Simulator (Opening Hand)</span>
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-              <div>
-                <label htmlFor="numSimulations" className="block text-sm font-medium text-slate-300 mb-2">Number of Simulations:</label>
-                <input 
-                  type="number" 
-                  id="numSimulations" 
-                  value={numSimulations}
-                  onChange={(e) => setNumSimulations(Math.max(100, parseInt(e.target.value, 10) || 10000))}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white focus:ring-primary-500 focus:border-primary-500 text-sm placeholder-slate-400 transition-all duration-300"
-                  min="100"
-                  step="100"
-                />
-              </div>
-              <div>
-                <label htmlFor="targetLandCount" className="block text-sm font-medium text-slate-300 mb-2">Target Minimum Lands in Hand (7 cards):</label>
-                <input 
-                  type="number" 
-                  id="targetLandCount" 
-                  value={targetLandCount}
-                  onChange={(e) => setTargetLandCount(Math.max(0, Math.min(7, parseInt(e.target.value, 10) || 3)))}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white focus:ring-primary-500 focus:border-primary-500 text-sm placeholder-slate-400 transition-all duration-300"
-                  min="0"
-                  max="7"
-                />
-              </div>
-            </div>
-
-            <button 
-              onClick={handleRunSimulation}
-              disabled={isSimulating || !comlinkApiRef.current} // Check comlinkApiRef.current
-              className="btn-modern btn-modern-primary btn-modern-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSimulating ? (
-                <span className="flex items-center space-x-2">
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Simulating...</span>
-                </span>
-              ) : (
-                'Run Simulation'
-              )}
-            </button>
-
-            {simulationError && (
-              <div className="mt-4 p-4 bg-red-900/30 border border-red-500/50 text-red-300 rounded-xl text-sm">
-                <p className="font-semibold flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Error:</span>
-                </p>
-                <p className="mt-1">{simulationError}</p>
-              </div>
-            )}
-
-            {simulationResults && !simulationError && (
-              <div className="mt-4 space-y-6">
-                <h4 className="text-lg font-semibold text-primary-400">Simulation Results:</h4>
-                <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/50">
-                  <p className="text-sm text-slate-300 leading-relaxed">
-                    Probability of having at least <span className="font-bold text-primary-400">{simulationResults.targetLandCount}</span> lands 
-                    in an opening hand of 7 cards (after {simulationResults.numSimulations} simulations): 
-                    <span className="font-bold text-2xl text-green-400 ml-2">{simulationResults.successRate}%</span>
-                  </p>
+        <div>
+          {activeTab === 'overview' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconChartPie size={20} />
+                    <span>Mana Color Pie</span>
+                  </h3>
+                  <ColorPie />
                 </div>
+              </div>
+              
+              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconChartBar size={20} />
+                    <span>Mana Curve</span>
+                  </h3>
+                  <ManaCurve />
+                </div>
+              </div>
+              
+              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconCards size={20} />
+                    <span>Card Type Distribution</span>
+                  </h3>
+                  <TypeBar />
+                </div>
+              </div>
+              
+              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconTarget size={20} />
+                    <span>Functional Roles</span>
+                  </h3>
+                  {Object.keys(functionalBuckets).length > 0 ? (
+                    <ul className="space-y-1 text-sm">
+                      {renderManaSourceItem('Ramp', functionalBuckets.Ramp || 0)}
+                      {renderManaSourceItem('Draw', functionalBuckets.Draw || 0)}
+                      {/* Add other buckets as they are implemented */}
+                    </ul>
+                  ) : (
+                    <div className="text-center text-slate-400 py-4">
+                      <IconSearch size={32} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No functional roles calculated yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'mana' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconBolt size={20} />
+                    <span>Mana Sources</span>
+                  </h3>
+                  {Object.keys(manaSources).length > 0 ? (
+                    <ul className="space-y-2 text-sm">
+                      {renderManaSourceItem('White', manaSources.W || 0, 'W')}
+                      {renderManaSourceItem('Blue', manaSources.U || 0, 'U')}
+                      {renderManaSourceItem('Black', manaSources.B || 0, 'B')}
+                      {renderManaSourceItem('Red', manaSources.R || 0, 'R')}
+                      {renderManaSourceItem('Green', manaSources.G || 0, 'G')}
+                      {renderManaSourceItem('Colorless', manaSources.C || 0, 'C')}
+                      {renderManaSourceItem('Multi-color', manaSources.Multi || 0)}
+                    </ul>
+                  ) : (
+                    <div className="text-center text-slate-400 py-4">
+                      <IconSearch size={32} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No mana sources calculated yet.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconTarget size={20} />
+                    <span>Colored Pip Requirements</span>
+                  </h3>
+                  {Object.keys(pipRequirements).length > 0 ? (
+                    <ul className="space-y-2 text-sm">
+                      {renderManaSourceItem('White Pips', pipRequirements.W || 0, 'W')}
+                      {renderManaSourceItem('Blue Pips', pipRequirements.U || 0, 'U')}
+                      {renderManaSourceItem('Black Pips', pipRequirements.B || 0, 'B')}
+                      {renderManaSourceItem('Red Pips', pipRequirements.R || 0, 'R')}
+                      {renderManaSourceItem('Green Pips', pipRequirements.G || 0, 'G')}
+                    </ul>
+                  ) : (
+                    <div className="text-center text-slate-400 py-4">
+                      <IconSearch size={32} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No pip requirements calculated yet.</p>
+                    </div>
+                  )}
+                  <p className='text-slate-500 text-xs mt-4 italic leading-relaxed'>Note: Hybrid/Phyrexian pips are counted towards each of their colored components.</p>
+                  <p className='text-slate-400 text-sm mt-3 font-semibold'>Karsten-style land health check (coming soon).</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'curve' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconChartBar size={20} />
+                    <span>Detailed Mana Curve</span>
+                  </h3>
+                  <ManaCurve />
+                </div>
+              </div>
+               
+              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconCards size={20} />
+                    <span>Detailed Card Types</span>
+                  </h3>
+                  <TypeBar />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'simulation' && (
+            <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg space-y-6">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+              <div className="relative z-10">
+                <h3 className="text-xl font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                  <IconFlask size={24} />
+                  <span>Mulligan Simulator (Opening Hand)</span>
+                </h3>
                 
-                <div>
-                  <h5 className="text-md font-semibold text-primary-400 mb-4">Probability Distribution of Land Counts (7 cards):</h5>
-                   {landProbDataForChart.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={landProbDataForChart} margin={{ top: 5, right: 20, left: -20, bottom: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-                            <XAxis dataKey="name" tick={{ fill: '#94a3b8' }} />
-                            <YAxis unit="%" allowDecimals={false} domain={[0, 100]} tick={{ fill: '#94a3b8' }} />
-                            <Tooltip 
-                                formatter={(value) => `${parseFloat(value).toFixed(2)}%`}
-                                contentStyle={{ 
-                                  backgroundColor: 'rgba(30, 41, 59, 0.95)', 
-                                  border: '1px solid #475569', 
-                                  borderRadius: '0.75rem',
-                                  backdropFilter: 'blur(8px)'
-                                }}
-                                itemStyle={{ color: '#e2e8f0' }}
-                                cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
-                            />
-                            <Bar dataKey="probability" name="Probability">
-                                {landProbDataForChart.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={MODERN_CHART_COLORS[index % MODERN_CHART_COLORS.length]} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                    ) : (
-                        <p className="text-slate-400 text-sm">No land probability data to display.</p>
-                    )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                  <div>
+                    <label htmlFor="numSimulations" className="block text-sm font-medium text-slate-300 mb-2">Number of Simulations:</label>
+                    <input 
+                      type="number" 
+                      id="numSimulations" 
+                      value={numSimulations}
+                      onChange={(e) => setNumSimulations(Math.max(100, parseInt(e.target.value, 10) || 10000))}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white focus:ring-primary-500 focus:border-primary-500 text-sm placeholder-slate-400 transition-all duration-300"
+                      min="100"
+                      step="100"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="targetLandCount" className="block text-sm font-medium text-slate-300 mb-2">Target Minimum Lands in Hand (7 cards):</label>
+                    <input 
+                      type="number" 
+                      id="targetLandCount" 
+                      value={targetLandCount}
+                      onChange={(e) => setTargetLandCount(Math.max(0, Math.min(7, parseInt(e.target.value, 10) || 3)))}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white focus:ring-primary-500 focus:border-primary-500 text-sm placeholder-slate-400 transition-all duration-300"
+                      min="0"
+                      max="7"
+                    />
+                  </div>
                 </div>
+
+                <button 
+                  onClick={handleRunSimulation}
+                  disabled={isSimulating || !comlinkApiRef.current} // Check comlinkApiRef.current
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-600 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {isSimulating ? (
+                    <span className="flex items-center space-x-2">
+                      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Simulating...</span>
+                    </span>
+                  ) : (
+                    <>
+                      <IconFlask size={20} className="mr-2" />
+                      Run Simulation
+                    </>
+                  )}
+                </button>
+
+                {simulationError && (
+                  <div className="mt-4 p-4 bg-red-500/10 border border-red-500/50 text-red-300 rounded-xl text-sm">
+                    <p className="font-semibold flex items-center space-x-2">
+                      <IconAlertTriangle size={16} />
+                      <span>Error:</span>
+                    </p>
+                    <p className="mt-1">{simulationError}</p>
+                  </div>
+                )}
+
+                {simulationResults && !simulationError && (
+                  <div className="mt-4 space-y-6">
+                    <h4 className="text-lg font-semibold text-primary-400 flex items-center space-x-2">
+                      <IconTrendingUp size={20} />
+                      <span>Simulation Results:</span>
+                    </h4>
+                    <div className="bg-slate-700/30 p-4 rounded-xl border border-slate-600/50">
+                      <p className="text-sm text-slate-300 leading-relaxed">
+                        Probability of having at least <span className="font-bold text-primary-400">{simulationResults.targetLandCount}</span> lands 
+                        in an opening hand of 7 cards (after {simulationResults.numSimulations} simulations): 
+                        <span className="font-bold text-2xl text-green-400 ml-2">{simulationResults.successRate}%</span>
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h5 className="text-md font-semibold text-primary-400 mb-4">Probability Distribution of Land Counts (7 cards):</h5>
+                       {landProbDataForChart.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={landProbDataForChart} margin={{ top: 5, right: 20, left: -20, bottom: 20 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+                                <XAxis dataKey="name" tick={{ fill: '#94a3b8' }} />
+                                <YAxis unit="%" allowDecimals={false} domain={[0, 100]} tick={{ fill: '#94a3b8' }} />
+                                <Tooltip 
+                                    formatter={(value) => `${parseFloat(value).toFixed(2)}%`}
+                                    contentStyle={{ 
+                                      backgroundColor: 'rgba(30, 41, 59, 0.95)', 
+                                      border: '1px solid #475569', 
+                                      borderRadius: '0.75rem',
+                                      backdropFilter: 'blur(8px)'
+                                    }}
+                                    itemStyle={{ color: '#e2e8f0' }}
+                                    cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+                                />
+                                <Bar dataKey="probability" name="Probability">
+                                    {landProbDataForChart.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={MODERN_CHART_COLORS[index % MODERN_CHART_COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                        ) : (
+                            <div className="text-center text-slate-400 py-4">
+                              <IconSearch size={32} className="mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">No land probability data to display.</p>
+                            </div>
+                        )}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
-        
+      
       {/* TODO: Add export buttons as per markdown */}
       {/* TODO: Add price and salt score once API/keys are sorted */}
     </div>

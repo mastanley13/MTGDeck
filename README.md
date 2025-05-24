@@ -52,3 +52,76 @@ export default tseslint.config({
   },
 })
 ```
+
+# MTG Card Search Application
+
+A modern Magic: The Gathering card search application built with React and Vite.
+
+## Features
+
+- **Advanced Card Search**: Search through the entire MTG database using Scryfall API
+- **Commander Search**: Specialized search for commander-legal cards
+- **Card Details Modal**: View detailed card information including legalities, prices, and multiple art versions
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Infinite Scroll**: Efficient loading of search results
+- **Card Image Display**: Robust image handling with fallbacks and retry mechanisms
+
+## Recent Improvements
+
+### Enhanced Card Image Loading (Latest Update)
+
+We've significantly improved the card image loading system to handle problematic cards, especially double-faced cards (DFCs) and cards with special layouts:
+
+#### **What was fixed:**
+- **Double-faced cards** (transform, modal DFC, reversible cards) now display properly
+- **Image format prioritization** - now supports PNG, large, normal, small, border_crop, and art_crop formats
+- **Comprehensive fallback handling** - tries multiple faces and image formats before giving up
+- **Error handling and retry logic** - automatic retry on failed image loads
+- **Better user feedback** - loading states and "Image unavailable" messages for problematic cards
+
+#### **Cards that should now work:**
+- A-Gutter Skulker // A-Gutter Shortcut
+- Arlinn, the Pack's Hope // Arlinn, the Moon's Rage  
+- Arcee, Sharpshooter // Arcee, Acrobatic Coupe
+- All other double-faced, transform, and modal DFC cards
+
+#### **Technical improvements:**
+- Enhanced `getCardImageUris()` function with comprehensive layout support
+- New `CardImage` component with retry logic and loading states
+- Better error logging for debugging image issues
+- Improved fallback UI for cards without images
+
+## Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Usage
+
+1. Use the search bar to find Magic cards
+2. Click on cards to view detailed information
+3. Use the commander search for deck building
+4. Navigate through different art versions in the detail modal
+
+## Technologies Used
+
+- React 18
+- Vite
+- Tailwind CSS
+- Scryfall API
+- Axios for API requests
+
+## Contributing
+
+Feel free to submit issues and pull requests to improve the application.
+
+## License
+
+This project is open source and available under the MIT License.

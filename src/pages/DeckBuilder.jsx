@@ -21,6 +21,7 @@ import { validateColorIdentity, validateFormatLegality, isDeckValid } from '../u
 import AlertModal from '../components/ui/AlertModal.jsx';
 import InputModal from '../components/ui/InputModal.jsx';
 import CardDetailModal from '../components/ui/CardDetailModal.jsx';
+import { IconCrown } from '@tabler/icons-react';
 
 const DeckBuilderAIPage = () => {
   const [activeTab, setActiveTab] = useState('deck'); // 'search', 'deck', 'stats'
@@ -445,9 +446,7 @@ const DeckBuilderAIPage = () => {
                   className="btn-modern btn-modern-secondary btn-modern-lg group"
                 >
                   <span className="flex items-center space-x-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4 4m4-4l-4-4m0 6H4m5 0a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                    <IconCrown size={16} />
                     <span>Change Commander</span>
                   </span>
                 </button>

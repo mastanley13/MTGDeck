@@ -8,10 +8,74 @@ const CardDetailModal = ({ card, onClose }) => {
   const [allArtworks, setAllArtworks] = useState([]);
   const [currentArtIndex, setCurrentArtIndex] = useState(0);
   const [artLoading, setArtLoading] = useState(false);
+  const [currentFace, setCurrentFace] = useState(0);
+
+  // Enhanced function to get all card face images
+  const getAllCardFaceImages = (card) => {
+    if (!card) return [];
+
+    try {
+      const faces = [];
+
+      // Single-faced card with direct image_uris
+      if (card.image_uris && !card.card_faces) {
+        faces.push({
+          name: card.name,
+          imageUrl: card.image_uris.png || card.image_uris.large || card.image_uris.normal,
+          uris: card.image_uris,
+          faceIndex: 0
+        });
+      }
+      // Multi-faced card
+      else if (card.card_faces && card.card_faces.length > 0) {
+        card.card_faces.forEach((face, index) => {
+          if (face.image_uris) {
+            const imageUrl = face.image_uris.png || face.image_uris.large || face.image_uris.normal;
+            if (imageUrl) {
+              faces.push({
+                name: face.name || `${card.name} (Face ${index + 1})`,
+                imageUrl: imageUrl,
+                uris: face.image_uris,
+                faceIndex: index,
+                oracle_text: face.oracle_text,
+                mana_cost: face.mana_cost,
+                type_line: face.type_line,
+                power: face.power,
+                toughness: face.toughness,
+                loyalty: face.loyalty
+              });
+            }
+          }
+        });
+      }
+
+      return faces;
+    } catch (error) {
+      console.error('CardDetailModal: Error processing card face images:', error, card);
+      return [];
+    }
+  };
+
+  const cardFaces = getAllCardFaceImages(card);
+  const isDoubleFaced = cardFaces.length > 1;
+  const currentFaceData = cardFaces[currentFace] || cardFaces[0];
+
+  const toggleFace = () => {
+    if (isDoubleFaced) {
+      setCurrentFace(prev => (prev + 1) % cardFaces.length);
+    }
+  };
 
   const fetchArtworks = useCallback(async () => {
     if (!card || !card.oracle_id) {
-      const initialArtUri = card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
+      // For cards without oracle_id, use current face data if it's a double-faced card
+      let initialArtUri;
+      if (isDoubleFaced && currentFaceData) {
+        initialArtUri = currentFaceData.imageUrl;
+      } else {
+        initialArtUri = card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
+      }
+      
       if (initialArtUri) {
         setAllArtworks([{
           uri: initialArtUri,
@@ -31,7 +95,14 @@ const CardDetailModal = ({ card, onClose }) => {
       const uniqueArtworks = [];
       const seenImageUris = new Set(); // Renamed from seenArtCropUris
 
-      const initialCardFullImageUri = card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
+      // For the initial card, use the current face if it's a double-faced card
+      let initialCardFullImageUri;
+      if (isDoubleFaced && currentFaceData) {
+        initialCardFullImageUri = currentFaceData.imageUrl;
+      } else {
+        initialCardFullImageUri = card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
+      }
+      
       if (initialCardFullImageUri) {
         uniqueArtworks.push({
           uri: initialCardFullImageUri,
@@ -47,8 +118,18 @@ const CardDetailModal = ({ card, onClose }) => {
 
         if (print.image_uris) {
           artUri = print.image_uris.png || print.image_uris.large || print.image_uris.normal;
-        } else if (print.card_faces && print.card_faces[0]?.image_uris) {
-          artUri = print.card_faces[0].image_uris.png || print.card_faces[0].image_uris.large || print.card_faces[0].image_uris.normal;
+        } else if (print.card_faces && print.card_faces.length > 0) {
+          // For double-faced cards, try to match the current face we're viewing
+          if (isDoubleFaced && currentFace < print.card_faces.length && print.card_faces[currentFace]?.image_uris) {
+            artUri = print.card_faces[currentFace].image_uris.png || 
+                     print.card_faces[currentFace].image_uris.large || 
+                     print.card_faces[currentFace].image_uris.normal;
+          } else if (print.card_faces[0]?.image_uris) {
+            // Fallback to first face
+            artUri = print.card_faces[0].image_uris.png || 
+                     print.card_faces[0].image_uris.large || 
+                     print.card_faces[0].image_uris.normal;
+          }
         }
 
         if (artUri && !seenImageUris.has(artUri)) {
@@ -79,16 +160,38 @@ const CardDetailModal = ({ card, onClose }) => {
       }
     }
     setArtLoading(false);
-  }, [card, allArtworks.length]);
+  }, [card, allArtworks.length, isDoubleFaced, currentFace, currentFaceData]);
 
   useEffect(() => {
     fetchArtworks();
   }, [fetchArtworks]);
+
+  // Refetch artworks when face changes for double-faced cards
+  useEffect(() => {
+    if (isDoubleFaced) {
+      fetchArtworks();
+    }
+  }, [currentFace, isDoubleFaced, fetchArtworks]);
   
   const currentArtwork = allArtworks[currentArtIndex] || {};
-  // Prioritize currentArtwork.uri, then fallback to card prop with new image type preference
-  const mainImageUrl = currentArtwork.uri || card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
-  const cardText = card.oracle_text || card.description;
+  // For double-faced cards, prioritize current face data, otherwise use artwork or card image
+  const mainImageUrl = isDoubleFaced && currentFaceData 
+    ? (currentArtwork.uri || currentFaceData.imageUrl)
+    : (currentArtwork.uri || card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal);
+  
+  // Use current face data for card details if it's a double-faced card
+  const displayCard = isDoubleFaced && currentFaceData ? {
+    ...card,
+    name: currentFaceData.name,
+    oracle_text: currentFaceData.oracle_text || card.oracle_text,
+    mana_cost: currentFaceData.mana_cost || card.mana_cost,
+    type_line: currentFaceData.type_line || card.type_line,
+    power: currentFaceData.power || card.power,
+    toughness: currentFaceData.toughness || card.toughness,
+    loyalty: currentFaceData.loyalty || card.loyalty
+  } : card;
+  
+  const cardText = displayCard.oracle_text || displayCard.description;
 
   const formatsToShow = [
     { key: 'standard', name: 'Standard' }, { key: 'pioneer', name: 'Pioneer' },
@@ -144,22 +247,52 @@ const CardDetailModal = ({ card, onClose }) => {
 
         {/* Card Image Section */} 
         <div className="md:w-[40%] flex-shrink-0 flex flex-col justify-center items-center relative">
-          {mainImageUrl ? (
-            <img 
-              src={mainImageUrl} 
-              alt={`Art for ${card.name} - ${currentArtwork.setName || card.set_name}`}
-              className="rounded-md max-w-full max-h-[75vh] md:max-h-[85vh] object-contain shadow-xl border-2 border-gray-600"
-            />
-          ) : (
-            <div className="w-full aspect-[5/7] bg-gray-700 flex items-center justify-center text-gray-400 rounded-lg border-2 border-gray-600">
-              {artLoading ? 'Loading Art...' : 'No Image Available'}
+          <div className="relative">
+            {mainImageUrl ? (
+              <img 
+                src={mainImageUrl} 
+                alt={`Art for ${displayCard.name} - ${currentArtwork.setName || card.set_name}`}
+                className="rounded-md max-w-full max-h-[75vh] md:max-h-[85vh] object-contain shadow-xl border-2 border-gray-600"
+              />
+            ) : (
+              <div className="w-full aspect-[5/7] bg-gray-700 flex items-center justify-center text-gray-400 rounded-lg border-2 border-gray-600">
+                {artLoading ? 'Loading Art...' : 'No Image Available'}
+              </div>
+            )}
+            
+            {/* Double-faced card indicator on image */}
+            {isDoubleFaced && (
+              <div className="absolute top-2 left-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg z-10">
+                DFC - Face {currentFace + 1}/{cardFaces.length}
+              </div>
+            )}
+          </div>
+          
+          {/* Prominent Flip Button for Double-Faced Cards */}
+          {isDoubleFaced && (
+            <div className="mt-3 w-full flex justify-center">
+              <button
+                onClick={toggleFace}
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center space-x-2 shadow-lg transition-all duration-200 transform hover:scale-105"
+                title={`Flip to ${cardFaces[(currentFace + 1) % cardFaces.length]?.name || 'other side'}`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Flip to Face {(currentFace + 1) % cardFaces.length + 1}</span>
+                <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                  {currentFace + 1}/{cardFaces.length}
+                </span>
+              </button>
             </div>
           )}
+          
           {allArtworks.length > 1 && (
             <div className="mt-2 w-full flex justify-between items-center px-1 z-10">
               <button onClick={handlePrevArt} className="bg-gray-600 hover:bg-gray-500 text-white text-xs py-1 px-2 rounded-md">Prev Art</button>
               <p className="text-xs text-gray-400 mx-2 text-center">
                 {currentArtIndex + 1} of {allArtworks.length}<br/>
+                {isDoubleFaced && <span className="block text-yellow-400 font-semibold">{currentFaceData?.name}</span>}
                 <span className="block truncate max-w-[120px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
                 <span className="block truncate max-w-[120px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
               </p>
@@ -168,6 +301,7 @@ const CardDetailModal = ({ card, onClose }) => {
           )}
            {allArtworks.length === 1 && currentArtwork.setName && (
              <p className="text-xs text-gray-400 mt-2 text-center">
+                {isDoubleFaced && <span className="block text-yellow-400 font-semibold truncate max-w-[180px]">{currentFaceData?.name}</span>}
                 <span className="block truncate max-w-[180px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
                 <span className="block truncate max-w-[180px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
               </p>
@@ -176,10 +310,10 @@ const CardDetailModal = ({ card, onClose }) => {
 
         {/* Card Info Section */} 
         <div className="md:w-[60%] flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pr-1 sm:pr-1.5 flex-grow">
-          <h2 className="text-xl sm:text-2xl font-bold mb-0.5 sm:mb-1 text-yellow-400 tracking-wide pr-6">{card.name}</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-yellow-400 tracking-wide mb-0.5 sm:mb-1 pr-6">{displayCard.name}</h2>
           <div className="flex justify-between items-baseline mb-1 sm:mb-1.5">
-            <span className="text-gray-300 text-sm sm:text-base">{card.type_line || card.type}</span>
-            {card.mana_cost && <span className="text-yellow-400 font-mono text-sm sm:text-base">{parseManaSymbols(card.mana_cost)}</span>}
+            <span className="text-gray-300 text-sm sm:text-base">{displayCard.type_line || displayCard.type}</span>
+            {displayCard.mana_cost && <span className="text-yellow-400 font-mono text-sm sm:text-base">{parseManaSymbols(displayCard.mana_cost)}</span>}
           </div>
           
           {cardText && (
@@ -190,15 +324,15 @@ const CardDetailModal = ({ card, onClose }) => {
             </div>
           )}
 
-          {card.flavor_text && (
+          {(displayCard.flavor_text || card.flavor_text) && (
             <div className="italic text-2xs sm:text-xs text-gray-400 border-t border-gray-700 pt-1.5 mt-1.5 mb-1.5 sm:mb-2">
-              {card.flavor_text.split('\n').map((line, index) => <p key={index} className="mb-0.5 last:mb-0">{line}</p>)}
+              {(displayCard.flavor_text || card.flavor_text).split('\n').map((line, index) => <p key={index} className="mb-0.5 last:mb-0">{line}</p>)}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-x-2 sm:gap-x-3 gap-y-0.5 text-2xs sm:text-xs mb-1.5 sm:mb-2 text-gray-300">
-            {(card.power || card.toughness) && (<p><strong>P/T:</strong> {card.power}/{card.toughness}</p>)}
-            {card.loyalty && (<p><strong>Loyalty:</strong> {card.loyalty}</p>)}
+            {(displayCard.power || displayCard.toughness) && (<p><strong>P/T:</strong> {displayCard.power}/{displayCard.toughness}</p>)}
+            {displayCard.loyalty && (<p><strong>Loyalty:</strong> {displayCard.loyalty}</p>)}
             {card.rarity && (<p><strong>Rarity:</strong> <span className="capitalize">{card.rarity}</span></p>)}
             {/* Artist is now shown under the image with art navigation */}
           </div>

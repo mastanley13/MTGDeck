@@ -11,6 +11,7 @@ import CommanderAiPage from './pages/CommanderAiPage.jsx';
 import TutorAiPage from './pages/TutorAiPage.jsx';
 import CardSearchPage from './pages/CardSearchPage.jsx';
 import SubscriptionPage from './pages/SubscriptionPage.jsx';
+import CardDebugger from './components/debug/CardDebugger.jsx';
 import { DeckProvider } from './context/DeckContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { SubscriptionProvider } from './context/SubscriptionContext.jsx';
@@ -32,6 +33,7 @@ function App() {
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/card-search" element={<CardSearchPage />} />
                   <Route path="/subscription" element={<SubscriptionPage />} />
+                  <Route path="/debug" element={<CardDebugger />} />
 
                   <Route path="/commander-ai" element={<CommanderAiPage />} />
                   <Route path="/tutor-ai" element={<TutorAiPage />} />

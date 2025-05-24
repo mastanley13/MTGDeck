@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useDeck } from '../../../context/DeckContext';
+import { IconChartBar } from '@tabler/icons-react';
 
-// Define a color palette for the bars, can be expanded or customized
-const BAR_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+// Modern color for the bars
+const MODERN_BAR_COLOR = '#3b82f6'; // Primary blue
 
 const ManaCurve = () => {
   const { cards } = useDeck(); // Commander is not typically included in mana curve chart
@@ -45,28 +46,62 @@ const ManaCurve = () => {
       // .filter(data => data.count > 0); // Optionally, filter out CMCs with 0 cards
   }, [cards]);
 
+  const totalNonLandCards = manaCurveData.reduce((sum, data) => sum + data.count, 0);
+
   if (!manaCurveData || manaCurveData.length === 0 || manaCurveData.every(d => d.count === 0)) {
     return (
-      <div className="text-center text-slate-400 py-4">
-        No non-land cards to display mana curve.
+      <div className="h-64 flex items-center justify-center text-slate-400">
+        <div className="text-center">
+          <IconChartBar size={48} className="mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No non-land cards to display mana curve</p>
+        </div>
       </div>
     );
   }
 
   return (
     <ResponsiveContainer width="100%" height={250}>
-      <BarChart data={manaCurveData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#4A5568" />
-        <XAxis dataKey="name" tick={{ fill: '#A0AEC0' }} />
-        <YAxis allowDecimals={false} tick={{ fill: '#A0AEC0' }} />
-        <Tooltip 
-          contentStyle={{ backgroundColor: '#2d3748', border: '1px solid #4a5568', borderRadius: '0.375rem' }}
-          itemStyle={{ color: '#cbd5e0' }}
-          cursor={{ fill: 'rgba(74, 85, 104, 0.5)' }}
+      <BarChart data={manaCurveData} margin={{ top: 5, right: 20, left: -20, bottom: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
+        <XAxis 
+          dataKey="name" 
+          tick={{ fill: '#94a3b8' }}
+          label={{ 
+            value: 'Converted Mana Cost', 
+            position: 'insideBottom', 
+            offset: -10,
+            style: { textAnchor: 'middle', fill: '#94a3b8' }
+          }}
         />
-        <Bar dataKey="count" name="Cards" unit="">
+        <YAxis 
+          allowDecimals={false} 
+          tick={{ fill: '#94a3b8' }}
+          label={{ 
+            value: 'Number of Cards', 
+            angle: -90, 
+            position: 'insideLeft',
+            style: { textAnchor: 'middle', fill: '#94a3b8' }
+          }}
+        />
+        <Tooltip 
+          contentStyle={{ 
+            backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+            border: '1px solid #3b82f6', 
+            borderRadius: '0.75rem',
+            backdropFilter: 'blur(8px)',
+            color: '#e2e8f0'
+          }}
+          itemStyle={{ color: '#e2e8f0' }}
+          cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+          formatter={(value, name) => {
+            const percentage = totalNonLandCards > 0 ? ((value / totalNonLandCards) * 100).toFixed(1) : 0;
+            return [`${value} cards (${percentage}% of non-lands)`, 'Cards'];
+          }}
+          labelFormatter={(label) => `CMC ${label}`}
+        />
+        <Bar dataKey="count" name="Cards" radius={[4, 4, 0, 0]}>
           {manaCurveData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
+            <Cell key={`cell-${index}`} fill={MODERN_BAR_COLOR} />
           ))}
         </Bar>
       </BarChart>

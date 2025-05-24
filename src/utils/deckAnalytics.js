@@ -15,8 +15,14 @@ export const getManaCurve = (cards) => {
     manaCurve[i] = 0;
   }
   
-  // Count cards by CMC
+  // Filter out lands and count cards by CMC
   cards.forEach(card => {
+    const type = card.type_line || '';
+    // Skip land cards
+    if (type.includes('Land')) {
+      return;
+    }
+    
     const cmc = Math.min(Math.floor(card.cmc || 0), 7); // Group 7+ costs together
     const quantity = card.quantity || 1;
     manaCurve[cmc] = (manaCurve[cmc] || 0) + quantity;

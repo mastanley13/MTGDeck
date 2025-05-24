@@ -82,18 +82,142 @@ export const searchCommanders = async (query = '') => {
 };
 
 /**
- * Get card image URIs
+ * Get card image URIs with comprehensive fallback handling
  * @param {Object} card - Card object from Scryfall
- * @returns {Object} Object with different image sizes
+ * @returns {Object|null} Object with different image sizes or null if no images found
  */
 export const getCardImageUris = (card) => {
-  // Some cards (like dual-faced cards) have faces instead of direct image_uris
-  if (card.image_uris) {
-    return card.image_uris;
-  } else if (card.card_faces && card.card_faces[0].image_uris) {
-    return card.card_faces[0].image_uris;
+  if (!card) {
+    console.warn('getCardImageUris: No card object provided');
+    return null;
   }
-  return null;
+
+  // Enhanced debugging for specific problematic cards
+  const problematicCards = ['A-Gutter Skulker', 'Arcee, Sharpshooter', 'Arlinn, the Pack\'s Hope'];
+  const isProblematicCard = problematicCards.some(name => card.name && card.name.includes(name.split(' ')[0]));
+  
+  if (isProblematicCard) {
+    console.group(`🔍 DEBUG: Problematic card - ${card.name}`);
+    console.log('Full card object:', card);
+    console.log('Layout:', card.layout);
+    console.log('Has image_uris:', !!card.image_uris);
+    console.log('image_uris:', card.image_uris);
+    console.log('Has card_faces:', !!card.card_faces);
+    console.log('card_faces length:', card.card_faces ? card.card_faces.length : 0);
+    if (card.card_faces) {
+      card.card_faces.forEach((face, index) => {
+        console.log(`Face ${index}:`, {
+          name: face.name,
+          has_image_uris: !!face.image_uris,
+          image_uris: face.image_uris
+        });
+      });
+    }
+    console.log('image_status:', card.image_status);
+  }
+
+  try {
+    // Simple direct approach - first check for direct image_uris (matches CardDetailModal approach)
+    let imageUrl = card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal || card.image_uris?.small;
+    
+    if (imageUrl) {
+      const result = {
+        png: card.image_uris?.png,
+        large: card.image_uris?.large, 
+        normal: card.image_uris?.normal,
+        small: card.image_uris?.small,
+        border_crop: card.image_uris?.border_crop,
+        art_crop: card.image_uris?.art_crop
+      };
+      
+      if (isProblematicCard) {
+        console.log('✅ Found direct image_uris:', result);
+        console.groupEnd();
+      }
+      
+      return result;
+    }
+
+    // For multi-faced cards, check the first face (matches CardDetailModal approach)
+    if (card.card_faces && card.card_faces[0]?.image_uris) {
+      const faceImageUris = card.card_faces[0].image_uris;
+      imageUrl = faceImageUris.png || faceImageUris.large || faceImageUris.normal || faceImageUris.small;
+      
+      if (imageUrl) {
+        const result = {
+          png: faceImageUris.png,
+          large: faceImageUris.large,
+          normal: faceImageUris.normal,
+          small: faceImageUris.small,
+          border_crop: faceImageUris.border_crop,
+          art_crop: faceImageUris.art_crop,
+          _faceIndex: 0
+        };
+        
+        if (isProblematicCard) {
+          console.log('✅ Found card_faces[0] image_uris:', result);
+          console.groupEnd();
+        }
+        
+        return result;
+      }
+    }
+
+    // If we still haven't found anything, try other faces
+    if (card.card_faces && card.card_faces.length > 1) {
+      for (let i = 1; i < card.card_faces.length; i++) {
+        const face = card.card_faces[i];
+        if (face?.image_uris) {
+          imageUrl = face.image_uris.png || face.image_uris.large || face.image_uris.normal || face.image_uris.small;
+          
+          if (imageUrl) {
+            const result = {
+              png: face.image_uris.png,
+              large: face.image_uris.large,
+              normal: face.image_uris.normal,
+              small: face.image_uris.small,
+              border_crop: face.image_uris.border_crop,
+              art_crop: face.image_uris.art_crop,
+              _faceIndex: i
+            };
+            
+            if (isProblematicCard) {
+              console.log(`✅ Found card_faces[${i}] image_uris:`, result);
+              console.groupEnd();
+            }
+            
+            return result;
+          }
+        }
+      }
+    }
+
+    if (isProblematicCard) {
+      console.log('❌ No image URIs found anywhere');
+      console.groupEnd();
+    }
+
+    // Log for debugging purposes (only for non-problematic cards to reduce noise)
+    if (!isProblematicCard) {
+      console.warn('getCardImageUris: No image URIs found for card:', {
+        name: card.name,
+        id: card.id,
+        layout: card.layout,
+        hasImageUris: !!card.image_uris,
+        hasCardFaces: !!card.card_faces,
+        cardFacesLength: card.card_faces ? card.card_faces.length : 0,
+        imageStatus: card.image_status
+      });
+    }
+
+    return null;
+  } catch (error) {
+    console.error('getCardImageUris: Error processing card image URIs:', error, card);
+    if (isProblematicCard) {
+      console.groupEnd();
+    }
+    return null;
+  }
 };
 
 /**
