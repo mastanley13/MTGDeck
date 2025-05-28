@@ -120,7 +120,7 @@ const CommanderAiPage = () => {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           max_tokens: 2000,
@@ -152,10 +152,23 @@ const CommanderAiPage = () => {
           parsedAiSuggestions.map(async (aiSuggestion) => {
             const scryfallData = await fetchScryfallCardData(aiSuggestion.name);
             if (scryfallData) {
+              // Verify color identity matches between AI suggestion and Scryfall data
+              const aiColors = aiSuggestion.colors || [];
+              const scryfallColors = scryfallData.color_identity || [];
+              
+              // Check if colors match (both arrays should contain the same elements)
+              const colorsMatch = aiColors.length === scryfallColors.length && 
+                                aiColors.every(color => scryfallColors.includes(color)) &&
+                                scryfallColors.every(color => aiColors.includes(color));
+              
+              if (!colorsMatch) {
+                console.warn(`Color mismatch for ${aiSuggestion.name}: AI suggested [${aiColors.join(',')}] but Scryfall has [${scryfallColors.join(',')}]. Using Scryfall data.`);
+              }
+              
               return {
                 ...scryfallData,
                 aiDescription: aiSuggestion.description,
-                colors: aiSuggestion.colors,
+                colors: scryfallColors, // Use Scryfall color identity as the authoritative source
                 imageUrl: scryfallData.image_uris?.art_crop || scryfallData.image_uris?.normal || null,
               };
             }

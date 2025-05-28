@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useDeck } from '../context/DeckContext';
 import { getOpenAIApiKey } from '../utils/openaiAPI';
 import { useSubscription } from '../context/SubscriptionContext';
+import { validateColorIdentity } from '../utils/deckValidator';
 
 /**
  * Hook for automatically building complete decks based on a commander
@@ -38,6 +39,13 @@ export const useAutoDeckBuilder = () => {
   const buildCompleteDeck = async (deckStyle = 'competitive') => {
     if (!commander) {
       setError('Please select a commander first');
+      return false;
+    }
+
+    // Check API key availability
+    const apiKey = getOpenAIApiKey();
+    if (!apiKey) {
+      setError('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
       return false;
     }
 
@@ -103,33 +111,62 @@ export const useAutoDeckBuilder = () => {
         COUNT all quantities to ensure the TOTAL is EXACTLY 99 cards.
       `;
       
-      // Call OpenAI API
+      // Call OpenAI API with fallback models
       const API_URL = 'https://api.openai.com/v1/chat/completions';
       setProgress(35);
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getOpenAIApiKey()}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            { 
-              role: 'system', 
-              content: 'You are a Magic: The Gathering deck building expert specializing in optimized Commander decks. You have deep knowledge of all MTG cards, their synergies, and competitive deck construction principles. Your most important job is to create EXACTLY 99 cards for a Commander deck.'
+      
+      const models = ['gpt-4o', 'gpt-4', 'gpt-3.5-turbo'];
+      let response;
+      let lastError;
+      
+      for (const model of models) {
+        try {
+          console.log(`Trying OpenAI model: ${model}`);
+          response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${getOpenAIApiKey()}`
             },
-            { 
-              role: 'user', 
-              content: prompt 
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 4000
-        })
-      });
+            body: JSON.stringify({
+              model: model,
+              messages: [
+                { 
+                  role: 'system', 
+                  content: 'You are a Magic: The Gathering deck building expert specializing in optimized Commander decks. You have deep knowledge of all MTG cards, their synergies, and competitive deck construction principles. Your most important job is to create EXACTLY 99 cards for a Commander deck.'
+                },
+                { 
+                  role: 'user', 
+                  content: prompt 
+                }
+              ],
+              temperature: 0.7,
+              max_tokens: 4000
+            })
+          });
+          
+          if (response.ok) {
+            console.log(`Successfully using model: ${model}`);
+            break;
+          } else {
+            const errorData = await response.json();
+            console.warn(`Model ${model} failed:`, errorData);
+            lastError = errorData;
+          }
+        } catch (error) {
+          console.warn(`Model ${model} failed with error:`, error);
+          lastError = error;
+        }
+      }
+      
+      // Check if we got a successful response
+      if (!response || !response.ok) {
+        console.error('All OpenAI models failed. Last error:', lastError);
+        throw new Error(`OpenAI API error: ${lastError?.error?.message || lastError?.message || 'All models failed'}`);
+      }
       
       const data = await response.json();
+      console.log('OpenAI API Response:', data); // Debug logging
       setProgress(60);
       
       if (data.choices && data.choices[0] && data.choices[0].message) {
@@ -197,6 +234,37 @@ export const useAutoDeckBuilder = () => {
           }
         }
         
+        // Validate color identity before adding cards to deck
+        console.log('Validating color identity for AI-generated deck...');
+        const validationResult = validateColorIdentity(commander, cardList);
+        
+        if (!validationResult.valid && validationResult.violations.length > 0) {
+          console.warn(`Found ${validationResult.violations.length} color identity violations:`, validationResult.violations);
+          
+          // Filter out violating cards
+          const validCards = cardList.filter(card => {
+            const cardColors = card.color_identity || [];
+            const commanderColors = commander.color_identity || [];
+            return cardColors.every(color => commanderColors.includes(color));
+          });
+          
+          const removedCount = cardList.length - validCards.length;
+          if (removedCount > 0) {
+            console.log(`Removed ${removedCount} cards due to color identity violations`);
+            cardList = validCards;
+            
+            // Recalculate total and add basic lands if needed
+            const newTotal = cardList.reduce((sum, card) => sum + (card.quantity || 1), 0);
+            if (newTotal < 99) {
+              const shortfall = 99 - newTotal;
+              console.log(`Adding ${shortfall} basic lands to compensate for removed cards`);
+              cardList = addBasicLands(cardList, shortfall, commander.color_identity);
+            }
+          }
+        } else {
+          console.log('All AI-suggested cards pass color identity validation');
+        }
+        
         // Fetch actual card data and add to deck
         setProgress(70);
         await addCardsFromList(cardList, setProgress);
@@ -215,7 +283,8 @@ export const useAutoDeckBuilder = () => {
         
         return true; // Successful completion
       } else {
-        throw new Error('Invalid response from API');
+        console.error('Unexpected API response structure:', data);
+        throw new Error(`Invalid response from API. Expected choices array but got: ${JSON.stringify(data).substring(0, 200)}...`);
       }
     } catch (error) {
       console.error('Error building deck:', error);

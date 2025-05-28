@@ -192,4 +192,52 @@ export const validateDeck = (commander, cards) => {
 export const isDeckValid = (commander, cards) => {
   const validations = validateDeck(commander, cards);
   return validations.every(validation => validation.valid);
+};
+
+/**
+ * Check if a single card is valid for the commander deck
+ * @param {Object} card - The card object to validate
+ * @param {Object} commander - The commander card object
+ * @returns {Object} Validation result with status and message
+ */
+export const validateCardForCommander = (card, commander) => {
+  if (!commander) {
+    return {
+      valid: false,
+      message: 'No commander selected.',
+    };
+  }
+
+  if (!card) {
+    return {
+      valid: false,
+      message: 'No card provided.',
+    };
+  }
+
+  const commanderColors = commander.color_identity || [];
+  const cardColors = card.color_identity || [];
+
+  // Check color identity compliance
+  const isColorCompliant = cardColors.every(color => commanderColors.includes(color));
+  
+  if (!isColorCompliant) {
+    return {
+      valid: false,
+      message: `${card.name} has color identity (${cardColors.join('')}) that is not allowed in ${commander.name}'s color identity (${commanderColors.join('')}).`,
+    };
+  }
+
+  // Check format legality
+  if (card.legalities && card.legalities.commander !== 'legal') {
+    return {
+      valid: false,
+      message: `${card.name} is not legal in Commander format.`,
+    };
+  }
+
+  return { 
+    valid: true, 
+    message: `${card.name} is valid for this commander deck.` 
+  };
 }; 

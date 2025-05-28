@@ -1,12 +1,13 @@
 import React from 'react';
 import { getCardImageUris } from '../../utils/scryfallAPI';
 import { useDeck } from '../../context/DeckContext';
+import { validateCardForCommander } from '../../utils/deckValidator';
 
 /**
  * Component to display a suggested card from AI with reasons
  */
 const SuggestedCard = ({ suggestion }) => {
-  const { addCard } = useDeck();
+  const { addCard, commander } = useDeck();
   
   // Extract card data and suggestion details
   const { card, name, reason, category } = suggestion;
@@ -17,6 +18,15 @@ const SuggestedCard = ({ suggestion }) => {
   // Handle adding card to deck
   const handleAddCard = () => {
     if (card) {
+      // Validate the card before adding it to the deck
+      const validation = validateCardForCommander(card, commander);
+      
+      if (!validation.valid) {
+        // Show an alert or notification about why the card cannot be added
+        alert(`Cannot add card: ${validation.message}`);
+        return;
+      }
+      
       addCard(card);
     }
   };

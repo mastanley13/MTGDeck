@@ -21,7 +21,7 @@ const API_URL = 'https://api.openai.com/v1/chat/completions';
 export const getSuggestions = async (commander, currentDeck, options = {}) => {
   const {
     maxSuggestions = 15,
-    model = 'o4-mini',
+    model = 'gpt-4o',
     categories = [],
     temperature = 0.8,
     deckTheme = '',

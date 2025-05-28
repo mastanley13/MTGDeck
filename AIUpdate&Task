@@ -1,0 +1,50 @@
+Summary
+
+The repository has multiple AI‑driven features but none of them verify color identity or land counts after receiving AI output.
+useAutoDeckBuilder.js builds a deck from GPT‑4o and directly adds cards, only trimming or padding with basic lands. It never checks if those cards match the commander’s colors.
+CommanderAiPage.jsx still calls GPT‑3.5 for suggestions (see model: 'gpt-3.5-turbo').
+getSuggestions defaults to the model 'o4-mini'.
+SuggestedCard.jsx adds a card to the deck with addCard(card); without validating anything.
+
+Recommended Improvements
+Enforce color identity on AI‑built decks
+
+After parsing the AI deck list in useAutoDeckBuilder.js, run validateColorIdentity(commander, parsedCards) from deckValidator.js and drop or replace any violating cards.
+
+Optionally use validateDeck to check singleton and legality before addCardsFromList.
+
+Upgrade commander recommendations
+
+Change the API call in CommanderAiPage.jsx to model: 'gpt-4o'.
+
+After fetching each suggested commander from Scryfall, compare the AI’s color identity with card.color_identity. Remove or fix any that don’t match.
+
+Improve card suggestion tool
+
+In openaiAPI.js, set model default to 'gpt-4o' so useAISuggestions always uses GPT‑4o.
+
+When a user adds a suggestion, modify SuggestedCard.jsx to run the same color identity and legality checks used in DeckBuilder.jsx before calling addCard.
+
+Reuse validation helpers
+
+Extract the color identity and legality checks in DeckBuilder.jsx to a shared utility so both manual and AI paths enforce the same rules.
+
+These changes will keep AI output compliant with commander colors, reduce invalid suggestions, and ensure consistent deck validation across the app.
+
+Breakdown of Task:
+
+Enforce color identity for AI deck builder
+1. Edit `src/hooks/useAutoDeckBuilder.js`.
+2. After parsing `cardList` and adjusting counts (around lines 145‑198), call `validateColorIdentity(commander, cardList)` from `deckValidator.js`.
+3. Filter out or replace any violations before calling `addCardsFromList`.
+4. Optionally run `validateDeck(commander, ...)` for a full check and warn the user if issues remain.
+
+Upgrade commander suggestions to GPT‑4o and verify colors
+1. In `src/pages/CommanderAiPage.jsx`, change `model: 'gpt-3.5-turbo'` to `model: 'gpt-4o'`.
+2. After fetching each commander’s Scryfall data (around lines 150‑167), compare `aiSuggestion.colors` with `scryfallData.color_identity`.
+3. Skip or correct suggestions whose colors don’t match before pushing them to `suggestionsWithFullData`.
+
+Use GPT‑4o and validate suggestions before adding
+1. Set the default model in `src/utils/openaiAPI.js` to `'gpt-4o'` (replace `'o4-mini'` at line 24).
+2. Create a shared validation helper (e.g., `validateCardForCommander(card, commander)` in `deckValidator.js`).
+3. In `src/components/suggestions/SuggestedCard.jsx`, call this helper inside `handleAddCard` and only invoke `addCard` if the card passes.
