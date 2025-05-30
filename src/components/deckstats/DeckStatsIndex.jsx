@@ -20,8 +20,17 @@ import {
   IconAlertTriangle,
   IconInfoCircle,
   IconCheck,
-  IconSearch
+  IconSearch,
+  IconCurrencyDollar,
+  IconSword,
+  IconBulb,
+  IconArrowsExchange,
+  IconStar
 } from '@tabler/icons-react';
+import DeckComparison from './comparisons/DeckComparison';
+import PriceHistory from './price/PriceHistory';
+import { CARD_TYPE_COLORS, STAT_COLORS } from './comparisons/DeckComparison';
+import { analyzeBracket } from './analyzers/bracketAnalyzer';
 
 // Define a modern color palette for the charts
 const MODERN_CHART_COLORS = [
@@ -36,8 +45,9 @@ const MODERN_CHART_COLORS = [
 ];
 
 const DeckStatsIndex = () => {
-  const [activeTab, setActiveTab] = useState('overview'); // overview, mana, curve, simulation
+  const [activeTab, setActiveTab] = useState('overview'); // overview, mana, curve, simulation, strategy, budget, power, recommendations, compare
   const { cards, commander } = useDeck();
+  const [comparedDeck, setComparedDeck] = useState(null);
 
   const manaSources = useMemo(() => {
     if (!cards) return {};
@@ -129,6 +139,25 @@ const DeckStatsIndex = () => {
                  .filter(item => item.probability > 0); // Optionally filter out 0% probabilities for cleaner chart
   }, [simulationResults]);
 
+  const getTypeColor = (type) => {
+    return CARD_TYPE_COLORS[type] || CARD_TYPE_COLORS.Artifact;
+  };
+
+  const getStatColor = (value, metric) => {
+    if (metric === 'lands') {
+      return value >= 36 ? STAT_COLORS.high :
+             value >= 32 ? STAT_COLORS.medium :
+             STAT_COLORS.low;
+    }
+    if (metric === 'interaction') {
+      return value >= 10 ? STAT_COLORS.high :
+             value >= 6 ? STAT_COLORS.medium :
+             STAT_COLORS.low;
+    }
+    // Add more metric evaluations
+    return STAT_COLORS.medium;
+  };
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-slate-700/50 bg-gradient-to-br from-slate-800/80 via-slate-800/60 to-slate-900/80 backdrop-blur-sm shadow-xl p-6">
       {/* Animated background */}
@@ -142,6 +171,11 @@ const DeckStatsIndex = () => {
               { name: 'Mana', tabKey: 'mana', icon: <IconBolt size={16} /> },
               { name: 'Curve/Types', tabKey: 'curve', icon: <IconChartBar size={16} /> },
               { name: 'Simulation', tabKey: 'simulation', icon: <IconFlask size={16} /> },
+              { name: 'Strategy', tabKey: 'strategy', icon: <IconSword size={16} /> },
+              { name: 'Budget', tabKey: 'budget', icon: <IconCurrencyDollar size={16} /> },
+              { name: 'Power Level', tabKey: 'power', icon: <IconTarget size={16} /> },
+              { name: 'Recommendations', tabKey: 'recommendations', icon: <IconBulb size={16} /> },
+              { name: 'Compare', tabKey: 'compare', icon: <IconArrowsExchange size={16} /> },
             ].map((tab) => (
               <button
                 key={tab.name}
@@ -162,8 +196,8 @@ const DeckStatsIndex = () => {
         <div>
           {activeTab === 'overview' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
                 <div className="relative z-10">
                   <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
                     <IconChartPie size={20} />
@@ -173,8 +207,8 @@ const DeckStatsIndex = () => {
                 </div>
               </div>
               
-              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
                 <div className="relative z-10">
                   <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
                     <IconChartBar size={20} />
@@ -184,8 +218,8 @@ const DeckStatsIndex = () => {
                 </div>
               </div>
               
-              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
                 <div className="relative z-10">
                   <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
                     <IconCards size={20} />
@@ -195,8 +229,8 @@ const DeckStatsIndex = () => {
                 </div>
               </div>
               
-              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
                 <div className="relative z-10">
                   <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
                     <IconTarget size={20} />
@@ -221,8 +255,8 @@ const DeckStatsIndex = () => {
 
           {activeTab === 'mana' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
                 <div className="relative z-10">
                   <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
                     <IconBolt size={20} />
@@ -247,8 +281,8 @@ const DeckStatsIndex = () => {
                 </div>
               </div>
               
-              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
                 <div className="relative z-10">
                   <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
                     <IconTarget size={20} />
@@ -277,8 +311,8 @@ const DeckStatsIndex = () => {
 
           {activeTab === 'curve' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
                 <div className="relative z-10">
                   <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
                     <IconChartBar size={20} />
@@ -288,8 +322,8 @@ const DeckStatsIndex = () => {
                 </div>
               </div>
                
-              <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
                 <div className="relative z-10">
                   <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
                     <IconCards size={20} />
@@ -302,8 +336,8 @@ const DeckStatsIndex = () => {
           )}
 
           {activeTab === 'simulation' && (
-            <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm p-6 shadow-lg space-y-6">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-blue-500/5"></div>
+            <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg space-y-6">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
               <div className="relative z-10">
                 <h3 className="text-xl font-semibold text-primary-400 mb-4 flex items-center space-x-2">
                   <IconFlask size={24} />
@@ -318,7 +352,7 @@ const DeckStatsIndex = () => {
                       id="numSimulations" 
                       value={numSimulations}
                       onChange={(e) => setNumSimulations(Math.max(100, parseInt(e.target.value, 10) || 10000))}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white focus:ring-primary-500 focus:border-primary-500 text-sm placeholder-slate-400 transition-all duration-300"
+                      className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-slate-200 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder-slate-400 transition-all duration-300"
                       min="100"
                       step="100"
                     />
@@ -330,7 +364,7 @@ const DeckStatsIndex = () => {
                       id="targetLandCount" 
                       value={targetLandCount}
                       onChange={(e) => setTargetLandCount(Math.max(0, Math.min(7, parseInt(e.target.value, 10) || 3)))}
-                      className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white focus:ring-primary-500 focus:border-primary-500 text-sm placeholder-slate-400 transition-all duration-300"
+                      className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-slate-200 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder-slate-400 transition-all duration-300"
                       min="0"
                       max="7"
                     />
@@ -418,6 +452,267 @@ const DeckStatsIndex = () => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'strategy' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconSword size={20} />
+                    <span>Deck Strategy Analysis</span>
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/30 transition-colors">
+                      <h4 className="text-sm font-semibold text-primary-300 mb-2">Strategy Distribution</h4>
+                      <ul className="space-y-2 text-sm text-slate-300">
+                        <li className="flex justify-between items-center">
+                          <span>Card Draw/Advantage</span>
+                          <span className="font-semibold text-slate-200">{functionalBuckets.cardDraw || 0} cards</span>
+                        </li>
+                        <li className="flex justify-between items-center">
+                          <span>Removal</span>
+                          <span className="font-semibold text-slate-200">{functionalBuckets.removal || 0} cards</span>
+                        </li>
+                        <li className="flex justify-between items-center">
+                          <span>Ramp</span>
+                          <span className="font-semibold text-slate-200">{functionalBuckets.ramp || 0} cards</span>
+                        </li>
+                        <li className="flex justify-between items-center">
+                          <span>Protection</span>
+                          <span className="font-semibold text-slate-200">{functionalBuckets.protection || 0} cards</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                    <IconTarget size={20} />
+                    <span>Win Conditions</span>
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/30 transition-colors">
+                      <h4 className="text-sm font-semibold text-primary-300 mb-3">Primary Win Conditions</h4>
+                      <ul className="space-y-2.5 text-sm">
+                        <li className="flex justify-between items-center text-slate-300">
+                          <span>Combat Damage</span>
+                          <span className="font-semibold text-slate-200">{functionalBuckets.combatWin || 0} cards</span>
+                        </li>
+                        <li className="flex justify-between items-center text-slate-300">
+                          <span>Combo Pieces</span>
+                          <span className="font-semibold text-slate-200">{functionalBuckets.combo || 0} cards</span>
+                        </li>
+                        <li className="flex justify-between items-center text-slate-300">
+                          <span>Alternative Win</span>
+                          <span className="font-semibold text-slate-200">{functionalBuckets.alternativeWin || 0} cards</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'budget' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
+                  <div className="relative z-10">
+                    <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                      <IconCurrencyDollar size={20} />
+                      <span>Budget Analysis</span>
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/30 transition-colors">
+                        <h4 className="text-sm font-semibold text-primary-300 mb-2">Price Distribution</h4>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex justify-between items-center text-slate-300">
+                            <span>Budget ($0-$1)</span>
+                            <span className="font-semibold text-slate-200">{functionalBuckets.budgetCards || 0} cards</span>
+                          </li>
+                          <li className="flex justify-between items-center text-slate-300">
+                            <span>Mid ($1-$5)</span>
+                            <span className="font-semibold text-slate-200">{functionalBuckets.midCards || 0} cards</span>
+                          </li>
+                          <li className="flex justify-between items-center text-slate-300">
+                            <span>Premium ($5-$20)</span>
+                            <span className="font-semibold text-slate-200">{functionalBuckets.premiumCards || 0} cards</span>
+                          </li>
+                          <li className="flex justify-between items-center text-slate-300">
+                            <span>Expensive ($20+)</span>
+                            <span className="font-semibold text-slate-200">{functionalBuckets.expensiveCards || 0} cards</span>
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/30 transition-colors">
+                        <h4 className="text-sm font-semibold text-primary-300 mb-2">Total Cost</h4>
+                        <div className="text-2xl font-bold text-primary-400 text-slate-200">${functionalBuckets.totalCost || '0.00'}</div>
+                        <p className="text-xs text-slate-400 mt-1">Based on current market prices</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <PriceHistory deck={cards} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'power' && (
+            <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
+              <div className="relative z-10">
+                <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                  <IconTarget size={20} />
+                  <span>Commander Bracket Assessment</span>
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-6">
+                    <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/30 transition-colors">
+                      {(() => {
+                        const bracketAnalysis = analyzeBracket(cards, commander);
+                        return (
+                          <div className="space-y-4">
+                            <div className="text-center p-4 bg-slate-800/50 rounded-lg border border-primary-500/30">
+                              <div className="text-2xl font-bold text-primary-400">Bracket {bracketAnalysis.bracket}</div>
+                              <div className="text-lg font-semibold text-primary-300">{bracketAnalysis.bracketName}</div>
+                              <p className="text-sm text-slate-400 mt-2">{bracketAnalysis.bracketDescription}</p>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <h4 className="text-sm font-semibold text-primary-300">Deck Restrictions Status:</h4>
+                              <ul className="space-y-2">
+                                <li className="flex items-center justify-between text-sm">
+                                  <span className="text-slate-300">Mass Land Destruction</span>
+                                  {bracketAnalysis.restrictions.noMLD ? (
+                                    <span className="text-green-400 flex items-center"><IconCheck size={16} className="mr-1" /> None</span>
+                                  ) : (
+                                    <span className="text-red-400 flex items-center"><IconAlertTriangle size={16} className="mr-1" /> Present</span>
+                                  )}
+                                </li>
+                                <li className="flex items-center justify-between text-sm">
+                                  <span className="text-slate-300">Extra Turns</span>
+                                  {bracketAnalysis.restrictions.noExtraTurns ? (
+                                    <span className="text-green-400 flex items-center"><IconCheck size={16} className="mr-1" /> None</span>
+                                  ) : (
+                                    <span className="text-red-400 flex items-center"><IconAlertTriangle size={16} className="mr-1" /> Present</span>
+                                  )}
+                                </li>
+                                <li className="flex items-center justify-between text-sm">
+                                  <span className="text-slate-300">Infinite Combos</span>
+                                  {bracketAnalysis.restrictions.noInfiniteCombo ? (
+                                    <span className="text-green-400 flex items-center"><IconCheck size={16} className="mr-1" /> None</span>
+                                  ) : (
+                                    <span className="text-red-400 flex items-center"><IconAlertTriangle size={16} className="mr-1" /> {bracketAnalysis.potentialComboCount} Found</span>
+                                  )}
+                                </li>
+                                <li className="flex items-center justify-between text-sm">
+                                  <span className="text-slate-300">Game Changers</span>
+                                  <span className={`${bracketAnalysis.gameChangerCount === 0 ? 'text-green-400' : 'text-yellow-400'} flex items-center`}>
+                                    {bracketAnalysis.gameChangerCount} Cards
+                                  </span>
+                                </li>
+                                <li className="flex items-center justify-between text-sm">
+                                  <span className="text-slate-300">Tutors</span>
+                                  <span className={`${bracketAnalysis.tutorCount <= 2 ? 'text-green-400' : 'text-yellow-400'} flex items-center`}>
+                                    {bracketAnalysis.tutorCount} Cards
+                                  </span>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/30 transition-colors">
+                    <h4 className="text-sm font-semibold text-primary-300 mb-4">Bracket System Guide</h4>
+                    <div className="space-y-4 text-sm">
+                      <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                        <p className="font-semibold text-primary-300">Bracket 1: Exhibition</p>
+                        <p className="text-slate-400 text-xs mt-1">Ultra-casual, no MLD, no infinite combos, no Game Changers</p>
+                      </div>
+                      <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                        <p className="font-semibold text-primary-300">Bracket 2: Core</p>
+                        <p className="text-slate-400 text-xs mt-1">Precon level, no MLD, no infinite combos, no Game Changers</p>
+                      </div>
+                      <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                        <p className="font-semibold text-primary-300">Bracket 3: Upgraded</p>
+                        <p className="text-slate-400 text-xs mt-1">Beyond precon, no MLD, allows late-game infinite combos, ≤3 Game Changers</p>
+                      </div>
+                      <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                        <p className="font-semibold text-primary-300">Bracket 4: Optimized</p>
+                        <p className="text-slate-400 text-xs mt-1">High power, no restrictions other than banned list</p>
+                      </div>
+                      <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+                        <p className="font-semibold text-primary-300">Bracket 5: CEDH</p>
+                        <p className="text-slate-400 text-xs mt-1">Competitive EDH, fully optimized for winning</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'recommendations' && (
+            <div className="relative overflow-hidden rounded-xl border border-slate-600/50 bg-slate-800/80 backdrop-blur-sm p-6 shadow-lg">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-blue-500/10"></div>
+              <div className="relative z-10">
+                <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+                  <IconBulb size={20} />
+                  <span>Deck Recommendations</span>
+                </h3>
+                <div className="space-y-4">
+                  <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/30 transition-colors">
+                    <h4 className="text-sm font-semibold text-primary-300 mb-2">Suggested Improvements</h4>
+                    <ul className="space-y-3 text-sm">
+                      {functionalBuckets.recommendations?.map((rec, index) => (
+                        <li key={index} className="flex items-start space-x-2 text-slate-300">
+                          <IconInfoCircle size={16} className="text-primary-400 mt-0.5 flex-shrink-0" />
+                          <span>{rec}</span>
+                        </li>
+                      )) || (
+                        <li className="text-slate-400">No recommendations available</li>
+                      )}
+                    </ul>
+                  </div>
+                  <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30 hover:border-slate-500/30 transition-colors">
+                    <h4 className="text-sm font-semibold text-primary-300 mb-2">Balance Suggestions</h4>
+                    <ul className="space-y-3 text-sm">
+                      {functionalBuckets.balanceSuggestions?.map((sug, index) => (
+                        <li key={index} className="flex items-start space-x-2 text-slate-300">
+                          <IconBulb size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
+                          <span>{sug}</span>
+                        </li>
+                      )) || (
+                        <li className="text-slate-400">No balance suggestions available</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'compare' && (
+            <div className="space-y-6">
+              <DeckComparison currentDeck={functionalBuckets} comparedDeck={comparedDeck} />
+              
+              {!comparedDeck && (
+                <div className="flex items-center justify-center p-8 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                  <span className="text-slate-400">Select a deck to compare with</span>
+                </div>
+              )}
             </div>
           )}
         </div>

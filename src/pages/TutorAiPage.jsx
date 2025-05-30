@@ -3,6 +3,7 @@ import { useDeck } from '../context/DeckContext';
 import { useAuth } from '../context/AuthContext';
 import CardDetailModal from '../components/ui/CardDetailModal';
 import { parseManaSymbols } from '../utils/manaSymbols';
+import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 
 const CheckIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
@@ -443,82 +444,95 @@ const TutorAiPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {suggestedCards.map((card, index) => (
-                <div 
-                  key={`${card.name}-${index}`}
-                  className="group relative glassmorphism-card p-0 overflow-hidden border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-105 hover:shadow-modern-primary flex flex-col h-full"
-                >
-                  {/* Card Image */}
-                  <div className="relative h-48 overflow-hidden flex-shrink-0">
-                    {card.imageUrl ? (
-                      <img 
-                        src={card.imageUrl} 
-                        alt={`Art for ${card.name}`} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
-                        <div className="text-center">
-                          <svg className="h-12 w-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span className="text-xs">No Image</span>
+              {suggestedCards.map((card, index) => {
+                const gameChangerEffect = card.game_changer 
+                  ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
+                  : '';
+
+                return (
+                  <div 
+                    key={`${card.name}-${index}`}
+                    className={`group relative glassmorphism-card p-0 overflow-hidden border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-105 hover:shadow-modern-primary ${gameChangerEffect} flex flex-col h-full`}
+                  >
+                    {/* Card Image */}
+                    <div className="relative h-48 overflow-hidden flex-shrink-0">
+                      {card.imageUrl ? (
+                        <img 
+                          src={card.imageUrl} 
+                          alt={`Art for ${card.name}`} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
+                          <div className="text-center">
+                            <svg className="h-12 w-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-xs">No Image</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Card Details */}
-                  <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0">
-                    <div className="flex items-start justify-between flex-shrink-0">
-                      <h3 className="text-sm font-bold text-white flex-1 pr-2 group-hover:text-primary-300 transition-colors leading-tight">
-                        {card.name}
-                      </h3>
-                      {/* Mana Cost Display */}
-                      {card.mana_cost && (
-                        <div className="flex items-center space-x-0.5 flex-shrink-0">
-                          {parseManaSymbols(card.mana_cost)}
+                      )}
+
+                      {/* Game Changer Badge */}
+                      {card.game_changer && (
+                        <div className="absolute top-2 right-2">
+                          <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
                         </div>
                       )}
                     </div>
                     
-                    <p className="text-xs text-slate-400 flex-shrink-0">
-                      {card.type_line || card.type}
-                    </p>
-                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3 flex-grow overflow-hidden">
-                      {card.description}
-                    </p>
-                    
-                    {/* Action buttons - side by side - Fixed at bottom */}
-                    <div className="flex space-x-2 pt-2 mt-auto">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenModal(card);
-                        }}
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
-                      >
-                        <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>Details</span>
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenDeckModal(card);
-                        }}
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
-                      >
-                        <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span>Add</span>
-                      </button>
+                    {/* Card Details */}
+                    <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0">
+                      <div className="flex items-start justify-between flex-shrink-0">
+                        <h3 className="text-sm font-bold text-white flex-1 pr-2 group-hover:text-primary-300 transition-colors leading-tight">
+                          {card.name}
+                        </h3>
+                        {/* Mana Cost Display */}
+                        {card.mana_cost && (
+                          <div className="flex items-center space-x-0.5 flex-shrink-0">
+                            {parseManaSymbols(card.mana_cost)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-slate-400 flex-shrink-0">
+                        {card.type_line || card.type}
+                      </p>
+                      <p className="text-xs text-slate-300 leading-relaxed line-clamp-3 flex-grow overflow-hidden">
+                        {card.description}
+                      </p>
+                      
+                      {/* Action buttons - side by side - Fixed at bottom */}
+                      <div className="flex space-x-2 pt-2 mt-auto">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenModal(card);
+                          }}
+                          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
+                        >
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Details</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDeckModal(card);
+                          }}
+                          className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
+                        >
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          <span>Add</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDeck } from '../context/DeckContext';
 import { useAuth } from '../context/AuthContext.jsx';
 import { isDeckValid } from '../utils/deckValidator.js';
+import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 
 // Checkmark Icon Component
 const CheckIcon = (props) => (
@@ -594,126 +595,68 @@ const CommanderAiPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {suggestions.map((commander, index) => (
-                <div 
-                  key={`${commander.name}-${index}`}
-                  className="group relative glassmorphism-card p-0 overflow-hidden border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-modern-primary"
-                  onClick={() => handleOpenModal(commander)}
-                >
-                  {/* Commander Image */}
-                  <div className="relative h-64 overflow-hidden">
-                    {commander.imageUrl ? (
-                      <img 
-                        src={commander.imageUrl} 
-                        alt={`Art for ${commander.name}`} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
-                        <div className="text-center">
-                          <svg className="h-16 w-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span className="text-sm">Image not found</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Color Identity Badge */}
-                    <div className="absolute top-3 right-3 flex space-x-1">
-                      {Array.isArray(commander.colors) && commander.colors.map((color, colorIndex) => (
-                        <div 
-                          key={colorIndex}
-                          className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-lg ${
-                            color === 'W' ? 'bg-yellow-100 text-yellow-800' :
-                            color === 'U' ? 'bg-blue-500' :
-                            color === 'B' ? 'bg-gray-800' :
-                            color === 'R' ? 'bg-red-500' :
-                            color === 'G' ? 'bg-green-500' : 'bg-gray-500'
-                          }`}
-                        >
-                          {color}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Commander Details */}
-                  <div className="p-6 space-y-4">
-                    <h3 className="text-lg font-bold text-white group-hover:text-primary-300 transition-colors line-clamp-2">
-                      {commander.name}
-                    </h3>
-                    
-                    <p className="text-sm text-slate-400">
-                      Colors: {Array.isArray(commander.colors) ? commander.colors.join(', ') : 'Colorless'}
-                    </p>
-                    
-                    <p className="text-sm text-slate-300 leading-relaxed line-clamp-4">
-                      {commander.aiDescription || commander.description}
-                    </p>
+              {suggestions.map((commander, index) => {
+                const gameChangerEffect = commander.game_changer 
+                  ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
+                  : '';
 
-                    {/* Action Buttons */}
-                    <div className="pt-4 border-t border-slate-700 space-y-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSaveNewDeckFromAI(commander);
-                        }}
-                        className="btn-modern btn-modern-primary btn-modern-sm w-full group/save"
-                        disabled={deckContextLoading || !isAuthenticated}
-                      >
-                        {deckContextLoading ? (
-                          <span className="flex items-center justify-center space-x-2">
-                            <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
-                            <span>Saving...</span>
-                          </span>
-                        ) : (
-                          <span className="flex items-center justify-center space-x-2">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                return (
+                  <div 
+                    key={`${commander.name}-${index}`}
+                    className={`group relative glassmorphism-card p-0 overflow-hidden border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-105 hover:shadow-modern-primary ${gameChangerEffect} flex flex-col h-full`}
+                    onClick={() => handleOpenModal(commander)}
+                  >
+                    {/* Card Image */}
+                    <div className="relative h-48 overflow-hidden flex-shrink-0">
+                      {commander.imageUrl ? (
+                        <img 
+                          src={commander.imageUrl} 
+                          alt={`Art for ${commander.name}`} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" 
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">
+                          <div className="text-center">
+                            <svg className="h-12 w-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <span>Save as New Deck</span>
-                          </span>
-                        )}
-                      </button>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!isAuthenticated) {
-                              setAlertModalConfig({
-                                  title: 'Login Required',
-                                  message: 'Please log in to build a new deck. You will be redirected to the login page.',
-                                  onConfirm: () => navigate('/login', { state: { from: '/builder' } }),
-                                  confirmText: 'Go to Login',
-                                  showCancelButton: true,
-                              });
-                              setIsAlertModalOpen(true);
-                          } else {
-                              handleBuildWithCommander(commander);
-                          }
-                        }}
-                        className="btn-modern btn-modern-secondary btn-modern-sm w-full"
-                        disabled={!OPENAI_API_KEY || isLoading }
-                      >
-                        <span className="flex items-center justify-center space-x-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                          </svg>
-                          <span>Build Deck</span>
-                        </span>
-                      </button>
-                    </div>
-                  </div>
+                            <span className="text-xs">No Image</span>
+                          </div>
+                        </div>
+                      )}
 
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-4">
-                    <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1 text-white text-xs font-semibold">
-                      Click to view details
+                      {/* Game Changer Badge */}
+                      {commander.game_changer && (
+                        <div className="absolute top-2 right-2">
+                          <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Card Details */}
+                    <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0">
+                      <div className="flex items-start justify-between flex-shrink-0">
+                        <h3 className="text-sm font-bold text-white flex-1 pr-2 group-hover:text-primary-300 transition-colors leading-tight">
+                          {commander.name}
+                        </h3>
+                        {/* Mana Cost Display */}
+                        {commander.mana_cost && (
+                          <div className="flex items-center space-x-0.5 flex-shrink-0">
+                            {parseManaSymbols(commander.mana_cost)}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-slate-400 flex-shrink-0">
+                        {commander.type_line || commander.type}
+                      </p>
+                      <p className="text-xs text-slate-300 leading-relaxed line-clamp-3 flex-grow overflow-hidden">
+                        {commander.aiDescription || commander.description}
+                      </p>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

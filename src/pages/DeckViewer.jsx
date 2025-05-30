@@ -7,6 +7,7 @@ import DeckAnalytics from '../components/deck/DeckAnalytics';
 import DeckExporter from '../components/deck/DeckExporter';
 import DeckShare from '../components/deck/DeckShare';
 import CardDetailModal from '../components/ui/CardDetailModal.jsx';
+import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 
 const DeckViewer = () => {
   const { deckId } = useParams();
@@ -111,26 +112,32 @@ const DeckViewer = () => {
                     onClick={() => handleOpenCardDetailModal(commander)}
                     title={`${commander.name} (Commander)`}
                   >
-                    {imageUris ? (
-                      <img
-                        src={imageUris.small}
-                        alt={commander.name}
-                        className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
-                      />
-                    ) : (
-                      <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
-                        <span className="text-slate-300 text-center text-xs">{commander.name}</span>
-                      </div>
-                    )}
-                    <div className="mt-2 flex justify-between items-center">
-                      <span className="text-xs text-yellow-400 truncate mr-1 font-semibold" title={commander.name}>{commander.name}</span>
-                      <span className="text-xs text-yellow-200 font-bold flex-shrink-0 bg-yellow-500/20 px-2 py-1 rounded-full">Cmdr</span>
+                    {/* Commander Image */}
+                    <div className="relative">
+                      {imageUris ? (
+                        <img
+                          src={imageUris.small}
+                          alt={commander.name}
+                          className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
+                        />
+                      ) : (
+                        <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
+                          <span className="text-slate-300 text-center text-xs">{commander.name}</span>
+                        </div>
+                      )}
+
+                      {/* Game Changer Badge */}
+                      {commander.game_changer && (
+                        <div className="absolute top-2 right-2">
+                          <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
+                        </div>
+                      )}
                     </div>
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end justify-center p-2">
-                      <div className="bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1 text-white text-xs font-semibold">
-                        Click to view
-                      </div>
+
+                    {/* Commander Name */}
+                    <div className="mt-2 flex justify-between items-center">
+                      <span className="text-xs text-yellow-300 truncate mr-1" title={commander.name}>{commander.name}</span>
+                      <span className="text-xs text-yellow-300 font-semibold flex-shrink-0 bg-yellow-500/30 px-2 py-1 rounded-full">Commander</span>
                     </div>
                   </div>
                 );
@@ -150,26 +157,32 @@ const DeckViewer = () => {
                     onClick={() => handleOpenCardDetailModal(card)}
                     title={card.name}
                   >
-                    {imageUris ? (
-                      <img
-                        src={imageUris.small}
-                        alt={card.name}
-                        className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
-                      />
-                    ) : (
-                      <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
-                        <span className="text-slate-300 text-center text-xs">{card.name}</span>
-                      </div>
-                    )}
+                    {/* Card Image */}
+                    <div className="relative">
+                      {imageUris ? (
+                        <img
+                          src={imageUris.small}
+                          alt={card.name}
+                          className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
+                        />
+                      ) : (
+                        <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
+                          <span className="text-slate-300 text-center text-xs">{card.name}</span>
+                        </div>
+                      )}
+
+                      {/* Game Changer Badge */}
+                      {card.game_changer && (
+                        <div className="absolute top-2 right-2">
+                          <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Name and Quantity */}
                     <div className="mt-2 flex justify-between items-center">
                       <span className="text-xs text-slate-300 truncate mr-1" title={card.name}>{card.name}</span>
                       <span className="text-xs text-white font-semibold flex-shrink-0 bg-primary-500/30 px-2 py-1 rounded-full">{card.quantity || 1}x</span>
-                    </div>
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl flex items-end justify-center p-2">
-                      <div className="bg-white/20 backdrop-blur-sm rounded-lg px-2 py-1 text-white text-xs font-semibold">
-                        Click to view
-                      </div>
                     </div>
                   </div>
                 );

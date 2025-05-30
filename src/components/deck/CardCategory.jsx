@@ -15,11 +15,15 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
   }));
   
   const handleViewDetailsClick = (e) => {
-    e.stopPropagation(); // Prevent card drag/drop or other parent clicks if necessary
+    e.stopPropagation();
     if (onViewCardDetails) {
       onViewCardDetails(card);
     }
   };
+
+  const gameChangerEffect = card.game_changer 
+    ? 'ring-2 ring-yellow-400 border-yellow-400/50' 
+    : 'border-slate-700/50';
 
   return (
     <div 
@@ -28,21 +32,30 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
     >
       {/* Enhanced Card Image Area - Clickable for details */}
       <div 
-        className="relative w-full cursor-pointer group/image" 
-        onClick={handleViewDetailsClick} // Open modal on image click
+        className={`relative w-full cursor-pointer group/image overflow-hidden ${gameChangerEffect} rounded-lg border transition-all duration-300`}
+        onClick={handleViewDetailsClick}
       >
         <EnhancedCardImage
           card={card}
           context="LIST_VIEW"
           aspectRatio="card"
-          className="rounded-t-lg shadow-md w-full border border-slate-700/50 group-hover:opacity-80 transition-opacity duration-150"
+          className="w-full shadow-md group-hover:opacity-80 transition-opacity duration-150"
           showDoubleFaceToggle={true}
           alt={`${card.name} card in deck`}
         />
+        
+        {/* Game Changer Badge */}
+        {card.game_changer && (
+          <div className="absolute bottom-2 right-2 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-full p-1.5">
+            <svg className="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          </div>
+        )}
       </div>
 
       {/* Controls Bar - Below Image */}
-      <div className="flex items-center justify-between p-1 bg-gray-700 rounded-b-lg border-t border-gray-600">
+      <div className="flex items-center justify-between p-1 mt-1 bg-gray-700/50 rounded-lg">
         {/* Quantity Controls */} 
         <div className="flex items-center">
           <button
@@ -76,7 +89,7 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
       </div>
 
       {/* Card Name - Below Controls Bar */}
-      <div className="mt-0.5 text-center text-xs truncate px-1 w-full text-gray-300">{card.name}</div>
+      <div className="mt-1 text-center text-xs truncate px-1 w-full text-gray-300">{card.name}</div>
     </div>
   );
 };

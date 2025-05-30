@@ -25,7 +25,8 @@ import {
   IconTrendingUp,
   IconAlertTriangle,
   IconInfoCircle,
-  IconCheck
+  IconCheck,
+  IconStar
 } from '@tabler/icons-react';
 
 // Register ChartJS components
@@ -438,6 +439,22 @@ const DeckInsights = ({ analysis }) => {
   const nonLandCards = analysis.totalCards - (analysis.typeBreakdown.Land || 0);
   const landCount = analysis.typeBreakdown.Land || 0;
   
+  // Add game changer analysis
+  if (analysis.gameChangers) {
+    const gameChangerCount = analysis.gameChangers.length;
+    const gameChangerPercentage = ((gameChangerCount / analysis.totalCards) * 100).toFixed(1);
+    
+    if (gameChangerCount > 0) {
+      insights.push({
+        type: 'success',
+        title: 'Game Changers Present',
+        description: `${gameChangerCount} game-changing cards (${gameChangerPercentage}%) boost deck impact`,
+        icon: <IconStar size={20} />,
+        details: analysis.gameChangers.map(card => card.name).join(', ')
+      });
+    }
+  }
+  
   // Mana curve analysis
   const peakCMC = Object.entries(analysis.manaCurve).reduce((a, b) => 
     analysis.manaCurve[a[0]] > analysis.manaCurve[b[0]] ? a : b
@@ -530,7 +547,7 @@ const DeckInsights = ({ analysis }) => {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
         <IconSearch size={24} />
         <span>Deck Insights</span>
@@ -553,17 +570,35 @@ const DeckInsights = ({ analysis }) => {
       {insights.length > 0 ? (
         <div className="space-y-2">
           {insights.map((insight, index) => (
-            <div key={index} className={`p-3 rounded-lg border-l-4 flex items-start space-x-3 ${
-              insight.type === 'warning' ? 'bg-amber-500/10 border-amber-500 text-amber-100' :
-              insight.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-100' :
-              'bg-blue-500/10 border-blue-500 text-blue-100'
-            }`}>
-              <div className="flex-shrink-0 mt-0.5">
-                {insight.icon}
-              </div>
-              <div>
-                <div className="font-medium">{insight.title}</div>
-                <div className="text-sm opacity-90">{insight.description}</div>
+            <div
+              key={index}
+              className={`p-4 rounded-lg border ${
+                insight.type === 'warning' ? 'bg-yellow-900/20 border-yellow-500/30' :
+                insight.type === 'success' ? 'bg-green-900/20 border-green-500/30' :
+                'bg-blue-900/20 border-blue-500/30'
+              }`}
+            >
+              <div className="flex items-start space-x-3">
+                <div className={`flex-shrink-0 ${
+                  insight.type === 'warning' ? 'text-yellow-400' :
+                  insight.type === 'success' ? 'text-green-400' :
+                  'text-blue-400'
+                }`}>
+                  {insight.icon}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-semibold ${
+                    insight.type === 'warning' ? 'text-yellow-300' :
+                    insight.type === 'success' ? 'text-green-300' :
+                    'text-blue-300'
+                  }`}>
+                    {insight.title}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-300">{insight.description}</p>
+                  {insight.details && (
+                    <p className="mt-2 text-xs text-gray-400 italic">{insight.details}</p>
+                  )}
+                </div>
               </div>
             </div>
           ))}

@@ -4,6 +4,7 @@ import SearchBar from '../components/search/SearchBar.jsx';
 import SearchResults from '../components/search/SearchResults.jsx';
 import DeckBuilderAI from '../components/deck/DeckBuilder.jsx';
 import DeckStats from '../components/deck/DeckStats.jsx';
+import DeckStatsIndex from '../components/deckstats/DeckStatsIndex.jsx';
 import ValidationResults from '../components/deck/ValidationResults.jsx';
 // import SuggestionPanel from '../components/suggestions/SuggestionPanel.jsx';
 // import AIChatbot from '../components/ai/AIChatbot.jsx';
@@ -22,6 +23,7 @@ import AlertModal from '../components/ui/AlertModal.jsx';
 import InputModal from '../components/ui/InputModal.jsx';
 import CardDetailModal from '../components/ui/CardDetailModal.jsx';
 import { IconCrown } from '@tabler/icons-react';
+import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 
 const DeckBuilderAIPage = () => {
   const [activeTab, setActiveTab] = useState('deck'); // 'search', 'deck', 'stats'
@@ -552,6 +554,7 @@ const DeckBuilderAIPage = () => {
                   {activeTab === 'stats' && (
                     <div className="space-y-6">
                       <DeckStats />
+                      <DeckStatsIndex />
                       <ValidationResults setActiveTab={setActiveTab} />
                     </div>
                   )}

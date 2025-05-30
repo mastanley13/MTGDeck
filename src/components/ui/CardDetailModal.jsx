@@ -135,11 +135,11 @@ const CardDetailModal = ({ card, onClose }) => {
       let allPrints = [];
       
       // Single optimized search with limited results
-      try {
+          try {
         console.log("Primary search: Limited oracle-based search...");
         const response = await axios.get(`https://api.scryfall.com/cards/search?order=released&q=oracleid:${card.oracle_id}&include_extras=true&unique=prints`);
-        
-        if (response.data && response.data.data) {
+            
+            if (response.data && response.data.data) {
           // Limit to first 20 results for performance
           allPrints = response.data.data.slice(0, 20);
           console.log(`Primary search: ${allPrints.length} prints found (limited)`);
@@ -175,9 +175,9 @@ const CardDetailModal = ({ card, onClose }) => {
         }
         // For double-faced cards
         else if (print.card_faces && isDoubleFaced && print.card_faces[currentFace]?.image_uris) {
-          artUri = print.card_faces[currentFace].image_uris.png || 
-                   print.card_faces[currentFace].image_uris.large || 
-                   print.card_faces[currentFace].image_uris.normal;
+            artUri = print.card_faces[currentFace].image_uris.png || 
+                     print.card_faces[currentFace].image_uris.large || 
+                     print.card_faces[currentFace].image_uris.normal;
         }
 
         if (artUri && !seenImages.has(artUri)) {
@@ -236,20 +236,20 @@ const CardDetailModal = ({ card, onClose }) => {
       console.error("Error fetching card artworks:", error);
       
       // Final fallback to current card only
-      const fallbackArtUri = isDoubleFaced && currentFaceData 
-        ? currentFaceData.imageUrl 
-        : card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
-      
-      if (fallbackArtUri) {
+        const fallbackArtUri = isDoubleFaced && currentFaceData 
+          ? currentFaceData.imageUrl 
+          : card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
+        
+        if (fallbackArtUri) {
         const fallbackArtwork = [{
-          uri: fallbackArtUri,
-          setName: card.set_name,
-          artist: card.artist,
+            uri: fallbackArtUri,
+            setName: card.set_name,
+            artist: card.artist,
           collector_number: card.collector_number,
           cardData: card
         }];
         setAllArtworks(fallbackArtwork);
-        setCurrentArtIndex(0);
+          setCurrentArtIndex(0);
         artworkCache.set(cacheKey, { artworks: fallbackArtwork, initialIndex: 0 });
       }
     }
@@ -392,13 +392,13 @@ const CardDetailModal = ({ card, onClose }) => {
       // Debounce face changes to avoid rapid API calls
       const timer = setTimeout(() => {
         console.log("Face changed, refetching artworks for face:", currentFace);
-        fetchArtworks();
+      fetchArtworks();
       }, 300); // 300ms debounce
       
       return () => clearTimeout(timer);
     }
   }, [currentFace, isDoubleFaced, hasLoadedArtworks, fetchArtworks]);
-
+  
   const currentArtwork = allArtworks[currentArtIndex] || {};
   // For double-faced cards, prioritize current face data, otherwise use artwork or card image
   const mainImageUrl = isDoubleFaced && currentFaceData 
@@ -569,13 +569,13 @@ const CardDetailModal = ({ card, onClose }) => {
                   </div>
                 ) : (
                   <>
-                    {currentArtIndex + 1} of {allArtworks.length}<br/>
-                    {isDoubleFaced && <span className="block text-yellow-400 font-semibold">{currentFaceData?.name}</span>}
-                    <span className="block truncate max-w-[120px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
-                    {currentArtwork.treatmentType && currentArtwork.treatmentType !== 'Regular' && (
-                      <span className="block text-blue-300 font-semibold text-2xs">{currentArtwork.treatmentType}</span>
-                    )}
-                    <span className="block truncate max-w-[120px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
+                {currentArtIndex + 1} of {allArtworks.length}<br/>
+                {isDoubleFaced && <span className="block text-yellow-400 font-semibold">{currentFaceData?.name}</span>}
+                <span className="block truncate max-w-[120px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
+                {currentArtwork.treatmentType && currentArtwork.treatmentType !== 'Regular' && (
+                  <span className="block text-blue-300 font-semibold text-2xs">{currentArtwork.treatmentType}</span>
+                )}
+                <span className="block truncate max-w-[120px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
                   </>
                 )}
               </p>
@@ -726,7 +726,19 @@ const CardDetailModal = ({ card, onClose }) => {
           {(card.edhrec_rank || card.game_changer) && (
             <div className="my-1 sm:my-1.5 py-1 sm:py-1.5 border-t border-b border-gray-700 text-2xs sm:text-xs">
               {card.edhrec_rank && (<p className="text-gray-300">EDHREC Rank: <span className="font-semibold text-gray-100">{card.edhrec_rank.toLocaleString()}</span></p>)}
-              {card.game_changer && (<p className="text-green-400 font-semibold mt-0.5">★ Game Changer</p> )}
+              {card.game_changer && (
+                <>
+                  <p className="text-green-400 font-semibold mt-0.5 flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    Game Changer
+                  </p>
+                  <div className="mt-1 text-2xs text-gray-400 bg-gray-700/50 rounded-md p-2 border border-gray-600/50">
+                    <p>Based on EDHREC data analysis, this card has been identified as a high-impact card that significantly influences deck performance and win rates. Game changers often provide exceptional value or create powerful synergies within their archetypes.</p>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
