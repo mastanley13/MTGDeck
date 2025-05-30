@@ -6,6 +6,29 @@ CommanderAiPage.jsx still calls GPT‑3.5 for suggestions (see model: 'gpt-3.5-t
 getSuggestions defaults to the model 'o4-mini'.
 SuggestedCard.jsx adds a card to the deck with addCard(card); without validating anything.
 
+Auto Deck Builder
+The deck builder prompt tells GPT‑4o to keep decks within the commander’s colors and at exactly 99 cards. After receiving the list, the code only adjusts counts with trimCardList or addBasicLands, then blindly adds cards to the deck. There is no validation that each card’s colors match the commander. You already have a full validator in deckValidator.js (see validateDeck) that checks color identity, singleton rules, and card count.
+
+Improvement: After building the deck, run validateColorIdentity (or validateDeck) on the AI list before adding cards. If violations exist, filter or replace those cards. This ensures no off‑color picks or excess lands get added.
+
+Commander Suggestions
+CommanderAiPage.jsx uses the older gpt‑3.5‑turbo model and accepts whatever JSON it returns. No color‑identity check is done on the suggestions before displaying them.
+
+Improvement: Upgrade the model to GPT‑4o and verify each commander’s color identity via Scryfall before showing it to the user. That will catch any mismatch between suggested colors and the commander card.
+
+Card Suggestion Tool
+getSuggestions defaults to model 'o4-mini' and asks for suggestions respecting color identity. The parsed suggestions are returned without validation. When the user clicks “Add to Deck,” the card is added directly from Scryfall by SuggestedCard without checking its color identity or legality.
+
+Improvement:
+
+Use the same validation (isColorIdentityCompliant from the deck builder or validateColorIdentity) before allowing a suggested card to be added.
+
+Consider using gpt‑4o or the standard GPT‑4 model instead of 'o4-mini' for better accuracy in the suggestions.
+
+Manual Deck Building
+When a user manually adds a card, DeckBuilder.jsx already enforces color identity and format legality checks before calling addCard. This is the right approach—extend similar checks to AI‑generated lists and suggestions so all paths enforce the same rules.
+
+
 Recommended Improvements
 Enforce color identity on AI‑built decks
 

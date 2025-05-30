@@ -3,6 +3,7 @@ import { searchCards } from '../utils/scryfallAPI';
 import { useDeck } from '../context/DeckContext';
 import CardDetailModal from '../components/ui/CardDetailModal';
 import EnhancedCardImage from '../components/ui/EnhancedCardImage';
+import { parseManaSymbols } from '../utils/manaSymbols';
 
 // Using EnhancedCardImage component for optimized image handling
 
@@ -258,29 +259,37 @@ const CardSearchPage = () => {
                 return (
                   <div 
                     key={card.id} 
-                    className={`group relative glassmorphism-card p-4 border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-modern-primary ${gameChangerEffect}`}
+                    className={`group relative glassmorphism-card p-4 border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-modern-primary ${gameChangerEffect} flex flex-col h-full`}
                   >
-                    <div className="cursor-pointer" onClick={(e) => {
+                    <div className="cursor-pointer flex-1 flex flex-col" onClick={(e) => {
                       e.stopPropagation();
                       handleOpenCardDetailsModal(card);
                     }}>
-                      <h3 className="font-bold text-white mb-3 group-hover:text-primary-300 transition-colors line-clamp-2" title={card.name}>
+                      <h3 className="font-bold text-white mb-3 group-hover:text-primary-300 transition-colors line-clamp-2 leading-tight flex-shrink-0" title={card.name}>
                         {card.name}
                       </h3>
                       
                       <EnhancedCardImage 
-                  card={card} 
-                  context="GRID_VIEW"
-                  aspectRatio="card"
-                  className="w-full rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-300 mb-3" 
-                  showDoubleFaceToggle={true}
-                  alt={`${card.name} Magic: The Gathering card`}
-                />
+                        card={card} 
+                        context="GRID_VIEW"
+                        aspectRatio="card"
+                        className="w-full rounded-xl shadow-lg group-hover:scale-105 transition-transform duration-300 mb-3 flex-shrink-0" 
+                        showDoubleFaceToggle={true}
+                        alt={`${card.name} Magic: The Gathering card`}
+                      />
                       
-                      <div className="space-y-1 mb-4">
-                        <p className="text-xs text-slate-400 truncate" title={card.type_line}>{card.type_line}</p>
+                      <div className="space-y-1 mb-4 flex-1 min-h-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-slate-400 truncate flex-1" title={card.type_line}>{card.type_line}</p>
+                          {/* Mana Cost Display */}
+                          {card.mana_cost && (
+                            <div className="flex items-center space-x-0.5 ml-2 flex-shrink-0">
+                              {parseManaSymbols(card.mana_cost)}
+                            </div>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-500 truncate flex items-center space-x-1" title={card.set_name}>
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M12 3l8 4.5l0 9l-8 4.5l-8 -4.5l0 -9l8 -4.5" />
                             <path d="M12 12l8 -4.5" />
@@ -292,8 +301,8 @@ const CardSearchPage = () => {
                       </div>
                     </div>
                     
-                    {/* Action buttons - always visible, side by side */}
-                    <div className="flex space-x-2 mt-3">
+                    {/* Action buttons - always visible, side by side - Fixed at bottom */}
+                    <div className="flex space-x-2 mt-auto">
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
@@ -301,7 +310,7 @@ const CardSearchPage = () => {
                         }}
                         className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span>Details</span>
@@ -313,7 +322,7 @@ const CardSearchPage = () => {
                         }}
                         className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
                       >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
                         <span>Add</span>

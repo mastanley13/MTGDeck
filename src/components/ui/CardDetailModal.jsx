@@ -1,15 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { parseManaSymbols } from '../../utils/manaSymbols';
 import { getOptimalImageUrl, IMAGE_CONTEXTS } from '../../utils/imageUtils.jsx';
+import { useSubscription } from '../../context/SubscriptionContext';
 import axios from 'axios'; // Import axios for API calls
 
 const CardDetailModal = ({ card, onClose }) => {
   if (!card) return null;
 
+  const { isPremium } = useSubscription();
+
   const [allArtworks, setAllArtworks] = useState([]);
   const [currentArtIndex, setCurrentArtIndex] = useState(0);
   const [artLoading, setArtLoading] = useState(false);
   const [currentFace, setCurrentFace] = useState(0);
+  const [hasLoadedArtworks, setHasLoadedArtworks] = useState(false);
+
+  // Add a simple cache to avoid refetching the same card's artworks
+  const [artworkCache] = useState(new Map());
+
+  // AI Strategic Overview states
+  const [aiOverview, setAiOverview] = useState('');
+  const [aiOverviewLoading, setAiOverviewLoading] = useState(false);
+  const [hasLoadedAiOverview, setHasLoadedAiOverview] = useState(false);
+  const [showAiOverview, setShowAiOverview] = useState(false);
+  const [aiOverviewCache] = useState(new Map());
 
   // Enhanced function to get all card face images
   const getAllCardFaceImages = (card) => {
@@ -68,12 +82,25 @@ const CardDetailModal = ({ card, onClose }) => {
     }
   };
 
+  // Optimized artwork fetching with caching and lazy loading
   const fetchArtworks = useCallback(async () => {
     if (!card) return;
 
+    // Create cache key based on card and current face
+    const cacheKey = `${card.id}_${currentFace}`;
+    
+    // Check cache first
+    if (artworkCache.has(cacheKey)) {
+      console.log("Using cached artwork data for", card.name);
+      const cachedData = artworkCache.get(cacheKey);
+      setAllArtworks(cachedData.artworks);
+      setCurrentArtIndex(cachedData.initialIndex);
+      return;
+    }
+
     setArtLoading(true);
 
-    // For cards without oracle_id, use current card image only
+    // For cards without oracle_id, use current card image only (fast path)
     if (!card.oracle_id) {
       console.log("Card has no oracle_id, using single artwork:", card.name);
       let initialArtUri;
@@ -84,165 +111,79 @@ const CardDetailModal = ({ card, onClose }) => {
       }
       
       if (initialArtUri) {
-        setAllArtworks([{
+        const singleArtwork = [{
           uri: initialArtUri,
           setName: card.set_name,
           artist: card.artist,
-          collector_number: card.collector_number
-        }]);
+          collector_number: card.collector_number,
+          cardData: card
+        }];
+        setAllArtworks(singleArtwork);
         setCurrentArtIndex(0);
+        artworkCache.set(cacheKey, { artworks: singleArtwork, initialIndex: 0 });
       }
       setArtLoading(false);
       return;
     }
 
     try {
-      console.log("Fetching artworks for card:", card.name, "Oracle ID:", card.oracle_id);
+      console.log("Fetching optimized artworks for card:", card.name, "Oracle ID:", card.oracle_id);
       
-      // Use comprehensive name-based search to capture ALL visual variants
-      // Name-based searches find cards with different oracle_ids (like Art Series)
       const cardName = card.name.replace(/^A-/, ''); // Remove A- prefix for Arena cards
       
-      console.log("Performing comprehensive search for all variants...");
+      // Optimized search strategy - limit results and prioritize efficiency
       let allPrints = [];
       
-      // Helper function to get all pages from a search  
-      const getAllPages = async (searchUrl) => {
-        let allResults = [];
-        let nextPageUrl = searchUrl;
-        let pageCount = 0;
-        const maxPages = 50; // Increased to handle unique=prints results
-        
-        while (nextPageUrl && pageCount < maxPages) {
-          try {
-            console.log(`  Fetching page ${pageCount + 1}...`);
-            const response = await axios.get(nextPageUrl);
-            
-            if (response.data && response.data.data) {
-              allResults = allResults.concat(response.data.data);
-              console.log(`  Page ${pageCount + 1}: ${response.data.data.length} results`);
-              
-              // Get next page URL if it exists
-              nextPageUrl = response.data.next_page || null;
-              pageCount++;
-            } else {
-              console.log(`  Page ${pageCount + 1}: No data found`);
-              break;
-            }
-          } catch (e) {
-            console.log(`  Page ${pageCount + 1}: Failed (${e.response?.status || 'network error'})`);
-            break;
-          }
-        }
-        
-        console.log(`  Total pages fetched: ${pageCount}, total results: ${allResults.length}`);
-        return allResults;
-      };
-      
-      // Search 1: Comprehensive prints search (gets ALL printings - this is the key!)
+      // Single optimized search with limited results
       try {
-        console.log("Primary search: All unique prints...");
-        const primaryResults = await getAllPages(`https://api.scryfall.com/cards/search?order=released&q="${encodeURIComponent(cardName)}"&include_extras=true&unique=prints`);
-        allPrints = allPrints.concat(primaryResults);
-        console.log(`Primary search: ${primaryResults.length} total prints found`);
-      } catch (e) {
-        console.log("Primary prints search failed, trying fallbacks...");
+        console.log("Primary search: Limited oracle-based search...");
+        const response = await axios.get(`https://api.scryfall.com/cards/search?order=released&q=oracleid:${card.oracle_id}&include_extras=true&unique=prints`);
         
-        // Fallback 1: Name-based search with unique=prints
+        if (response.data && response.data.data) {
+          // Limit to first 20 results for performance
+          allPrints = response.data.data.slice(0, 20);
+          console.log(`Primary search: ${allPrints.length} prints found (limited)`);
+        }
+      } catch (e) {
+        console.log("Primary search failed, trying name-based fallback...");
+        
+        // Fallback: Name-based search with even stricter limits
         try {
-          console.log("Fallback 1: Name field with unique prints...");
-          const nameResults = await getAllPages(`https://api.scryfall.com/cards/search?order=released&q=name:${encodeURIComponent(cardName)}&include_extras=true&unique=prints`);
-          allPrints = allPrints.concat(nameResults);
-          console.log(`Name search: ${nameResults.length} prints found`);
+          const response = await axios.get(`https://api.scryfall.com/cards/search?order=released&q=name:"${encodeURIComponent(cardName)}"&include_extras=false&unique=prints`);
+          if (response.data && response.data.data) {
+            allPrints = response.data.data.slice(0, 10); // Even more limited fallback
+            console.log(`Fallback search: ${allPrints.length} prints found (limited)`);
+          }
         } catch (e2) {
-          console.log("Name field search also failed");
+          console.log("All searches failed, using current card only");
+          allPrints = [card];
         }
       }
       
-      // Search 2: Oracle-based search with unique=prints (for functional reprints)
-      if (card.oracle_id && allPrints.length < 50) { // Only if we haven't found many prints yet
-        try {
-          console.log("Oracle-based search for functional reprints...");
-          const oracleResults = await getAllPages(`https://api.scryfall.com/cards/search?order=released&q=oracleid:${card.oracle_id}&include_extras=true&unique=prints`);
-          allPrints = allPrints.concat(oracleResults);
-          console.log(`Oracle search: ${oracleResults.length} additional prints found`);
-        } catch (e) {
-          console.log("Oracle search failed");
-        }
-      }
-      
-      // Search 3: Broader fuzzy search (only if still limited results)
-      if (allPrints.length < 10) {
-        try {
-          console.log("Fallback: Broader search for variants...");
-          const fuzzyResults = await getAllPages(`https://api.scryfall.com/cards/search?order=released&q=${encodeURIComponent(cardName)}&include_extras=true&unique=prints`);
-          allPrints = allPrints.concat(fuzzyResults);
-          console.log(`Fuzzy search: ${fuzzyResults.length} additional prints found`);
-        } catch (e) {
-          console.log("Fuzzy search failed");
-        }
-      }
-      
-      // Remove duplicates based on card ID (handle missing IDs)
-      const uniquePrints = [];
-      const seenIds = new Set();
-      allPrints.forEach(print => {
-        if (print && print.id && !seenIds.has(print.id)) {
-          seenIds.add(print.id);
-          uniquePrints.push(print);
-        }
-      });
-      
-      const prints = uniquePrints;
-      console.log("Found", prints.length, "total unique prints for", card.name, "after combining all searches");
+      console.log("Processing", allPrints.length, "total prints for", card.name);
       
       const uniqueArtworks = [];
-      const seenCombinations = new Set(); // Track unique combinations of art + treatment
+      const seenImages = new Set(); // Simplified deduplication
 
-      // Filter to only include cards that are actually variants of our target card
-      const relevantPrints = prints.filter(print => {
-        if (!print || !print.name) return false;
-        
-        const printName = print.name.replace(/^A-/, '').replace(/ \/\/ .*$/, ''); // Remove A- prefix and // suffix  
-        const targetName = cardName;
-        const isMatch = printName.toLowerCase() === targetName.toLowerCase();
-        
-        if (!isMatch) {
-          console.log(`Filtered out: "${print.name}" (doesn't match "${cardName}")`);
-        }
-        
-        return isMatch;
-      });
-      
-      console.log(`Filtered to ${relevantPrints.length} relevant prints from ${prints.length} total`);
-      
-      // Process all relevant prints to find unique artworks and treatments
-      relevantPrints.forEach(print => {
+      // Process prints with simplified logic for speed
+      allPrints.forEach(print => {
         let artUri = null;
-        // Use a more robust artId that handles undefined illustration_id
-        let artId = print.illustration_id || `card_${print.id}`;
 
-        // For single-faced cards - prioritize higher quality
+        // For single-faced cards
         if (print.image_uris && !isDoubleFaced) {
-          artUri = print.image_uris.png || print.image_uris.large || print.image_uris.normal || print.image_uris.small;
+          artUri = print.image_uris.png || print.image_uris.large || print.image_uris.normal;
         }
         // For double-faced cards
-        else if (print.card_faces && print.card_faces.length > 0 && isDoubleFaced) {
-          // For double-faced cards, try to match the current face we're viewing
-          if (currentFace < print.card_faces.length && print.card_faces[currentFace]?.image_uris) {
-            artUri = print.card_faces[currentFace].image_uris.png || 
-                     print.card_faces[currentFace].image_uris.large || 
-                     print.card_faces[currentFace].image_uris.normal;
-          } else if (print.card_faces[0]?.image_uris) {
-            // Fallback to first face
-            artUri = print.card_faces[0].image_uris.png || 
-                     print.card_faces[0].image_uris.large || 
-                     print.card_faces[0].image_uris.normal;
-          }
+        else if (print.card_faces && isDoubleFaced && print.card_faces[currentFace]?.image_uris) {
+          artUri = print.card_faces[currentFace].image_uris.png || 
+                   print.card_faces[currentFace].image_uris.large || 
+                   print.card_faces[currentFace].image_uris.normal;
         }
 
-        if (artUri) {
-          // Determine treatment type for display
+        if (artUri && !seenImages.has(artUri)) {
+          seenImages.add(artUri);
+          
+          // Determine treatment type (simplified)
           let treatmentType = 'Regular';
           if (print.frame_effects?.includes('extendedart')) {
             treatmentType = 'Extended Art';
@@ -250,42 +191,9 @@ const CardDetailModal = ({ card, onClose }) => {
             treatmentType = 'Borderless';
           } else if (print.set_type === 'art_series') {
             treatmentType = 'Art Series';
-          } else if (print.name && print.name.startsWith('A-')) {
-            treatmentType = 'Arena';
           } else if (print.promo) {
             treatmentType = 'Promo';
-          } else if (print.frame_effects?.includes('showcase')) {
-            treatmentType = 'Showcase';
-          } else if (print.finishes?.includes('foil') && !print.finishes?.includes('nonfoil')) {
-            treatmentType = 'Foil Only';
           }
-
-          // Smart deduplication: Show unique artworks and significant treatments
-          // Primary key: illustration_id (if available) - this groups cards with same artwork
-          // Secondary key: treatment type + set type for variants
-          const primaryArtKey = artId; // This is illustration_id or fallback
-          const treatmentSignature = `${treatmentType}_${print.set_type || 'normal'}_${print.frame_effects?.join(',') || 'regular'}`;
-          
-          // Create a combined key that allows some duplicates for different treatments
-          const dedupeKey = `${primaryArtKey}_${treatmentSignature}`;
-          
-          // For special treatments, always include them
-          const isSpecialTreatment = treatmentType !== 'Regular';
-          
-          // For regular treatments, only keep the most recent printing of each artwork
-          if (!isSpecialTreatment && seenCombinations.has(dedupeKey)) {
-            console.log(`⏭️  Skipped regular duplicate: ${print.set_name} #${print.collector_number} (${treatmentType})`);
-            return;
-          }
-          
-          // For special treatments, check if we already have this exact treatment
-          if (isSpecialTreatment && seenCombinations.has(dedupeKey)) {
-            console.log(`⏭️  Skipped special duplicate: ${print.set_name} #${print.collector_number} (${treatmentType})`);
-            return;
-          }
-          
-          seenCombinations.add(dedupeKey);
-          console.log(`✅ Added artwork: ${print.set_name} #${print.collector_number} (${treatmentType}) - Art ID: ${artId.substring(0, 8)}...`);
 
           uniqueArtworks.push({
             uri: artUri,
@@ -293,118 +201,212 @@ const CardDetailModal = ({ card, onClose }) => {
             artist: print.artist,
             collector_number: print.collector_number,
             set: print.set,
-            artId: artId,
+            artId: print.illustration_id || `card_${print.id}`,
             oracleId: print.oracle_id,
             released_at: print.released_at,
             treatmentType: treatmentType,
             frameEffects: print.frame_effects,
             borderColor: print.border_color,
-            setType: print.set_type
+            setType: print.set_type,
+            cardData: print
           });
-        } else {
-          console.log(`❌ No image found for: ${print.set_name} #${print.collector_number}`);
         }
       });
 
-      // Sort by release date (newest first) to show recent arts first
+      // Sort by release date (newest first)
       uniqueArtworks.sort((a, b) => new Date(b.released_at || 0) - new Date(a.released_at || 0));
 
       console.log("Found", uniqueArtworks.length, "unique artworks after processing");
-      console.log("Processed artworks:", uniqueArtworks.map(art => ({
-        setName: art.setName,
-        artist: art.artist,
-        artId: art.artId,
-        uri: art.uri.substring(0, 50) + '...'
-      })));
-      setAllArtworks(uniqueArtworks);
       
-      // Find the index of the current card's artwork to start with
+      // Find initial index
       const currentCardImageUri = !isDoubleFaced 
         ? (card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal)
         : (currentFaceData?.imageUrl);
       
       const initialIndex = uniqueArtworks.findIndex(art => art.uri === currentCardImageUri);
-      setCurrentArtIndex(initialIndex !== -1 ? initialIndex : 0);
+      const finalIndex = initialIndex !== -1 ? initialIndex : 0;
+      
+      setAllArtworks(uniqueArtworks);
+      setCurrentArtIndex(finalIndex);
+      
+      // Cache the results
+      artworkCache.set(cacheKey, { artworks: uniqueArtworks, initialIndex: finalIndex });
 
     } catch (error) {
       console.error("Error fetching card artworks:", error);
       
-      // Try fallback search without unique=art parameter
-      try {
-        console.log("Trying fallback search without unique=art...");
-        const fallbackResponse = await axios.get(`https://api.scryfall.com/cards/search?order=released&q=oracleid%3A${card.oracle_id}&include_extras=true`);
-        const fallbackPrints = fallbackResponse.data.data;
-        console.log("Fallback found", fallbackPrints.length, "prints");
-        
-        const fallbackArtworks = [];
-        const seenImages = new Set();
-        
-        fallbackPrints.forEach(print => {
-          let artUri = null;
-          
-          if (print.image_uris && !isDoubleFaced) {
-            artUri = print.image_uris.png || print.image_uris.large || print.image_uris.normal;
-          } else if (print.card_faces && isDoubleFaced && print.card_faces[currentFace]?.image_uris) {
-            artUri = print.card_faces[currentFace].image_uris.png || 
-                     print.card_faces[currentFace].image_uris.large || 
-                     print.card_faces[currentFace].image_uris.normal;
-          }
-          
-          if (artUri && !seenImages.has(artUri)) {
-            fallbackArtworks.push({
-              uri: artUri,
-              setName: print.set_name,
-              artist: print.artist,
-              collector_number: print.collector_number,
-              set: print.set
-            });
-            seenImages.add(artUri);
-          }
-        });
-        
-        if (fallbackArtworks.length > 0) {
-          setAllArtworks(fallbackArtworks);
-          setCurrentArtIndex(0);
-        }
-      } catch (fallbackError) {
-        console.error("Fallback search also failed:", fallbackError);
-        
-        // Final fallback to card's own image
-        const fallbackArtUri = isDoubleFaced && currentFaceData 
-          ? currentFaceData.imageUrl 
-          : card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
-        
-        if (fallbackArtUri) {
-          setAllArtworks([{
-            uri: fallbackArtUri,
-            setName: card.set_name,
-            artist: card.artist,
-            collector_number: card.collector_number
-          }]);
-          setCurrentArtIndex(0);
-        }
+      // Final fallback to current card only
+      const fallbackArtUri = isDoubleFaced && currentFaceData 
+        ? currentFaceData.imageUrl 
+        : card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
+      
+      if (fallbackArtUri) {
+        const fallbackArtwork = [{
+          uri: fallbackArtUri,
+          setName: card.set_name,
+          artist: card.artist,
+          collector_number: card.collector_number,
+          cardData: card
+        }];
+        setAllArtworks(fallbackArtwork);
+        setCurrentArtIndex(0);
+        artworkCache.set(cacheKey, { artworks: fallbackArtwork, initialIndex: 0 });
       }
     }
     setArtLoading(false);
   }, [card?.id, card?.oracle_id, isDoubleFaced, currentFace, currentFaceData?.imageUrl]);
 
-  // Initial fetch when modal opens or card changes
-  useEffect(() => {
-    fetchArtworks();
-  }, [fetchArtworks]);
-
-  // Refetch artworks when face changes for double-faced cards only
-  useEffect(() => {
-    if (isDoubleFaced) {
+  // Lazy loading - only fetch artwork data when user wants to see other prints
+  const handleLoadArtworks = () => {
+    console.log("Loading artworks button clicked, hasLoadedArtworks:", hasLoadedArtworks);
+    if (!hasLoadedArtworks) {
+      setHasLoadedArtworks(true);
       fetchArtworks();
     }
-  }, [currentFace, isDoubleFaced, fetchArtworks]);
-  
+  };
+
+  // AI Strategic Overview fetch function
+  const fetchAiOverview = useCallback(async () => {
+    if (!card) return;
+
+    const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!OPENAI_API_KEY) {
+      setAiOverview('AI Strategic Overview requires OpenAI API key configuration.');
+      return;
+    }
+
+    // Check cache first
+    const cacheKey = card.id;
+    if (aiOverviewCache.has(cacheKey)) {
+      console.log("Using cached AI overview for", card.name);
+      setAiOverview(aiOverviewCache.get(cacheKey));
+      return;
+    }
+
+    setAiOverviewLoading(true);
+
+    try {
+      const prompt = `
+        You are an expert Magic: The Gathering strategist. Provide a strategic overview for the card "${card.name}".
+
+        Card Details:
+        - Name: ${card.name}
+        - Type: ${card.type_line}
+        - Mana Cost: ${card.mana_cost || 'N/A'}
+        - Oracle Text: ${card.oracle_text || 'N/A'}
+        ${card.power && card.toughness ? `- Power/Toughness: ${card.power}/${card.toughness}` : ''}
+        ${card.loyalty ? `- Loyalty: ${card.loyalty}` : ''}
+
+        Provide a strategic overview that covers:
+        1. The card's primary strategic role and purpose
+        2. Key synergies and deck archetypes where it excels
+        3. Optimal timing and usage tips
+        4. How to maximize its value in gameplay
+
+        Keep the response concise but informative (2-3 paragraphs). Focus on practical strategic advice that helps players understand how to effectively use this card.
+      `;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+          max_tokens: 500,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch AI overview');
+      }
+
+      const data = await response.json();
+      const overview = data.choices[0]?.message?.content || 'Unable to generate strategic overview.';
+      
+      setAiOverview(overview);
+      aiOverviewCache.set(cacheKey, overview);
+
+    } catch (error) {
+      console.error('Error fetching AI overview:', error);
+      setAiOverview('Failed to load AI strategic overview. Please try again later.');
+    }
+
+    setAiOverviewLoading(false);
+  }, [card, aiOverviewCache]);
+
+  // Handle AI overview loading
+  const handleLoadAiOverview = () => {
+    if (!isPremium) {
+      // Redirect to subscription page for non-premium users
+      window.open('/subscription', '_blank');
+      return;
+    }
+    
+    if (!hasLoadedAiOverview) {
+      setHasLoadedAiOverview(true);
+      fetchAiOverview();
+    }
+    setShowAiOverview(!showAiOverview);
+  };
+
+  // Initial setup - just use current card data
+  useEffect(() => {
+    if (card) {
+      console.log("Initial setup for card:", card.name);
+      
+      // Reset lazy loading state for new card
+      setHasLoadedArtworks(false);
+      setArtLoading(false);
+      
+      // Reset AI overview state for new card
+      setHasLoadedAiOverview(false);
+      setAiOverviewLoading(false);
+      setShowAiOverview(false);
+      setAiOverview('');
+      
+      // Initialize with current card data only for fast loading
+      const currentArtUri = isDoubleFaced && currentFaceData 
+        ? currentFaceData.imageUrl 
+        : card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal;
+      
+      if (currentArtUri) {
+        setAllArtworks([{
+          uri: currentArtUri,
+          setName: card.set_name,
+          artist: card.artist,
+          collector_number: card.collector_number,
+          cardData: card
+        }]);
+        setCurrentArtIndex(0);
+      }
+    }
+  }, [card?.id]); // Only depend on card ID, not other derived state
+
+  // Only refetch artworks when face changes for double-faced cards, and only if already loaded
+  useEffect(() => {
+    if (isDoubleFaced && hasLoadedArtworks) {
+      // Debounce face changes to avoid rapid API calls
+      const timer = setTimeout(() => {
+        console.log("Face changed, refetching artworks for face:", currentFace);
+        fetchArtworks();
+      }, 300); // 300ms debounce
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentFace, isDoubleFaced, hasLoadedArtworks, fetchArtworks]);
+
   const currentArtwork = allArtworks[currentArtIndex] || {};
   // For double-faced cards, prioritize current face data, otherwise use artwork or card image
   const mainImageUrl = isDoubleFaced && currentFaceData 
     ? (currentArtwork.uri || currentFaceData.imageUrl)
     : (currentArtwork.uri || card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal);
+  
+  // Get the current printing's data for pricing and set-specific information
+  const currentPrintingData = currentArtwork.cardData || card;
   
   // Use current face data for card details if it's a double-faced card
   const displayCard = isDoubleFaced && currentFaceData ? {
@@ -441,13 +443,32 @@ const CardDetailModal = ({ card, onClose }) => {
     }
   };
 
-  const PriceDisplay = ({ prices }) => {
+  const PriceDisplay = ({ prices, printingInfo, isLoading }) => {
+    if (isLoading) {
+      return (
+        <div className="mt-2 pt-2 border-t border-gray-700">
+          <h4 className="text-sm font-semibold mb-1 text-gray-100">Prices:</h4>
+          <div className="flex items-center justify-center py-4">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent mr-2"></div>
+            <span className="text-xs text-gray-400">Loading pricing data...</span>
+          </div>
+        </div>
+      );
+    }
+    
     if (!prices) return null;
     const { usd, usd_foil, usd_etched, tix } = prices;
     if (!usd && !usd_foil && !usd_etched && !tix) return null;
     return (
       <div className="mt-2 pt-2 border-t border-gray-700">
-        <h4 className="text-sm font-semibold mb-1 text-gray-100">Prices:</h4>
+        <h4 className="text-sm font-semibold mb-1 text-gray-100">
+          Prices:
+          {printingInfo && allArtworks.length > 1 && (
+            <span className="text-xs font-normal text-gray-400 ml-2">
+              ({printingInfo.setName} #{printingInfo.collector_number})
+            </span>
+          )}
+        </h4>
         <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-300">
           {usd && <p>USD: <span className="font-semibold text-gray-100">${usd}</span></p>}
           {usd_foil && <p>Foil: <span className="font-semibold text-gray-100">${usd_foil}</span></p>}
@@ -483,7 +504,24 @@ const CardDetailModal = ({ card, onClose }) => {
               />
             ) : (
               <div className="w-full aspect-[5/7] bg-gray-700 flex items-center justify-center text-gray-400 rounded-lg border-2 border-gray-600">
-                {artLoading ? 'Loading Art...' : 'No Image Available'}
+                {artLoading ? (
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent mx-auto mb-2"></div>
+                    <span className="text-xs">Loading Art...</span>
+                  </div>
+                ) : (
+                  'No Image Available'
+                )}
+              </div>
+            )}
+            
+            {/* Loading Overlay for Image */}
+            {artLoading && mainImageUrl && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-md">
+                <div className="text-center text-white">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent mx-auto mb-2"></div>
+                  <span className="text-xs">Loading artwork data...</span>
+                </div>
               </div>
             )}
             
@@ -516,20 +554,57 @@ const CardDetailModal = ({ card, onClose }) => {
           
           {allArtworks.length > 1 && (
             <div className="mt-2 w-full flex justify-between items-center px-1 z-10">
-              <button onClick={handlePrevArt} className="bg-gray-600 hover:bg-gray-500 text-white text-xs py-1 px-2 rounded-md">Prev Art</button>
+              <button 
+                onClick={handlePrevArt} 
+                disabled={artLoading}
+                className={`bg-gray-600 hover:bg-gray-500 text-white text-xs py-1 px-2 rounded-md transition-colors ${artLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Prev Art
+              </button>
               <p className="text-xs text-gray-400 mx-2 text-center">
-                {currentArtIndex + 1} of {allArtworks.length}<br/>
-                {isDoubleFaced && <span className="block text-yellow-400 font-semibold">{currentFaceData?.name}</span>}
-                <span className="block truncate max-w-[120px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
-                {currentArtwork.treatmentType && currentArtwork.treatmentType !== 'Regular' && (
-                  <span className="block text-blue-300 font-semibold text-2xs">{currentArtwork.treatmentType}</span>
+                {artLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-3 w-3 border border-gray-400 border-t-transparent mr-1"></div>
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  <>
+                    {currentArtIndex + 1} of {allArtworks.length}<br/>
+                    {isDoubleFaced && <span className="block text-yellow-400 font-semibold">{currentFaceData?.name}</span>}
+                    <span className="block truncate max-w-[120px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
+                    {currentArtwork.treatmentType && currentArtwork.treatmentType !== 'Regular' && (
+                      <span className="block text-blue-300 font-semibold text-2xs">{currentArtwork.treatmentType}</span>
+                    )}
+                    <span className="block truncate max-w-[120px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
+                  </>
                 )}
-                <span className="block truncate max-w-[120px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
               </p>
-              <button onClick={handleNextArt} className="bg-gray-600 hover:bg-gray-500 text-white text-xs py-1 px-2 rounded-md">Next Art</button>
+              <button 
+                onClick={handleNextArt} 
+                disabled={artLoading}
+                className={`bg-gray-600 hover:bg-gray-500 text-white text-xs py-1 px-2 rounded-md transition-colors ${artLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Next Art
+              </button>
             </div>
           )}
-           {allArtworks.length === 1 && currentArtwork.setName && (
+
+          {/* Load More Versions Button - Show when only current card is loaded */}
+          {allArtworks.length === 1 && !hasLoadedArtworks && !artLoading && card.oracle_id && (
+            <div className="mt-3 w-full flex justify-center">
+              <button
+                onClick={handleLoadArtworks}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-4 rounded-md transition-colors flex items-center space-x-2"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Load Other Versions</span>
+              </button>
+            </div>
+          )}
+
+           {allArtworks.length === 1 && currentArtwork.setName && !artLoading && (hasLoadedArtworks || !card.oracle_id) && (
              <p className="text-xs text-gray-400 mt-2 text-center">
                 {isDoubleFaced && <span className="block text-yellow-400 font-semibold truncate max-w-[180px]">{currentFaceData?.name}</span>}
                 <span className="block truncate max-w-[180px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
@@ -537,6 +612,7 @@ const CardDetailModal = ({ card, onClose }) => {
                   <span className="block text-blue-300 font-semibold text-2xs">{currentArtwork.treatmentType}</span>
                 )}
                 <span className="block truncate max-w-[180px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
+                {hasLoadedArtworks && allArtworks.length === 1 && <span className="block text-gray-500 text-2xs mt-1">(Only version found)</span>}
               </p>
            )}
         </div>
@@ -563,10 +639,87 @@ const CardDetailModal = ({ card, onClose }) => {
             </div>
           )}
 
+          {/* AI Strategic Overview Section */}
+          <div className="my-1.5 sm:my-2 py-1.5 sm:py-2 border-t border-b border-gray-700">
+            <button
+              onClick={handleLoadAiOverview}
+              className="w-full flex items-center justify-between text-left hover:bg-gray-700/30 p-2 rounded-md transition-colors"
+            >
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 rounded bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <h4 className="text-sm font-semibold text-purple-300">AI Strategic Overview</h4>
+                {!isPremium && (
+                  <span className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-2xs px-2 py-0.5 rounded-full font-semibold">
+                    PREMIUM
+                  </span>
+                )}
+                {aiOverviewLoading && isPremium && (
+                  <div className="animate-spin rounded-full h-3 w-3 border border-purple-400 border-t-transparent"></div>
+                )}
+              </div>
+              <svg 
+                className={`w-4 h-4 text-gray-400 transition-transform ${showAiOverview ? 'rotate-180' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            {showAiOverview && isPremium && (
+              <div className="mt-3 px-2">
+                {aiOverviewLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-400 border-t-transparent mr-3"></div>
+                    <span className="text-sm text-gray-300">Generating strategic analysis...</span>
+                  </div>
+                ) : aiOverview ? (
+                  <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg p-4">
+                    <div className="text-xs sm:text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">
+                      {aiOverview.split('\n').map((paragraph, index) => (
+                        paragraph.trim() && <p key={index} className="mb-3 last:mb-0">{paragraph.trim()}</p>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-400 text-center py-4">
+                    Click to load AI strategic overview
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!isPremium && (
+              <div className="mt-3 px-2">
+                <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-500/30 rounded-lg p-4 text-center">
+                  <div className="mb-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center mx-auto mb-2">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <h5 className="text-sm font-semibold text-yellow-300 mb-1">Premium Feature</h5>
+                    <p className="text-xs text-gray-300 mb-3">
+                      Get expert AI strategic insights for every card to improve your gameplay and deck building.
+                    </p>
+                  </div>
+                  <span className="text-xs text-yellow-200 italic">
+                    Click above to upgrade to Premium for just $3.99/month
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-x-2 sm:gap-x-3 gap-y-0.5 text-2xs sm:text-xs mb-1.5 sm:mb-2 text-gray-300">
             {(displayCard.power || displayCard.toughness) && (<p><strong>P/T:</strong> {displayCard.power}/{displayCard.toughness}</p>)}
             {displayCard.loyalty && (<p><strong>Loyalty:</strong> {displayCard.loyalty}</p>)}
-            {card.rarity && (<p><strong>Rarity:</strong> <span className="capitalize">{card.rarity}</span></p>)}
+            {currentPrintingData.rarity && (<p><strong>Rarity:</strong> <span className="capitalize">{currentPrintingData.rarity}</span></p>)}
             {/* Artist is now shown under the image with art navigation */}
           </div>
           
@@ -577,14 +730,14 @@ const CardDetailModal = ({ card, onClose }) => {
             </div>
           )}
 
-          <PriceDisplay prices={card.prices} />
+          <PriceDisplay prices={currentPrintingData.prices} printingInfo={currentPrintingData} isLoading={artLoading} />
 
-          {card.legalities && (
+          {currentPrintingData.legalities && (
             <div className="mt-2 pt-2 border-t border-gray-700 flex-grow flex flex-col min-h-[80px]">
               <h4 className="text-xs sm:text-sm font-semibold mb-1 text-gray-100">Format Legalities:</h4>
               <div className="grid grid-cols-2 gap-x-2 sm:gap-x-3 gap-y-0 text-2xs sm:text-xs flex-grow overflow-y-auto max-h-28 sm:max-h-32 scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-700 pr-0.5">
                 {formatsToShow.sort((a,b) => a.name.localeCompare(b.name)).map(format => {
-                  const status = card.legalities[format.key];
+                  const status = currentPrintingData.legalities[format.key];
                   return (
                     <div key={format.key} className="flex justify-between items-center">
                       <span className="text-gray-300">{format.name}:</span>
@@ -597,12 +750,22 @@ const CardDetailModal = ({ card, onClose }) => {
           )}
           
           <div className="mt-auto pt-2 space-x-3 text-center">
-            {card.scryfall_uri && <a href={card.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-2xs sm:text-xs text-blue-400 hover:text-blue-300 underline">Scryfall</a>}
-            {card.related_uris?.edhrec && <a href={card.related_uris.edhrec} target="_blank" rel="noopener noreferrer" className="text-2xs sm:text-xs text-purple-400 hover:text-purple-300 underline">EDHREC</a>}
+            {currentPrintingData.scryfall_uri && <a href={currentPrintingData.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-2xs sm:text-xs text-blue-400 hover:text-blue-300 underline">Scryfall</a>}
+            {currentPrintingData.related_uris?.edhrec && <a href={currentPrintingData.related_uris.edhrec} target="_blank" rel="noopener noreferrer" className="text-2xs sm:text-xs text-purple-400 hover:text-purple-300 underline">EDHREC</a>}
           </div>
 
           <p className="text-2xs sm:text-xs text-gray-500 mt-1.5 text-center">
-            Original Set: {card.set_name} ({card.set?.toUpperCase()}) — #{card.collector_number || 'N/A'}
+            {artLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-3 w-3 border border-gray-500 border-t-transparent mr-1"></div>
+                <span>Loading printing info...</span>
+              </div>
+            ) : (
+              <>
+                Current Printing: {currentPrintingData.set_name} ({currentPrintingData.set?.toUpperCase()}) — #{currentPrintingData.collector_number || 'N/A'}
+                {allArtworks.length > 1 && <span className="block mt-1">Use arrow buttons above to view different printings</span>}
+              </>
+            )}
           </p>
         </div>
       </div>

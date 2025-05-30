@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDeck } from '../context/DeckContext';
 import { useAuth } from '../context/AuthContext';
 import CardDetailModal from '../components/ui/CardDetailModal';
+import { parseManaSymbols } from '../utils/manaSymbols';
 
 const CheckIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
@@ -18,8 +19,12 @@ const TutorAiPage = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCardForModal, setSelectedCardForModal] = useState(null);
+  
+  // Add states for deck selection modal
+  const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
+  const [selectedCardForAdding, setSelectedCardForAdding] = useState(null);
 
-  const { savedDecks, fetchAndSetUserDecks, loading: decksLoading, error: decksError } = useDeck();
+  const { savedDecks, fetchAndSetUserDecks, loading: decksLoading, error: decksError, addCard, currentDeckName } = useDeck();
   const { currentUser } = useAuth();
 
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
@@ -199,6 +204,26 @@ const TutorAiPage = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedCardForModal(null);
+  };
+
+  // Add deck modal functions
+  const handleOpenDeckModal = (card) => {
+    setSelectedCardForAdding(card);
+    setIsDeckModalOpen(true);
+  };
+
+  const handleCloseDeckModal = () => {
+    setSelectedCardForAdding(null);
+    setIsDeckModalOpen(false);
+  };
+
+  const handleAddCardToDeck = (deckId) => {
+    if (selectedCardForAdding) {
+      addCard(selectedCardForAdding);
+      const targetDeckName = deckId === 'current' ? currentDeckName : savedDecks.find(d => d.id === deckId)?.name;
+      alert(`${selectedCardForAdding.name} added to ${targetDeckName || 'current deck'}.`);
+      handleCloseDeckModal();
+    }
   };
 
   return (
@@ -405,9 +430,15 @@ const TutorAiPage = () => {
         {suggestedCards.length > 0 && !isLoading && (
           <div className="space-y-8">
             <div className="text-center">
-                            <h2 className="text-4xl font-bold text-gradient-primary mb-4 flex items-center justify-center space-x-3">                <svg className="w-10 h-10 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>                  <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />                </svg>                <span>Suggested Cards ({suggestedCards.length} found)</span>              </h2>
+              <h2 className="text-4xl font-bold text-gradient-primary mb-4 flex items-center justify-center space-x-3">
+                <svg className="w-10 h-10 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>Suggested Cards ({suggestedCards.length} found)</span>
+              </h2>
               <p className="text-xl text-slate-400">
-                Click on any card to view detailed information
+                Click Details to view card information or Add to add cards to your decks
               </p>
             </div>
 
@@ -415,11 +446,10 @@ const TutorAiPage = () => {
               {suggestedCards.map((card, index) => (
                 <div 
                   key={`${card.name}-${index}`}
-                  className="group relative glassmorphism-card p-0 overflow-hidden border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-modern-primary"
-                  onClick={() => handleOpenModal(card)}
+                  className="group relative glassmorphism-card p-0 overflow-hidden border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-105 hover:shadow-modern-primary flex flex-col h-full"
                 >
                   {/* Card Image */}
-                  <div className="relative h-48 overflow-hidden">
+                  <div className="relative h-48 overflow-hidden flex-shrink-0">
                     {card.imageUrl ? (
                       <img 
                         src={card.imageUrl} 
@@ -436,29 +466,55 @@ const TutorAiPage = () => {
                         </div>
                       </div>
                     )}
-                    {/* Quantity Badge */}
-                    <div className="absolute top-2 left-2 bg-primary-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                      {card.quantity}x
-                    </div>
                   </div>
                   
                   {/* Card Details */}
-                  <div className="p-4 space-y-3">
-                    <h3 className="text-sm font-bold text-white truncate group-hover:text-primary-300 transition-colors">
-                      {card.name}
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      {card.type_line || card.type} • {card.mana_cost}
+                  <div className="p-4 space-y-3 flex-1 flex flex-col min-h-0">
+                    <div className="flex items-start justify-between flex-shrink-0">
+                      <h3 className="text-sm font-bold text-white flex-1 pr-2 group-hover:text-primary-300 transition-colors leading-tight">
+                        {card.name}
+                      </h3>
+                      {/* Mana Cost Display */}
+                      {card.mana_cost && (
+                        <div className="flex items-center space-x-0.5 flex-shrink-0">
+                          {parseManaSymbols(card.mana_cost)}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <p className="text-xs text-slate-400 flex-shrink-0">
+                      {card.type_line || card.type}
                     </p>
-                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3 flex-grow overflow-hidden">
                       {card.description}
                     </p>
-                  </div>
-
-                  {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-4">
-                    <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-1 text-white text-xs font-semibold">
-                      Click to view details
+                    
+                    {/* Action buttons - side by side - Fixed at bottom */}
+                    <div className="flex space-x-2 pt-2 mt-auto">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenModal(card);
+                        }}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
+                      >
+                        <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Details</span>
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDeckModal(card);
+                        }}
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
+                      >
+                        <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        <span>Add</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -470,6 +526,69 @@ const TutorAiPage = () => {
         {/* Modal */}
         {isModalOpen && selectedCardForModal && (
           <CardDetailModal card={selectedCardForModal} onClose={handleCloseModal} />
+        )}
+
+        {/* Add to Deck Modal */}
+        {isDeckModalOpen && selectedCardForAdding && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="glassmorphism-card p-8 max-w-md w-full border-primary-500/30">
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center space-x-2">
+                <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Add "{selectedCardForAdding.name}"</span>
+              </h3>
+              
+              <div className="space-y-3 max-h-60 overflow-y-auto mb-6">
+                {/* Current Deck Option */}
+                <button 
+                  onClick={() => handleAddCardToDeck('current')}
+                  className="w-full btn-modern btn-modern-primary btn-modern-md text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <span>Current Deck: {currentDeckName || 'Untitled'}</span>
+                  </div>
+                </button>
+
+                {/* Saved Decks */}
+                {savedDecks && savedDecks.length > 0 && (
+                  <>
+                    <div className="border-t border-slate-700/50 pt-3 mt-3">
+                      <p className="text-sm text-slate-400 mb-3">Or add to saved deck:</p>
+                    </div>
+                    {savedDecks.map((deck) => (
+                      <button 
+                        key={deck.id}
+                        onClick={() => handleAddCardToDeck(deck.id)}
+                        className="w-full btn-modern btn-modern-secondary btn-modern-sm text-left"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                          </svg>
+                          <span>{deck.name}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                {(!savedDecks || savedDecks.length === 0) && (
+                  <p className="text-xs text-slate-500 text-center py-4">No other saved decks found.</p>
+                )}
+              </div>
+
+              <button 
+                onClick={handleCloseDeckModal}
+                className="w-full btn-modern btn-modern-outline btn-modern-md"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
