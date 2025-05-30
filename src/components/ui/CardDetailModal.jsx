@@ -267,7 +267,16 @@ const CardDetailModal = ({ card, onClose }) => {
 
   // AI Strategic Overview fetch function
   const handleLoadAiOverview = async () => {
-    if (!card || !isPremium) return;
+    if (!card) return;
+
+    // Check if card is a commander or user has premium
+    const isCommander = card.type_line?.toLowerCase().includes('legendary') && card.type_line?.toLowerCase().includes('creature');
+    if (!isPremium && !isCommander) {
+      setShowAiOverview(prev => !prev);
+      setAiOverview('');
+      setHasLoadedAiOverview(true);
+      return;
+    }
 
     // Toggle visibility state
     setShowAiOverview(prev => !prev);
@@ -673,7 +682,7 @@ Please provide a concise strategic overview focusing on:
               </div>
             )}
 
-            {!isPremium && (
+            {!isPremium && !isCommander && (
               <div className="mt-3 px-2">
                 <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-500/30 rounded-lg p-4 text-center">
                   <div className="mb-3">
@@ -684,12 +693,17 @@ Please provide a concise strategic overview focusing on:
                     </div>
                     <h5 className="text-sm font-semibold text-yellow-300 mb-1">Premium Feature</h5>
                     <p className="text-xs text-gray-300 mb-3">
-                      Get expert AI strategic insights for every card to improve your gameplay and deck building.
+                      AI Strategic Overview is available for commanders in the free plan. Upgrade to Premium to get AI analysis for all cards!
                     </p>
                   </div>
-                  <span className="text-xs text-yellow-200 italic">
-                    Click above to upgrade to Premium for just $3.99/month
-                  </span>
+                  <a
+                    href={getPaymentUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-modern btn-modern-primary btn-modern-xs"
+                  >
+                    Upgrade to Premium
+                  </a>
                 </div>
               </div>
             )}

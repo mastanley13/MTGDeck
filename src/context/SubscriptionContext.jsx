@@ -20,9 +20,14 @@ export const SUBSCRIPTION_LIMITS = {
     features: [
       '5 saved decks',
       '5 AI requests per week',
-      'Card search',
-      'Basic analytics',
-      'Free export feature'
+      'Basic card search',
+      'Basic deck analytics & mana curve analysis',
+      'Commander color identity validation',
+      'Format legality checking',
+      'Export to all formats',
+      'AI Strategic Overview for commanders only',
+      'Basic deck suggestions',
+      'Basic deck validation'
     ]
   },
   PREMIUM: {
@@ -33,12 +38,17 @@ export const SUBSCRIPTION_LIMITS = {
     features: [
       'Unlimited saved decks',
       'Unlimited AI requests',
-      'Card search',
-      'Basic analytics',
-      'Free export feature',
-      'Coming soon: Card draw simulation',
-      'Coming soon: Hand play out',
-      'Coming soon: Advanced analytics'
+      'Advanced card search with filters',
+      'Advanced deck analytics & mana curve analysis',
+      'Cloud sync across devices',
+      'Priority AI responses',
+      'AI Strategic Overview for ALL cards',
+      'Advanced deck suggestions',
+      'Advanced deck validation',
+      'Detailed card statistics',
+      'Synergy recommendations',
+      'Card draw simulation',
+      'Priority customer support'
     ]
   }
 };
