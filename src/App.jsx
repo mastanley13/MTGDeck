@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
 import './App.css';
 import HomePage from './pages/HomePage.jsx';
 import DeckBuilderPage from './pages/DeckBuilder.jsx';
@@ -74,6 +75,18 @@ function App() {
                   </div>
                 </div>
               </footer>
+              <ToastContainer
+                position="bottom-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+              />
             </div>
           </Router>
         </DeckProvider>

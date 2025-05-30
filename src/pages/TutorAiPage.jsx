@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import CardDetailModal from '../components/ui/CardDetailModal';
 import { parseManaSymbols } from '../utils/manaSymbols';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
+import { validateCardForCommander } from '../utils/deckValidator';
+import { toast } from 'react-toastify';
 
 const CheckIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
@@ -137,7 +139,7 @@ const TutorAiPage = () => {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           max_tokens: 3000,
@@ -169,6 +171,18 @@ const TutorAiPage = () => {
           parsedAiSuggestions.map(async (cardStub) => {
             const fullCardData = await fetchScryfallImage(cardStub.name);
             if (fullCardData) {
+              // Validate card against commander's color identity
+              if (savedDecks && selectedDeckId) {
+                const selectedDeck = savedDecks.find(deck => deck.id === selectedDeckId);
+                if (selectedDeck && selectedDeck.commander) {
+                  const validation = validateCardForCommander(fullCardData, selectedDeck.commander);
+                  if (!validation.valid) {
+                    console.warn(`Skipping ${fullCardData.name}: ${validation.message}`);
+                    return null;
+                  }
+                }
+              }
+              
               return {
                 ...cardStub,
                 ...fullCardData,
@@ -178,15 +192,18 @@ const TutorAiPage = () => {
                 type: cardStub.type || fullCardData.type_line,
               };
             }
-            return { 
-              ...cardStub, 
-              name: cardStub.name, 
-              imageUrl: null, 
-              description: cardStub.description || "No Scryfall data found for this card, AI reason provided."
-            }; 
+            return null;
           })
         );
-        setSuggestedCards(suggestionsWithFullData);
+        
+        // Filter out null entries (invalid cards) and remove duplicates by name
+        const validSuggestions = suggestionsWithFullData
+          .filter(card => card !== null)
+          .filter((card, index, self) => 
+            index === self.findIndex((c) => c.name === card.name)
+          );
+          
+        setSuggestedCards(validSuggestions);
       } else {
         setError('Received no response content from AI.');
       }
@@ -219,12 +236,34 @@ const TutorAiPage = () => {
   };
 
   const handleAddCardToDeck = (deckId) => {
-    if (selectedCardForAdding) {
-      addCard(selectedCardForAdding);
-      const targetDeckName = deckId === 'current' ? currentDeckName : savedDecks.find(d => d.id === deckId)?.name;
-      alert(`${selectedCardForAdding.name} added to ${targetDeckName || 'current deck'}.`);
-      handleCloseDeckModal();
+    if (!selectedCardForAdding) return;
+
+    // Get the target deck
+    const targetDeck = savedDecks.find(deck => deck.id === deckId);
+    if (!targetDeck || !targetDeck.commander) {
+      toast.error('Please select a valid deck with a commander.');
+      return;
     }
+
+    // Validate the card against the commander's color identity
+    const validation = validateCardForCommander(selectedCardForAdding, targetDeck.commander);
+    if (!validation.valid) {
+      toast.error(validation.message);
+      return;
+    }
+
+    // Check for duplicates (except basic lands)
+    const isBasicLand = selectedCardForAdding.type_line?.toLowerCase().includes('basic land');
+    const existingCard = targetDeck.cards.find(c => c.name === selectedCardForAdding.name);
+    if (existingCard && !isBasicLand) {
+      toast.warning('This card is already in your deck (Commander decks can only have one copy of each card except basic lands).');
+      return;
+    }
+
+    // Add the card to the deck
+    addCard(selectedCardForAdding, deckId);
+    toast.success(`Added ${selectedCardForAdding.name} to ${targetDeck.name}`);
+    handleCloseDeckModal();
   };
 
   return (

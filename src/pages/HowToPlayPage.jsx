@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 const HowToPlayPage = () => {
   const [activeSection, setActiveSection] = useState('basics');
   const [expandedSections, setExpandedSections] = useState({});
+  const observerRef = useRef(null);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -18,7 +19,35 @@ const HowToPlayPage = () => {
       ...prev,
       [activeSection]: true
     }));
-  }, [activeSection]);
+
+    // Set up intersection observer for section highlighting
+    const options = {
+      root: null,
+      rootMargin: '-20% 0px -75% 0px', // Adjust these values to control when sections become "active"
+      threshold: 0
+    };
+
+    const callback = (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    };
+
+    observerRef.current = new IntersectionObserver(callback, options);
+
+    // Observe all section elements
+    document.querySelectorAll('section[id]').forEach(section => {
+      observerRef.current.observe(section);
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
 
   const sections = [
     { id: 'basics', title: 'Magic Basics', icon: '🎲' },
@@ -238,22 +267,22 @@ const HowToPlayPage = () => {
                         <span className="mr-3">📊</span>
                         Deck Requirements
                       </h3>
-                      <ul className="space-y-3 text-slate-300">
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-primary-400 rounded-full mr-3"></span>
-                          <strong>100 cards exactly:</strong> 99 main deck + 1 Commander
+                      <ul className="space-y-4 text-slate-300">
+                        <li className="flex items-start">
+                          <span className="w-2 h-2 bg-primary-400 rounded-full mr-3 mt-2"></span>
+                          <span><strong>100 Cards Exactly: </strong>99 cards in the main deck plus 1 Commander</span>
                         </li>
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-primary-400 rounded-full mr-3"></span>
-                          <strong>Singleton format:</strong> Only 1 copy of each card (except basic lands)
+                        <li className="flex items-start">
+                          <span className="w-2 h-2 bg-primary-400 rounded-full mr-3 mt-2"></span>
+                          <span><strong>Singleton Format: </strong>Only 1 copy of each card allowed (except basic lands)</span>
                         </li>
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-primary-400 rounded-full mr-3"></span>
-                          <strong>Legendary Commander:</strong> Must be a legendary creature
+                        <li className="flex items-start">
+                          <span className="w-2 h-2 bg-primary-400 rounded-full mr-3 mt-2"></span>
+                          <span><strong>Commander Requirements: </strong>Must be a legendary creature or a planeswalker that specifically states it can be your commander</span>
                         </li>
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-primary-400 rounded-full mr-3"></span>
-                          <strong>Color Identity:</strong> All cards must match commander's colors
+                        <li className="flex items-start">
+                          <span className="w-2 h-2 bg-primary-400 rounded-full mr-3 mt-2"></span>
+                          <span><strong>Color Identity: </strong>All cards in your deck must match your commander's color identity</span>
                         </li>
                       </ul>
                     </div>
@@ -263,22 +292,22 @@ const HowToPlayPage = () => {
                         <span className="mr-3">🎮</span>
                         Game Rules
                       </h3>
-                      <ul className="space-y-3 text-slate-300">
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
-                          <strong>40 starting life</strong> instead of 20
+                      <ul className="space-y-4 text-slate-300">
+                        <li className="flex items-start">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 mt-2"></span>
+                          <span><strong>Starting Life Total: </strong>40 life points instead of the usual 20</span>
                         </li>
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
-                          <strong>Multiplayer:</strong> Usually 3-4 players
+                        <li className="flex items-start">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 mt-2"></span>
+                          <span><strong>Player Count: </strong>Usually played with 3-4 players in a free-for-all format</span>
                         </li>
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
-                          <strong>Commander Damage:</strong> 21 damage from one commander = loss
+                        <li className="flex items-start">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 mt-2"></span>
+                          <span><strong>Commander Damage: </strong>A player loses if they take 21 or more combat damage from a single commander</span>
                         </li>
-                        <li className="flex items-center">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
-                          <strong>Command Zone:</strong> Commander starts here, costs +2 each replay
+                        <li className="flex items-start">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full mr-3 mt-2"></span>
+                          <span><strong>Command Zone: </strong>Your commander starts here and costs 2 more mana each time it's cast from this zone</span>
                         </li>
                       </ul>
                     </div>

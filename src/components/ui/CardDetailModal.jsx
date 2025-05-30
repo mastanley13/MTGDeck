@@ -266,55 +266,47 @@ const CardDetailModal = ({ card, onClose }) => {
   };
 
   // AI Strategic Overview fetch function
-  const fetchAiOverview = useCallback(async () => {
-    if (!card) return;
+  const handleLoadAiOverview = async () => {
+    if (!card || !isPremium) return;
 
-    const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-    if (!OPENAI_API_KEY) {
-      setAiOverview('AI Strategic Overview requires OpenAI API key configuration.');
-      return;
-    }
+    // Toggle visibility state
+    setShowAiOverview(prev => !prev);
 
-    // Check cache first
-    const cacheKey = card.id;
+    // If we already have data, no need to fetch again
+    const cacheKey = `${card.id}_${currentFace}`;
     if (aiOverviewCache.has(cacheKey)) {
-      console.log("Using cached AI overview for", card.name);
       setAiOverview(aiOverviewCache.get(cacheKey));
+      setHasLoadedAiOverview(true);
       return;
     }
 
     setAiOverviewLoading(true);
 
     try {
-      const prompt = `
-        You are an expert Magic: The Gathering strategist. Provide a strategic overview for the card "${card.name}".
-
-        Card Details:
-        - Name: ${card.name}
-        - Type: ${card.type_line}
-        - Mana Cost: ${card.mana_cost || 'N/A'}
-        - Oracle Text: ${card.oracle_text || 'N/A'}
-        ${card.power && card.toughness ? `- Power/Toughness: ${card.power}/${card.toughness}` : ''}
-        ${card.loyalty ? `- Loyalty: ${card.loyalty}` : ''}
-
-        Provide a strategic overview that covers:
-        1. The card's primary strategic role and purpose
-        2. Key synergies and deck archetypes where it excels
-        3. Optimal timing and usage tips
-        4. How to maximize its value in gameplay
-
-        Keep the response concise but informative (2-3 paragraphs). Focus on practical strategic advice that helps players understand how to effectively use this card.
-      `;
-
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: prompt }],
+          model: 'gpt-4',
+          messages: [{
+            role: 'user',
+            content: `Analyze this Magic: The Gathering card for Commander/EDH format. Consider its strategic value, common use cases, and synergies:
+
+Card Name: ${card.name}
+Type: ${card.type_line}
+Mana Cost: ${card.mana_cost || 'N/A'}
+Oracle Text: ${card.oracle_text || 'N/A'}
+Color Identity: ${card.color_identity?.join('') || 'Colorless'}
+
+Please provide a concise strategic overview focusing on:
+1. Key strengths and potential weaknesses
+2. Notable synergies and combos
+3. Types of decks that commonly use this card
+4. Power level assessment for Commander format`
+          }],
           temperature: 0.7,
           max_tokens: 500,
         }),
@@ -325,32 +317,19 @@ const CardDetailModal = ({ card, onClose }) => {
       }
 
       const data = await response.json();
-      const overview = data.choices[0]?.message?.content || 'Unable to generate strategic overview.';
-      
-      setAiOverview(overview);
-      aiOverviewCache.set(cacheKey, overview);
+      const overview = data.choices[0]?.message?.content;
 
+      if (overview) {
+        setAiOverview(overview);
+        aiOverviewCache.set(cacheKey, overview);
+      }
     } catch (error) {
       console.error('Error fetching AI overview:', error);
-      setAiOverview('Failed to load AI strategic overview. Please try again later.');
-    }
-
-    setAiOverviewLoading(false);
-  }, [card, aiOverviewCache]);
-
-  // Handle AI overview loading
-  const handleLoadAiOverview = () => {
-    if (!isPremium) {
-      // Redirect to subscription page for non-premium users
-      window.open('/subscription', '_blank');
-      return;
-    }
-    
-    if (!hasLoadedAiOverview) {
+      setAiOverview('Failed to generate AI overview. Please try again later.');
+    } finally {
+      setAiOverviewLoading(false);
       setHasLoadedAiOverview(true);
-      fetchAiOverview();
     }
-    setShowAiOverview(!showAiOverview);
   };
 
   // Initial setup - just use current card data
