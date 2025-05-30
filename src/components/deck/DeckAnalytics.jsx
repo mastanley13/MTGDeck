@@ -12,6 +12,8 @@ import {
 import { Bar, Pie } from 'react-chartjs-2';
 import { analyzeDeck } from '../../utils/deckAnalytics';
 import ManaSymbolSVG from '../ui/ManaSymbolSVG';
+import { analyzeBracket } from '../deckstats/analyzers/bracketAnalyzer';
+import { getFunctionalBuckets } from '../deckstats/analyzers/bucketClassify';
 // Tabler Icons
 import { 
   IconCards, 
@@ -26,7 +28,9 @@ import {
   IconAlertTriangle,
   IconInfoCircle,
   IconCheck,
-  IconStar
+  IconStar,
+  IconCurrencyDollar,
+  IconTarget
 } from '@tabler/icons-react';
 
 // Register ChartJS components
@@ -613,6 +617,164 @@ const DeckInsights = ({ analysis }) => {
   );
 };
 
+const BracketAssessment = ({ deck }) => {
+  const bracketAnalysis = analyzeBracket(deck.cards, deck.commander);
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+        <IconTarget size={24} />
+        <span>Commander Bracket Assessment</span>
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30">
+            <div className="text-center p-4 bg-slate-800/50 rounded-lg border border-primary-500/30">
+              <div className="text-2xl font-bold text-primary-400">Bracket {bracketAnalysis.bracket}</div>
+              <div className="text-lg font-semibold text-primary-300">{bracketAnalysis.bracketName}</div>
+              <p className="text-sm text-slate-400 mt-2">{bracketAnalysis.bracketDescription}</p>
+            </div>
+            
+            <div className="space-y-3 mt-4">
+              <h4 className="text-sm font-semibold text-primary-300">Deck Restrictions Status:</h4>
+              <ul className="space-y-2">
+                <li className="flex items-center justify-between text-sm">
+                  <span className="text-slate-300">Mass Land Destruction</span>
+                  {bracketAnalysis.restrictions.noMLD ? (
+                    <span className="text-green-400 flex items-center"><IconCheck size={16} className="mr-1" /> None</span>
+                  ) : (
+                    <span className="text-red-400 flex items-center"><IconAlertTriangle size={16} className="mr-1" /> Present</span>
+                  )}
+                </li>
+                <li className="flex items-center justify-between text-sm">
+                  <span className="text-slate-300">Extra Turns</span>
+                  {bracketAnalysis.restrictions.noExtraTurns ? (
+                    <span className="text-green-400 flex items-center"><IconCheck size={16} className="mr-1" /> None</span>
+                  ) : (
+                    <span className="text-red-400 flex items-center"><IconAlertTriangle size={16} className="mr-1" /> Present</span>
+                  )}
+                </li>
+                <li className="flex items-center justify-between text-sm">
+                  <span className="text-slate-300">Infinite Combos</span>
+                  {bracketAnalysis.restrictions.noInfiniteCombo ? (
+                    <span className="text-green-400 flex items-center"><IconCheck size={16} className="mr-1" /> None</span>
+                  ) : (
+                    <span className="text-red-400 flex items-center"><IconAlertTriangle size={16} className="mr-1" /> {bracketAnalysis.potentialComboCount} Found</span>
+                  )}
+                </li>
+                <li className="flex items-center justify-between text-sm">
+                  <span className="text-slate-300">Game Changers</span>
+                  <span className={`${bracketAnalysis.gameChangerCount === 0 ? 'text-green-400' : 'text-yellow-400'} flex items-center`}>
+                    {bracketAnalysis.gameChangerCount} Cards
+                  </span>
+                </li>
+                <li className="flex items-center justify-between text-sm">
+                  <span className="text-slate-300">Tutors</span>
+                  <span className={`${bracketAnalysis.tutorCount <= 2 ? 'text-green-400' : 'text-yellow-400'} flex items-center`}>
+                    {bracketAnalysis.tutorCount} Cards
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30">
+          <h4 className="text-sm font-semibold text-primary-300 mb-4">Bracket System Guide</h4>
+          <div className="space-y-4 text-sm">
+            <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+              <p className="font-semibold text-primary-300">Bracket 1: Exhibition</p>
+              <p className="text-slate-400 text-xs mt-1">Ultra-casual, no MLD, no infinite combos, no Game Changers</p>
+            </div>
+            <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+              <p className="font-semibold text-primary-300">Bracket 2: Core</p>
+              <p className="text-slate-400 text-xs mt-1">Precon level, no MLD, no infinite combos, no Game Changers</p>
+            </div>
+            <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+              <p className="font-semibold text-primary-300">Bracket 3: Upgraded</p>
+              <p className="text-slate-400 text-xs mt-1">Beyond precon, no MLD, allows late-game infinite combos, ≤3 Game Changers</p>
+            </div>
+            <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+              <p className="font-semibold text-primary-300">Bracket 4: Optimized</p>
+              <p className="text-slate-400 text-xs mt-1">High power, no restrictions other than banned list</p>
+            </div>
+            <div className="p-3 bg-slate-800/50 rounded border border-slate-600/30">
+              <p className="font-semibold text-primary-300">Bracket 5: CEDH</p>
+              <p className="text-slate-400 text-xs mt-1">Competitive EDH, fully optimized for winning</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BudgetAnalysis = ({ deck }) => {
+  const buckets = getFunctionalBuckets(deck.cards, deck.commander);
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold text-primary-400 mb-4 flex items-center space-x-2">
+        <IconCurrencyDollar size={24} />
+        <span>Budget Analysis</span>
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30">
+            <h4 className="text-sm font-semibold text-primary-300 mb-2">Price Distribution</h4>
+            <ul className="space-y-2 text-sm">
+              <li className="flex justify-between items-center text-slate-300">
+                <span>Budget ($0-$1)</span>
+                <span className="font-semibold text-slate-200">{buckets.budgetCards || 0} cards</span>
+              </li>
+              <li className="flex justify-between items-center text-slate-300">
+                <span>Mid ($1-$5)</span>
+                <span className="font-semibold text-slate-200">{buckets.midCards || 0} cards</span>
+              </li>
+              <li className="flex justify-between items-center text-slate-300">
+                <span>Premium ($5-$20)</span>
+                <span className="font-semibold text-slate-200">{buckets.premiumCards || 0} cards</span>
+              </li>
+              <li className="flex justify-between items-center text-slate-300">
+                <span>Expensive ($20+)</span>
+                <span className="font-semibold text-slate-200">{buckets.expensiveCards || 0} cards</span>
+              </li>
+            </ul>
+          </div>
+          <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30">
+            <h4 className="text-sm font-semibold text-primary-300 mb-2">Total Cost</h4>
+            <div className="text-2xl font-bold text-primary-400">${buckets.totalCost || '0.00'}</div>
+            <p className="text-xs text-slate-400 mt-1">Based on current market prices</p>
+          </div>
+        </div>
+
+        <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/30">
+          <h4 className="text-sm font-semibold text-primary-300 mb-4">Budget Insights</h4>
+          <div className="space-y-4">
+            {buckets.balanceSuggestions && buckets.balanceSuggestions.length > 0 ? (
+              <ul className="space-y-3">
+                {buckets.balanceSuggestions.map((suggestion, index) => (
+                  <li key={index} className="flex items-start space-x-2 text-slate-300">
+                    <IconInfoCircle size={16} className="text-primary-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-sm">{suggestion}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center text-slate-400">
+                <IconCheck size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No budget concerns detected</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DeckAnalytics = ({ deck }) => {
   if (!deck || !deck.cards || deck.cards.length === 0) {
     return (
@@ -707,6 +869,12 @@ const DeckAnalytics = ({ deck }) => {
             <CardTypeChart typeBreakdown={analysis.typeBreakdown} />
           </div>
         </div>
+      </div>
+
+      {/* Add after the charts grid and before the Detailed Breakdown */}
+      <div className="space-y-8">
+        <BracketAssessment deck={deck} />
+        <BudgetAnalysis deck={deck} />
       </div>
 
       {/* Detailed Breakdown */}
