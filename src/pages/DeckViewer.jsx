@@ -55,11 +55,19 @@ const DeckViewer = () => {
 
   if (loadingAuth || deckLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="glassmorphism-card p-12 text-center">
-          <div className="animate-spin h-16 w-16 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-6"></div>
-          <h3 className="text-2xl font-bold text-white mb-2">Loading Your Decks</h3>
-          <p className="text-slate-400 text-lg">Fetching your collection...</p>
+      <div className="min-h-screen bg-slate-900">
+        {/* Add background effects div */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <div className="glassmorphism-card p-12 text-center">
+            <div className="animate-spin h-16 w-16 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-6"></div>
+            <h3 className="text-2xl font-bold text-white mb-2">Loading Your Decks</h3>
+            <p className="text-slate-400 text-lg">Fetching your collection...</p>
+          </div>
         </div>
       </div>
     );
@@ -67,15 +75,23 @@ const DeckViewer = () => {
 
   if (deckError) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="glassmorphism-card p-12 text-center border-red-500/30 bg-red-500/10">
-          <div className="w-16 h-16 rounded-lg bg-red-500 flex items-center justify-center mx-auto mb-6">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+      <div className="min-h-screen bg-slate-900">
+        {/* Add background effects div */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <div className="glassmorphism-card p-12 text-center border-red-500/30 bg-red-500/10">
+            <div className="w-16 h-16 rounded-lg bg-red-500 flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-red-300 mb-2">Error Loading Decks</h3>
+            <p className="text-red-200">{deckError}</p>
           </div>
-          <h3 className="text-2xl font-bold text-red-300 mb-2">Error Loading Decks</h3>
-          <p className="text-red-200">{deckError}</p>
         </div>
       </div>
     );

@@ -82,8 +82,8 @@ const Navbar = () => {
   }
 
   return (
-    <header className="relative z-50">
-      <nav className="bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl">
+    <header className="relative z-[100]">
+      <nav className="bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 backdrop-blur-xl relative z-[60]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             {/* Logo and primary navigation */}
@@ -156,7 +156,7 @@ const Navbar = () => {
                   </button>
 
                   {isAiDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-50">
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-[100]">
                       <Link
                         to="/builder"
                         onClick={() => setIsAiDropdownOpen(false)}
@@ -167,7 +167,6 @@ const Navbar = () => {
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <span>🔨</span>
                           <span>Deck Builder</span>
                         </div>
                       </Link>
@@ -181,7 +180,6 @@ const Navbar = () => {
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <span>⚔️</span>
                           <span>Commander AI</span>
                         </div>
                       </Link>
@@ -195,7 +193,6 @@ const Navbar = () => {
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <span>🎯</span>
                           <span>Tutor AI</span>
                         </div>
                       </Link>
@@ -228,7 +225,7 @@ const Navbar = () => {
                   </button>
 
                   {isToolsDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-50">
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-[100]">
                       <Link
                         to="/card-search"
                         onClick={() => setIsToolsDropdownOpen(false)}
@@ -239,7 +236,6 @@ const Navbar = () => {
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <span>🔍</span>
                           <span>Card Search</span>
                         </div>
                       </Link>
@@ -253,7 +249,6 @@ const Navbar = () => {
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <span>📚</span>
                           <span>How to Play</span>
                         </div>
                       </Link>
@@ -326,7 +321,7 @@ const Navbar = () => {
                     </button>
 
                     {isProfileDropdownOpen && (
-                      <div className="absolute top-full right-0 mt-2 w-64 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-50 animate-in slide-in-from-top-2 duration-200">
+                      <div className="absolute top-full right-0 mt-2 w-64 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-[100] animate-in slide-in-from-top-2 duration-200">
                         <div className="px-4 py-3 border-b border-slate-700/50">
                           <div className="flex items-center space-x-3">
                             {(() => {
@@ -365,7 +360,6 @@ const Navbar = () => {
                           className="block w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 rounded-lg mx-2"
                         >
                           <div className="flex items-center space-x-3">
-                            <span>👤</span>
                             <span>View Profile</span>
                           </div>
                         </Link>
@@ -375,7 +369,6 @@ const Navbar = () => {
                           className="block w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 rounded-lg mx-2"
                         >
                           <div className="flex items-center space-x-3">
-                            <span>💳</span>
                             <span>Subscription</span>
                           </div>
                         </Link>
@@ -385,7 +378,6 @@ const Navbar = () => {
                             className="block w-full text-left px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 rounded-lg mx-2"
                           >
                             <div className="flex items-center space-x-3">
-                              <span>🚪</span>
                               <span>Sign out</span>
                             </div>
                           </button>
@@ -512,7 +504,6 @@ const Navbar = () => {
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <span>🏠</span>
                   <span>Home</span>
                 </div>
               </Link>
@@ -527,7 +518,6 @@ const Navbar = () => {
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <span>🔨</span>
                   <span>Deck Builder</span>
                 </div>
               </Link>
@@ -543,7 +533,6 @@ const Navbar = () => {
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span>📚</span>
                     <span>My Decks</span>
                   </div>
                 </Link>
@@ -564,7 +553,6 @@ const Navbar = () => {
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span>⚔️</span>
                     <span>Commander AI</span>
                   </div>
                 </Link>
@@ -578,10 +566,16 @@ const Navbar = () => {
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span>🎯</span>
                     <span>Tutor AI</span>
                   </div>
                 </Link>
+              </div>
+
+              {/* Resources section */}
+              <div className="pt-2">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 px-3">
+                  Resources
+                </div>
                 <Link
                   to="/card-search"
                   onClick={() => setIsMenuOpen(false)}
@@ -592,17 +586,9 @@ const Navbar = () => {
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span>🔍</span>
                     <span>Card Search</span>
                   </div>
                 </Link>
-              </div>
-
-              {/* How to Play section */}
-              <div className="pt-2">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 px-3">
-                  Learning
-                </div>
                 <Link
                   to="/how-to-play"
                   onClick={() => setIsMenuOpen(false)}
@@ -613,8 +599,27 @@ const Navbar = () => {
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span>📚</span>
                     <span>How to Play</span>
+                  </div>
+                </Link>
+              </div>
+
+              {/* Blog section */}
+              <div className="pt-2">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 px-3">
+                  Content
+                </div>
+                <Link
+                  to="/blog"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/blog')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>Blog</span>
                   </div>
                 </Link>
               </div>
@@ -630,7 +635,6 @@ const Navbar = () => {
                     className="block w-full p-3 rounded-xl text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 border border-transparent hover:border-slate-600/50"
                   >
                     <div className="flex items-center space-x-3">
-                      <span>👤</span>
                       <span>View Profile</span>
                     </div>
                   </Link>
@@ -639,7 +643,6 @@ const Navbar = () => {
                     className="block w-full p-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 text-left border border-transparent hover:border-red-500/30"
                   >
                     <div className="flex items-center space-x-3">
-                      <span>🚪</span>
                       <span>Sign out</span>
                     </div>
                   </button>
@@ -668,7 +671,7 @@ const Navbar = () => {
       )}
 
       {/* Subscription Banner */}
-      <div className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/40">
+      <div className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/40 relative z-[40]">
         <Link 
           to="/subscription"
           className={`block w-full transition-all duration-300 ${
