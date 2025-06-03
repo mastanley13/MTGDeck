@@ -1,0 +1,120 @@
+To generate high-quality **Magic: The Gathering (MTG)** blogs and post them directly via **GoHighLevel's Blog API**, follow this efficient, automated pipeline:
+
+---
+
+### 🔁 SYSTEM OVERVIEW
+
+**Goal**: Automate MTG blog generation and publishing using AI + GoHighLevel.
+
+**Key Stack**:
+
+* **OpenAI API (GPT-4/o)** — for writing the content.
+* **GoHighLevel Private API (Blog endpoint)** — to publish blog posts.
+* **Optional: Make.com or Zapier** — to connect both if you don't want to hardcode.
+
+---
+
+### ✅ STEP-BY-STEP SYSTEM
+
+#### 1. **Define Blog Content Framework**
+
+To keep quality consistent, define structure:
+
+* **Title** (with SEO keywords)
+* **Intro** (hook + what the post will cover)
+* **Main Sections** (choose 2–4 of these):
+
+  * Deck strategy
+  * Card analysis
+  * Meta shifts
+  * Commander combos
+  * Budget vs competitive builds
+* **Final Thoughts** (summary + call to comment/share)
+* **Tags** (used for GHL blog filtering)
+
+✅ Store this as a **template prompt** for OpenAI.
+
+---
+
+#### 2. **Write Reusable Prompt for GPT**
+
+Here’s a working prompt template:
+
+```text
+Write a 1000-word blog post about Magic: The Gathering. The topic is "{{TOPIC}}". Use an SEO-friendly title and intro. The post should include strategic insights, analysis, and friendly tone for Commander players. Format in HTML (h1 for title, h2 for sections, p for text). End with a CTA to visit the rest of the blog. Include a meta description and tags.
+```
+
+Examples of topics:
+
+* “Best Budget Commanders in 2025”
+* “How to Build Around Atraxa: Deck Guide”
+* “Is EDH Still Casual? A Meta Overview”
+
+---
+
+#### 3. **Automate with OpenAI + Blog API**
+
+##### Option A: **Custom Script**
+
+If coding, set this up in Python or Node.js:
+
+1. Call GPT-4 API with your prompt.
+2. Parse the response to get `title`, `meta description`, `content`, `tags`.
+3. POST to GHL’s `/blogs/` endpoint:
+
+```http
+POST https://rest.gohighlevel.com/v1/blogs/
+Headers:
+  Authorization: Bearer {{PRIVATE_API_KEY}}
+  Content-Type: application/json
+Body:
+{
+  "title": "Your Blog Title",
+  "content": "<h1>...</h1><p>...</p>",
+  "description": "Meta description",
+  "tags": ["commander", "strategy", "mtg"],
+  "categoryId": "optional-category-id"
+}
+```
+
+##### Option B: **Make.com (No-Code)**
+
+1. Trigger (manually or on schedule).
+2. Use OpenAI module to generate the blog.
+3. Format blog in Make using HTML tools.
+4. Use **HTTP module** to POST to GoHighLevel `/blogs`.
+
+---
+
+#### 4. **Enhance with SEO**
+
+In your prompt or post-processing, add:
+
+* Meta description (155 characters)
+* Alt tags for images (if used)
+* Keyword usage (commander, EDH, MTG strategy, etc.)
+
+---
+
+### 🔄 RECOMMENDED WORKFLOW
+
+* **Batch Generate 5 Posts Weekly** from a topic list.
+* **Review/edit (optional)** before pushing to GHL.
+* Use **GHL scheduling** if you want them staggered.
+
+---
+
+### ✅ NEXT STEPS CHECKLIST
+
+| Task                                      | Status |
+| ----------------------------------------- | ------ |
+| Define blog structure template            | ☐      |
+| Build OpenAI prompt                       | ☐      |
+| Decide automation tool (Make.com or Code) | ☐      |
+| Setup Blog API call                       | ☐      |
+| Generate & test 1 blog post               | ☐      |
+| Set recurring schedule                    | ☐      |
+
+---
+
+Want help building a Make.com scenario or API script template? I can write that next.
