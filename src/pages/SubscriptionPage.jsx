@@ -57,22 +57,21 @@ const SubscriptionPage = () => {
       'Core Features': [
         'saved decks',
         'AI requests',
-        'card search',
         'Export to all formats',
         'Format legality checking',
-        'Commander color identity validation'
+        'Commander color identity validation',
+        'deck validation',
+        'Card search powered by Scryfall'
       ],
       'Analytics & AI': [
         'deck analytics',
         'mana curve analysis',
         'AI Strategic Overview',
         'deck suggestions',
-        'deck validation',
         'Synergy recommendations',
         'Card draw simulation'
       ],
       'Advanced Tools': [
-        'Cloud sync',
         'Priority AI responses',
         'Priority customer support'
       ]
@@ -332,8 +331,8 @@ const SubscriptionPage = () => {
                   </tr>
                   <tr className="border-b border-slate-700/30">
                     <td className="py-4 px-4 text-white">Card Search</td>
-                    <td className="py-4 px-4 text-center text-slate-300">Basic</td>
-                    <td className="py-4 px-4 text-center text-primary-300">Advanced with Filters</td>
+                    <td className="py-4 px-4 text-center text-slate-300">Powered by Scryfall</td>
+                    <td className="py-4 px-4 text-center text-primary-300">Powered by Scryfall</td>
                   </tr>
                   <tr className="border-b border-slate-700/30">
                     <td className="py-4 px-4 text-white">Export Formats</td>
@@ -341,8 +340,8 @@ const SubscriptionPage = () => {
                     <td className="py-4 px-4 text-center text-primary-300">All Formats</td>
                   </tr>
                   <tr className="border-b border-slate-700/30">
-                    <td className="py-4 px-4 text-white">Cloud Sync</td>
-                    <td className="py-4 px-4 text-center text-slate-300">❌</td>
+                    <td className="py-4 px-4 text-white">Deck Validation</td>
+                    <td className="py-4 px-4 text-center text-slate-300">✅</td>
                     <td className="py-4 px-4 text-center text-primary-300">✅</td>
                   </tr>
                   <tr className="border-b border-slate-700/30">
@@ -352,11 +351,6 @@ const SubscriptionPage = () => {
                   </tr>
                   <tr className="border-b border-slate-700/30">
                     <td className="py-4 px-4 text-white">Synergy Recommendations</td>
-                    <td className="py-4 px-4 text-center text-slate-300">Basic</td>
-                    <td className="py-4 px-4 text-center text-primary-300">Advanced</td>
-                  </tr>
-                  <tr className="border-b border-slate-700/30">
-                    <td className="py-4 px-4 text-white">Deck Validation</td>
                     <td className="py-4 px-4 text-center text-slate-300">Basic</td>
                     <td className="py-4 px-4 text-center text-primary-300">Advanced</td>
                   </tr>
