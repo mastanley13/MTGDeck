@@ -3,30 +3,71 @@
  * to reduce API calls and improve performance
  */
 
-const CACHE_KEY_PREFIX = 'mtg_card_cache_';
-const CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+import { v4 as uuidv4 } from 'uuid';
+
+const CACHE_PREFIX = 'mtg_card_cache_';
+const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
+const MAX_CACHE_SIZE = 50; // Maximum number of cards to cache
 const SEARCH_CACHE_KEY_PREFIX = 'mtg_search_cache_';
 const SEARCH_CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+
+// Helper to get all cache keys
+const getCacheKeys = () => {
+  return Object.keys(localStorage).filter(key => key.startsWith(CACHE_PREFIX));
+};
+
+// Helper to clean old cache entries
+const cleanOldCache = () => {
+  const keys = getCacheKeys();
+  const now = Date.now();
+  
+  // Sort by timestamp, oldest first
+  const sortedKeys = keys.sort((a, b) => {
+    const aData = JSON.parse(localStorage.getItem(a) || '{}');
+    const bData = JSON.parse(localStorage.getItem(b) || '{}');
+    return (aData.timestamp || 0) - (bData.timestamp || 0);
+  });
+  
+  // Remove old entries if we exceed the max size
+  while (sortedKeys.length >= MAX_CACHE_SIZE) {
+    const oldestKey = sortedKeys.shift();
+    localStorage.removeItem(oldestKey);
+  }
+  
+  // Also remove expired entries
+  for (const key of sortedKeys) {
+    try {
+      const data = JSON.parse(localStorage.getItem(key) || '{}');
+      if (now - (data.timestamp || 0) > CACHE_EXPIRY) {
+        localStorage.removeItem(key);
+      }
+    } catch (e) {
+      // If entry is corrupted, remove it
+      localStorage.removeItem(key);
+    }
+  }
+};
 
 /**
  * Save a card or array of cards to cache
  * @param {Object|Array} cardData - Card data to cache
  */
-export const cacheCard = (cardData) => {
-  if (!cardData) return;
-  
-  const cardsToCache = Array.isArray(cardData) ? cardData : [cardData];
-  
-  cardsToCache.forEach(card => {
-    if (!card.id) return;
+export const cacheCard = (card) => {
+  try {
+    cleanOldCache();
     
-    const cacheItem = {
-      data: card,
+    const cacheKey = CACHE_PREFIX + uuidv4();
+    const cacheData = {
+      card,
       timestamp: Date.now()
     };
     
-    localStorage.setItem(`${CACHE_KEY_PREFIX}${card.id}`, JSON.stringify(cacheItem));
-  });
+    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    return true;
+  } catch (e) {
+    console.warn('Failed to cache card:', e);
+    return false;
+  }
 };
 
 /**
@@ -34,26 +75,19 @@ export const cacheCard = (cardData) => {
  * @param {string} cardId - ID of the card to retrieve
  * @returns {Object|null} Card data or null if not in cache or expired
  */
-export const getCachedCard = (cardId) => {
-  if (!cardId) return null;
-  
-  const cacheItem = localStorage.getItem(`${CACHE_KEY_PREFIX}${cardId}`);
-  if (!cacheItem) return null;
-  
+export const getCachedCard = (cardName) => {
   try {
-    const { data, timestamp } = JSON.parse(cacheItem);
-    
-    // Check if cache is expired
-    if (Date.now() - timestamp > CACHE_EXPIRY_MS) {
-      localStorage.removeItem(`${CACHE_KEY_PREFIX}${cardId}`);
-      return null;
+    const keys = getCacheKeys();
+    for (const key of keys) {
+      const data = JSON.parse(localStorage.getItem(key) || '{}');
+      if (data.card?.name === cardName) {
+        return data.card;
+      }
     }
-    
-    return data;
-  } catch (error) {
-    console.error('Error parsing cached card:', error);
-    return null;
+  } catch (e) {
+    console.warn('Error reading card cache:', e);
   }
+  return null;
 };
 
 /**
@@ -105,12 +139,8 @@ export const getCachedSearchResults = (query) => {
  * Clear all cached card data
  */
 export const clearCardCache = () => {
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key.startsWith(CACHE_KEY_PREFIX) || key.startsWith(SEARCH_CACHE_KEY_PREFIX)) {
-      localStorage.removeItem(key);
-    }
-  }
+  const keys = getCacheKeys();
+  keys.forEach(key => localStorage.removeItem(key));
 };
 
 export default {
