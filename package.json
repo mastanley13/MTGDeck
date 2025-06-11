@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node src/scripts/startServer.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "test:webhooks": "node src/scripts/testWebhooks.js",
     "test:ghl": "node src/scripts/testGHLWebhook.js",
     "generate:secret": "node src/scripts/generateSecret.js"
@@ -16,6 +18,8 @@
     "express": "^4.18.2"
   },
   "devDependencies": {
-    "ngrok": "^5.0.0-beta.2"
+    "@vitejs/plugin-react": "^4.2.1",
+    "ngrok": "^5.0.0-beta.2",
+    "vite": "^5.0.12"
   }
 }
