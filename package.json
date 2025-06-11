@@ -12,12 +12,14 @@
     "generate:secret": "node src/scripts/generateSecret.js"
   },
   "dependencies": {
+    "@heroicons/react": "^2.1.1",
     "axios": "^1.6.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
     "react-toastify": "^9.1.3"
   },
   "devDependencies": {
