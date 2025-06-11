@@ -1,6 +1,10 @@
 import React from 'react';
 
 const AffiliatePage = () => {
+  const handleApplyClick = () => {
+    window.open('https://reflio.com/affiliate-signup', '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-slate-900">
       {/* Background effects */}
@@ -44,7 +48,9 @@ const AffiliatePage = () => {
             </div>
 
             <div className="flex justify-center mb-8">
-              <button className="btn-modern btn-modern-primary btn-modern-xl premium-glow group">
+              <button 
+                onClick={handleApplyClick}
+                className="btn-modern btn-modern-primary btn-modern-xl premium-glow group">
                 <span className="flex items-center space-x-3">
                   <span>⚡ Apply Now</span>
                   <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,11 +172,16 @@ const AffiliatePage = () => {
         </div>
 
         <div className="mt-16 text-center">
-          <button className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+          <button 
+            onClick={handleApplyClick}
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
             Apply Now
           </button>
           <p className="mt-4 text-sm text-gray-500">
             Questions? Contact our affiliate support team at affiliates@mtgapp.com
+          </p>
+          <p className="mt-2 text-sm text-gray-500">
+            Powered by Reflio - Secure and automated affiliate tracking and payouts
           </p>
         </div>
       </div>

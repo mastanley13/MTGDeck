@@ -83,8 +83,10 @@ const RegistrationForm = () => {
         if (result.contact && result.contact.id) {
           try {
             await setInitialSubscriptionStatus(result.contact.id, false);
+            // Add Reflio signup tracking
+            await window.Reflio.signup(userData.email);
           } catch (error) {
-            console.error('Failed to set initial subscription status:', error);
+            console.error('Failed to set initial subscription status or track Reflio signup:', error);
           }
         }
         
