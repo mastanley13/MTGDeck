@@ -6,6 +6,7 @@ import DeckBuilderAI from '../components/deck/DeckBuilder.jsx';
 import DeckStats from '../components/deck/DeckStats.jsx';
 import DeckStatsIndex from '../components/deckstats/DeckStatsIndex.jsx';
 import ValidationResults from '../components/deck/ValidationResults.jsx';
+import DeckPlaybook from '../components/deck/DeckPlaybook.jsx';
 // import SuggestionPanel from '../components/suggestions/SuggestionPanel.jsx';
 // import AIChatbot from '../components/ai/AIChatbot.jsx';
 import AutoDeckBuilder from '../components/ai/AutoDeckBuilder.jsx';
@@ -26,7 +27,7 @@ import { IconCrown } from '@tabler/icons-react';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 
 const DeckBuilderAIPage = () => {
-  const [activeTab, setActiveTab] = useState('deck'); // 'search', 'deck', 'stats'
+  const [activeTab, setActiveTab] = useState('deck'); // 'search', 'deck', 'stats', 'playbook'
   const [validationError, setValidationError] = useState(null);
   const [isCommanderSearchModalOpen, setIsCommanderSearchModalOpen] = useState(false);
   
@@ -500,6 +501,23 @@ const DeckBuilderAIPage = () => {
                         <span>Deck Stats</span>
                       </div>
                     </button>
+
+                    {/* Playbook Tab */}
+                    <button
+                      onClick={() => setActiveTab('playbook')}
+                      className={`py-4 px-1 font-semibold text-sm transition-all duration-300 border-b-2 ${
+                        activeTab === 'playbook'
+                          ? 'border-primary-500 text-primary-400'
+                          : 'border-transparent text-slate-400 hover:text-white hover:border-slate-600'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <span>Playbook</span>
+                      </div>
+                    </button>
                   </nav>
                 </div>
                 
@@ -557,6 +575,10 @@ const DeckBuilderAIPage = () => {
                       <DeckStatsIndex />
                       <ValidationResults setActiveTab={setActiveTab} />
                     </div>
+                  )}
+
+                  {activeTab === 'playbook' && (
+                    <DeckPlaybook />
                   )}
                 </div>
               </div>
