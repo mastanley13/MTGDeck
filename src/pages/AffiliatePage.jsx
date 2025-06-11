@@ -2,7 +2,7 @@ import React from 'react';
 
 const AffiliatePage = () => {
   const handleApplyClick = () => {
-    window.open('https://reflio.com/affiliate-signup', '_blank');
+    window.open('https://affiliates.reflio.com/invite/aidecktutor', '_blank');
   };
 
   return (
@@ -178,7 +178,7 @@ const AffiliatePage = () => {
             Apply Now
           </button>
           <p className="mt-4 text-sm text-gray-500">
-            Questions? Contact our affiliate support team at affiliates@mtgapp.com
+            Questions? Contact our affiliate support team at support@aideckbuilder.com
           </p>
           <p className="mt-2 text-sm text-gray-500">
             Powered by Reflio - Secure and automated affiliate tracking and payouts
