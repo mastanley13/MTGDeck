@@ -265,6 +265,19 @@ const Navbar = () => {
                           <span>Become an Affiliate</span>
                         </div>
                       </Link>
+                      <Link
+                        to="/contact"
+                        onClick={() => setIsToolsDropdownOpen(false)}
+                        className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
+                          isActive('/contact')
+                            ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span>Contact Us</span>
+                        </div>
+                      </Link>
                     </div>
                   )}
                 </div>

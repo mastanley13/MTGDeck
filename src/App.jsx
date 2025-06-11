@@ -16,6 +16,7 @@ import HowToPlayPage from './pages/HowToPlayPage.jsx';
 import BlogPage from './pages/BlogPage.jsx';
 import AffiliatePage from './pages/AffiliatePage.jsx';
 import BlogPostPage from './pages/BlogPostPage.jsx';
+import ContactPage from './pages/ContactPage.jsx';
 import CardDebugger from './components/debug/CardDebugger.jsx';
 import { DeckProvider } from './context/DeckContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -43,6 +44,7 @@ function App() {
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
                   <Route path="/debug" element={<CardDebugger />} />
                   <Route path="/affiliate" element={<AffiliatePage />} />
+                  <Route path="/contact" element={<ContactPage />} />
 
                   <Route path="/commander-ai" element={<CommanderAiPage />} />
                   <Route path="/tutor-ai" element={<TutorAiPage />} />
