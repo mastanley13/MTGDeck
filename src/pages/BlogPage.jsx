@@ -7,7 +7,7 @@ const BlogPage = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const categories = ['All', 'Guides', 'Strategy', 'Deck Ideas', 'News', 'Other'];
+  const categories = ['All', 'Blog'];
 
   useEffect(() => {
     fetchPosts();
@@ -64,24 +64,7 @@ const BlogPage = () => {
           </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-6 py-2 rounded-full transition-all duration-300 ${
-                selectedCategory === category
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-
-        {/* Loading State */}
+        {/* Blog Posts Grid */}
         {loading && (
           <div className="text-center py-16">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
@@ -89,7 +72,6 @@ const BlogPage = () => {
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <div className="text-center py-16">
             <div className="mb-8">
@@ -108,21 +90,22 @@ const BlogPage = () => {
           </div>
         )}
 
-        {/* Blog Posts Grid */}
         {!loading && !error && posts.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
             {posts.map((post) => (
               <Link 
                 key={post.id}
-                to={`/blog/${post.slug}`}
+                to={`/blog/${encodeURIComponent(post.slug.split('/').pop())}`}
                 className="card-modern hover-glow group"
               >
                 <div className="overflow-hidden rounded-t-3xl">
-                  <img 
-                    src={post.image} 
-                    alt={post.title}
-                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
+                  {post.image && (
+                    <img 
+                      src={post.image} 
+                      alt={post.title}
+                      className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  )}
                 </div>
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-3">
@@ -139,18 +122,11 @@ const BlogPage = () => {
                   </p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      {post.author.avatar && (
-                        <img 
-                          src={post.author.avatar} 
-                          alt={post.author.name}
-                          className="w-8 h-8 rounded-full"
-                        />
-                      )}
                       <span className="text-slate-300 text-sm">{post.author.name}</span>
                     </div>
                     <span className="text-slate-500 text-sm">{formatDate(post.date)}</span>
                   </div>
-                  {post.tags.length > 0 && (
+                  {post.tags && post.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-4">
                       {post.tags.slice(0, 3).map((tag) => (
                         <span 
@@ -168,7 +144,6 @@ const BlogPage = () => {
           </div>
         )}
 
-        {/* Empty State */}
         {!loading && !error && posts.length === 0 && (
           <div className="text-center py-16">
             <div className="mb-8">
@@ -176,37 +151,10 @@ const BlogPage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-4">
-              {selectedCategory === 'All' ? 'No Blog Posts Yet' : `No ${selectedCategory} Posts`}
-            </h3>
-            <p className="text-slate-400 mb-8">
-              {selectedCategory === 'All' 
-                ? 'Blog posts will appear here once they are published.' 
-                : `No posts found in the ${selectedCategory} category.`}
-            </p>
+            <h3 className="text-2xl font-bold text-white mb-4">No Blog Posts Yet</h3>
+            <p className="text-slate-400 mb-8">Blog posts will appear here once they are published.</p>
           </div>
         )}
-
-        {/* Newsletter Section */}
-        <div className="mt-24 relative card-modern p-8 sm:p-12 hover-glow animate-fade-in text-center">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl transition-all duration-500"></div>
-          <div className="relative">
-            <h3 className="text-3xl font-bold text-white mb-4">Stay Updated</h3>
-            <p className="text-slate-300 mb-8 max-w-2xl mx-auto">
-              Subscribe to our newsletter to receive the latest Commander strategies, deck tech, and MTG insights directly in your inbox.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-6 py-3 rounded-xl bg-slate-800 text-white border border-slate-700 focus:border-primary-500 focus:outline-none"
-              />
-              <button className="btn-modern btn-modern-primary btn-modern-md whitespace-nowrap">
-                Subscribe Now
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
