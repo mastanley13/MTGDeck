@@ -813,6 +813,42 @@ export const DeckProvider = ({ children }) => {
     }
   }
   
+  // Function to delete a deck from GHL and locally
+  const deleteDeckFromGHL = useCallback(async (deckId, contactId) => {
+    if (!deckId) {
+      console.error('Deck ID is required to delete a deck.');
+      return { success: false, error: 'Deck ID is required.' };
+    }
+    try {
+      // 1. Delete the deck record from GHL (no locationId in URL)
+      const deleteRes = await fetch(`${GHL_API_BASE_URL}/objects/${GHL_DECK_OBJECT_KEY}/records/${deckId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${GHL_API_TOKEN}`,
+            'Version': GHL_API_VERSION,
+            'Accept': 'application/json',
+          },
+        }
+      );
+      if (!deleteRes.ok) {
+        const errorData = await deleteRes.json().catch(() => ({ message: 'Failed to delete deck from GHL.' }));
+        throw new Error(errorData.message || `GHL Delete Record Error: ${deleteRes.status} - ${await deleteRes.text()}`);
+      }
+      // 2. Remove from local state
+      const updatedDecks = state.savedDecks.filter(deck => deck.id !== deckId);
+      dispatch({ type: Actions.INIT_SAVED_DECKS, payload: updatedDecks });
+      // 3. Optionally, refresh user decks from GHL
+      if (contactId) {
+        await fetchAndSetUserDecks(contactId);
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting deck from GHL:', error);
+      return { success: false, error: error.message };
+    }
+  }, [state.savedDecks, dispatch, fetchAndSetUserDecks]);
+  
   // Provide value to consumers
   const value = {
     ...state,
@@ -834,6 +870,7 @@ export const DeckProvider = ({ children }) => {
     importDeck,
     updateCardCategory,
     getCardType, // Exposing getCardType
+    deleteDeckFromGHL, // Expose the new function
   };
   
   return (

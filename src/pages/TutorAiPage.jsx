@@ -8,6 +8,7 @@ import { validateCardForCommander } from '../utils/deckValidator';
 import { toast } from 'react-toastify';
 import AddToDeckModal from '../components/ui/AddToDeckModal';
 import SelectDeckModal from '../components/ui/SelectDeckModal';
+import { useLocation } from 'react-router-dom';
 
 const CheckIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
@@ -37,6 +38,8 @@ const TutorAiPage = () => {
 
   const { savedDecks, fetchAndSetUserDecks, loading: decksLoading, error: decksError, addCard, currentDeckName, saveCurrentDeckToGHL } = useDeck();
   const { currentUser } = useAuth();
+  const location = useLocation();
+  const passedDeck = location.state?.deck;
 
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
@@ -48,6 +51,23 @@ const TutorAiPage = () => {
       fetchAndSetUserDecks(userId);
     }
   }, [currentUser, fetchAndSetUserDecks]);
+
+  // Pre-fill deck if passed from navigation state
+  useEffect(() => {
+    if (passedDeck) {
+      setSelectedDeckId(passedDeck.id);
+      let decklistString = '';
+      if (passedDeck.commander) {
+        decklistString += `${passedDeck.commander.name} (Commander)\n`;
+      }
+      if (passedDeck.cards && Array.isArray(passedDeck.cards)) {
+        passedDeck.cards.forEach(card => {
+          decklistString += `${card.quantity || 1}x ${card.name}\n`;
+        });
+      }
+      setCurrentDecklist(decklistString.trim());
+    }
+  }, [passedDeck]);
 
   useEffect(() => {
     console.log('TutorAiPage: savedDecks', savedDecks);

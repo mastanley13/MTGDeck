@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useDeck } from '../context/DeckContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCardImageUris } from '../utils/scryfallAPI';
@@ -11,13 +11,14 @@ import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 
 const DeckViewer = () => {
   const { deckId } = useParams();
-  const { savedDecks, loadDeck, fetchAndSetUserDecks, loading: deckLoading, error: deckError } = useDeck();
+  const { savedDecks, loadDeck, fetchAndSetUserDecks, loading: deckLoading, error: deckError, deleteDeckFromGHL } = useDeck();
   const { currentUser, loadingAuth } = useAuth();
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [activeTab, setActiveTab] = useState('cards');
   const [hasFetchedDecks, setHasFetchedDecks] = useState(false);
   const [isCardDetailModalOpen, setIsCardDetailModalOpen] = useState(false);
   const [selectedCardForModal, setSelectedCardForModal] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!loadingAuth && currentUser && currentUser.id && !deckId && !hasFetchedDecks) {
@@ -51,6 +52,18 @@ const DeckViewer = () => {
   const handleCloseCardDetailModal = () => {
     setIsCardDetailModalOpen(false);
     setSelectedCardForModal(null);
+  };
+
+  const handleDeleteDeck = async () => {
+    if (!selectedDeck) return;
+    if (!window.confirm(`Are you sure you want to delete the deck "${selectedDeck.name}"? This action cannot be undone.`)) return;
+    const result = await deleteDeckFromGHL(selectedDeck.id, currentUser?.id);
+    if (result.success) {
+      alert('Deck deleted successfully.');
+      navigate('/decks');
+    } else {
+      alert('Failed to delete deck: ' + (result.error || 'Unknown error'));
+    }
   };
 
   if (loadingAuth || deckLoading) {
@@ -367,7 +380,11 @@ const DeckViewer = () => {
               
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-4">
-                <Link to={`/builder?deck=${selectedDeck.id}`} className="btn-modern btn-modern-primary btn-modern-lg group">
+                <Link
+                  to={`/tutor-ai?deck=${selectedDeck.id}`}
+                  state={{ deck: selectedDeck }}
+                  className="btn-modern btn-modern-primary btn-modern-lg group"
+                >
                   <span className="flex items-center space-x-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -375,6 +392,18 @@ const DeckViewer = () => {
                     <span>Edit Deck</span>
                   </span>
                 </Link>
+                <button
+                  onClick={handleDeleteDeck}
+                  className="btn-modern btn-modern-lg group bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg rounded-xl px-8 py-4 font-bold transition-all hover:scale-105"
+                  type="button"
+                >
+                  <span className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Delete Deck</span>
+                  </span>
+                </button>
               </div>
             </div>
           ) : (
