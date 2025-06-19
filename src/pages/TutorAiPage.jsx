@@ -353,6 +353,7 @@ const TutorAiPage = () => {
       toast.error('Failed to update deck in cloud: ' + (err.message || err));
     }
     handleCloseDeckModal();
+    setSelectedCardForAdding(null);
   };
 
   // Handler for selecting a deck from the modal
@@ -674,12 +675,12 @@ const TutorAiPage = () => {
 
         {/* AddToDeckModal for TutorAiPage */}
         <AddToDeckModal
-          isOpen={showAddDeckModal}
+          isOpen={!!selectedCardForAdding}
           card={selectedCardForAdding}
           savedDecks={savedDecks}
           isLoading={decksLoading}
           onAddToDeck={handleAddCardToDeck}
-          onClose={() => setShowAddDeckModal(false)}
+          onClose={() => setSelectedCardForAdding(null)}
           currentDeckName={currentDeckName}
         />
 
