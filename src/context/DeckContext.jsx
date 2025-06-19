@@ -404,15 +404,6 @@ export const DeckProvider = ({ children }) => {
     }
   }, []);
   
-  // Save decks to localStorage when updated
-  useEffect(() => {
-    try {
-      localStorage.setItem('mtg_saved_decks', JSON.stringify(state.savedDecks));
-    } catch (error) {
-      console.error('Error saving decks to local storage:', error);
-    }
-  }, [state.savedDecks]);
-  
   // Derived state computations (memoized)
   const { cardsByType, totalCardCount } = useMemo(() => {
     const newCardsByType = {};
@@ -496,8 +487,15 @@ export const DeckProvider = ({ children }) => {
   };
   
   // New function to save deck to GHL and then locally
-  const saveCurrentDeckToGHL = useCallback(async (contactId, commanderNameForGHLInput, localDeckName) => {
-    if (!state.commander) {
+  const saveCurrentDeckToGHL = useCallback(async (contactId, commanderNameForGHLInput, localDeckName, deckToSave) => {
+    // Use deckToSave if provided, otherwise fall back to context state
+    const commander = deckToSave?.commander || state.commander;
+    const cards = deckToSave?.cards || state.cards;
+    const cardCategories = deckToSave?.cardCategories || state.cardCategories;
+    const deckDescription = deckToSave?.description || state.deckDescription;
+    const deckId = deckToSave?.id;
+
+    if (!commander) {
       console.error("Commander is required to save a deck.");
       dispatch({ type: Actions.SET_ERROR, payload: "Commander is required to save a deck." });
       return false;
@@ -507,28 +505,23 @@ export const DeckProvider = ({ children }) => {
       dispatch({ type: Actions.SET_ERROR, payload: "User not identified. Cannot save deck to cloud."});
       return false;
     }
-    
     const commanderNameForGHL = commanderNameForGHLInput.trim();
     if (!commanderNameForGHL || typeof commanderNameForGHL !== 'string' || commanderNameForGHL === '') {
-        console.error("Commander name is invalid or empty after trim. Cannot satisfy GHL required property.");
-        dispatch({ type: Actions.SAVE_DECK_GHL_ERROR, payload: "Commander name is invalid. Cannot save to cloud." });
-        return false;
+      console.error("Commander name is invalid or empty after trim. Cannot satisfy GHL required property.");
+      dispatch({ type: Actions.SAVE_DECK_GHL_ERROR, payload: "Commander name is invalid. Cannot save to cloud." });
+      return false;
     }
-
     dispatch({ type: Actions.SAVE_DECK_START });
-
     // Construct minimized deck payload
-    const minimizedCommander = minimizeCardDataForKeySaving(state.commander);
+    const minimizedCommander = minimizeCardDataForKeySaving(commander);
     if (minimizedCommander && minimizedCommander.q === undefined) {
-        minimizedCommander.q = 1; 
+      minimizedCommander.q = 1;
     }
-
-    const minimizedMainboard = state.cards.map(card => {
+    const minimizedMainboard = cards.map(card => {
       const minimizedCard = minimizeCardDataForKeySaving(card);
-      minimizedCard.ct = state.cardCategories[card.id] || getCardType(card);
+      minimizedCard.ct = cardCategories[card.id] || getCardType(card);
       return minimizedCard;
     });
-
     const deckDataToStoreInGHLField = {
       v: "1.1_shortkeys",
       adn: localDeckName,
@@ -536,82 +529,98 @@ export const DeckProvider = ({ children }) => {
       mb: minimizedMainboard,
       ls: new Date().toISOString()
     };
-
     const propertiesForGHLRecord = {
       [GHL_SHORT_DECK_NAME_FIELD_KEY]: commanderNameForGHL,
       [GHL_SHORT_DECK_DATA_FIELD_KEY]: JSON.stringify(deckDataToStoreInGHLField)
     };
-
     try {
-      // console.log('GHL Create Record - Properties being sent:', JSON.stringify(propertiesForGHLRecord, null, 2));
-      
       const deckDataStringForLengthCheck = JSON.stringify(deckDataToStoreInGHLField);
-      // console.log(`Length of key-shortened deck_data JSON string: ${deckDataStringForLengthCheck.length}`);
       if (deckDataStringForLengthCheck.length > 12000) {
-          console.error(`Deck data JSON string is still too long (${deckDataStringForLengthCheck.length} chars), exceeding 12000 limit.`);
-          dispatch({ type: Actions.SAVE_DECK_GHL_ERROR, payload: `Deck data is too large (${deckDataStringForLengthCheck.length}/12000 chars). Try removing cards or simplifying further.` });
-          return false;
+        console.error(`Deck data JSON string is still too long (${deckDataStringForLengthCheck.length} chars), exceeding 12000 limit.`);
+        dispatch({ type: Actions.SAVE_DECK_GHL_ERROR, payload: `Deck data is too large (${deckDataStringForLengthCheck.length}/12000 chars). Try removing cards or simplifying further.` });
+        return false;
       }
-
-      const createRecordResponse = await fetch(`${GHL_API_BASE_URL}/objects/${GHL_DECK_OBJECT_KEY}/records`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GHL_API_TOKEN}`,
-          'Version': GHL_API_VERSION,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          locationId: GHL_LOCATION_ID,
-          properties: propertiesForGHLRecord 
-        })
-      });
-
-      if (!createRecordResponse.ok) {
-        const errorData = await createRecordResponse.json().catch(() => ({ message: 'Failed to save deck to GHL.' }));
-        throw new Error(errorData.message || `GHL Create Record Error: ${createRecordResponse.status} - ${await createRecordResponse.text()}`);
+      let recordResult, newGHLDeckRecordId;
+      if (deckId) {
+        // UPDATE EXISTING DECK (PUT)
+        const updateResponse = await fetch(`${GHL_API_BASE_URL}/objects/${GHL_DECK_OBJECT_KEY}/records/${deckId}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${GHL_API_TOKEN}`,
+              'Version': GHL_API_VERSION,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              locationId: GHL_LOCATION_ID,
+              properties: propertiesForGHLRecord
+            })
+          }
+        );
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json().catch(() => ({ message: 'Failed to update deck in GHL.' }));
+          throw new Error(errorData.message || `GHL Update Record Error: ${updateResponse.status} - ${await updateResponse.text()}`);
+        }
+        recordResult = await updateResponse.json();
+        newGHLDeckRecordId = deckId; // Keep the same ID
+        // No need to create association again
+      } else {
+        // CREATE NEW DECK (POST)
+        const createRecordResponse = await fetch(`${GHL_API_BASE_URL}/objects/${GHL_DECK_OBJECT_KEY}/records`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GHL_API_TOKEN}`,
+            'Version': GHL_API_VERSION,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            locationId: GHL_LOCATION_ID,
+            properties: propertiesForGHLRecord 
+          })
+        });
+        if (!createRecordResponse.ok) {
+          const errorData = await createRecordResponse.json().catch(() => ({ message: 'Failed to save deck to GHL.' }));
+          throw new Error(errorData.message || `GHL Create Record Error: ${createRecordResponse.status} - ${await createRecordResponse.text()}`);
+        }
+        recordResult = await createRecordResponse.json();
+        newGHLDeckRecordId = recordResult?.record?.id;
+        if (!newGHLDeckRecordId) {
+          throw new Error('Failed to get ID from GHL deck record creation.');
+        }
+        // Create association only on new deck
+        const createAssociationResponse = await fetch(`${GHL_API_BASE_URL}/associations/relations`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GHL_API_TOKEN}`,
+            'Version': GHL_API_VERSION,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            locationId: GHL_LOCATION_ID,
+            associationId: GHL_ASSOCIATION_ID,
+            firstRecordId: contactId, 
+            secondRecordId: newGHLDeckRecordId
+          })
+        });
+        if (!createAssociationResponse.ok) {
+          const errorData = await createAssociationResponse.json().catch(() => ({ message: 'Failed to associate deck with contact.' }));
+          console.error("GHL Association Failed. Deck record was created with ID:", newGHLDeckRecordId);
+          throw new Error(errorData.message || `GHL Create Association Error: ${createAssociationResponse.status} - ${await createAssociationResponse.text()}`);
+        }
       }
-      const recordResult = await createRecordResponse.json();
-      const newGHLDeckRecordId = recordResult?.record?.id;
-
-      if (!newGHLDeckRecordId) {
-        throw new Error('Failed to get ID from GHL deck record creation.');
-      }
-      
       dispatch({ type: Actions.SAVE_DECK_GHL_SUCCESS });
-
-      const createAssociationResponse = await fetch(`${GHL_API_BASE_URL}/associations/relations`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${GHL_API_TOKEN}`,
-          'Version': GHL_API_VERSION,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          locationId: GHL_LOCATION_ID,
-          associationId: GHL_ASSOCIATION_ID,
-          firstRecordId: contactId, 
-          secondRecordId: newGHLDeckRecordId
-        })
-      });
-
-      if (!createAssociationResponse.ok) {
-        const errorData = await createAssociationResponse.json().catch(() => ({ message: 'Failed to associate deck with contact.' }));
-        console.error("GHL Association Failed. Deck record was created with ID:", newGHLDeckRecordId);
-        throw new Error(errorData.message || `GHL Create Association Error: ${createAssociationResponse.status} - ${await createAssociationResponse.text()}`);
-      }
-      
       dispatch({ 
         type: Actions.SAVE_DECK, 
         payload: { 
           id: newGHLDeckRecordId, 
           name: localDeckName, 
-          description: state.deckDescription, 
+          description: deckDescription, 
         }
       });
       return true;
-
     } catch (error) {
       console.error('Error saving deck to GHL:', error);
       dispatch({ type: Actions.SAVE_DECK_GHL_ERROR, payload: error.message });

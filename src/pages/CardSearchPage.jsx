@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { searchCards } from '../utils/scryfallAPI';
+import { searchCards, getCardImageUris } from '../utils/scryfallAPI';
 import { useDeck } from '../context/DeckContext';
 import CardDetailModal from '../components/ui/CardDetailModal';
 import EnhancedCardImage from '../components/ui/EnhancedCardImage';
 import { parseManaSymbols } from '../utils/manaSymbols';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
+import { useAuth } from '../context/AuthContext';
 
 // Using EnhancedCardImage component for optimized image handling
 
@@ -27,10 +28,12 @@ const CardSearchPage = () => {
 
   const [selectedCardForAdding, setSelectedCardForAdding] = useState(null);
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
+  const [isDecksLoadingForModal, setIsDecksLoadingForModal] = useState(false);
 
   const [selectedCardForDetails, setSelectedCardForDetails] = useState(null);
 
-  const { addCard, savedDecks, currentDeckName } = useDeck();
+  const { addCard, savedDecks, currentDeckName, saveCurrentDeckToGHL, fetchAndSetUserDecks } = useDeck();
+  const { currentUser } = useAuth();
 
   // Function to sort results prioritizing original cards over Arena cards
   const sortResultsByCardType = (cards) => {
@@ -62,7 +65,15 @@ const CardSearchPage = () => {
     setError(null);
     try {
       const response = await searchCards(currentQuery);
-      const sortedResults = sortResultsByCardType(response.data || []);
+      // Map each card to include imageUrl using getCardImageUris
+      const mappedResults = (response.data || []).map(card => {
+        const imageUris = getCardImageUris(card);
+        return {
+          ...card,
+          imageUrl: imageUris?.art_crop || imageUris?.normal || null
+        };
+      });
+      const sortedResults = sortResultsByCardType(mappedResults);
       setResults(sortedResults);
     } catch (err) {
       setError('Failed to fetch cards. Please try again.');
@@ -89,9 +100,14 @@ const CardSearchPage = () => {
   };
 
   // --- Add to Deck Modal Logic ---
-  const handleOpenDeckModal = (card) => {
+  const handleOpenDeckModal = async (card) => {
     setSelectedCardForAdding(card);
     setIsDeckModalOpen(true);
+    if (currentUser && (currentUser.contactId || currentUser.id)) {
+      setIsDecksLoadingForModal(true);
+      await fetchAndSetUserDecks(currentUser.contactId || currentUser.id);
+      setIsDecksLoadingForModal(false);
+    }
   };
 
   const handleCloseDeckModal = () => {
@@ -99,11 +115,115 @@ const CardSearchPage = () => {
     setIsDeckModalOpen(false);
   };
 
-  const handleAddCardToDeck = (deckId) => {
+  const handleAddCardToDeck = async (deckId) => {
     if (selectedCardForAdding) {
-      addCard(selectedCardForAdding);
-      const targetDeckName = deckId === 'current' ? currentDeckName : savedDecks.find(d => d.id === deckId)?.name;
-      alert(`${selectedCardForAdding.name} added to ${targetDeckName || 'current deck'}.`);
+      if (deckId === 'current') {
+        addCard(selectedCardForAdding);
+        console.log('[AddCard] Added to current deck:', selectedCardForAdding, currentDeckName);
+        alert(`${selectedCardForAdding.name} added to ${currentDeckName || 'current deck'}.`);
+        handleCloseDeckModal();
+        return;
+      }
+      // --- Step 1: Fetch the latest version of the selected deck from GHL ---
+      let latestDeckRecord = null;
+      try {
+        console.log('[AddCard] Fetching latest deck from GHL. deckId:', deckId);
+        const res = await fetch(
+          `https://services.leadconnectorhq.com/objects/custom_objects.decks/records/${deckId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_GHL_API_KEY}`,
+              'Version': '2021-07-28',
+              'Accept': 'application/json',
+            },
+          }
+        );
+        console.log('[AddCard] GET response status:', res.status);
+        if (!res.ok) throw new Error('Failed to fetch latest deck from GHL');
+        const data = await res.json();
+        latestDeckRecord = data.record;
+        console.log('[AddCard] latestDeckRecord:', latestDeckRecord);
+      } catch (err) {
+        console.error('[AddCard] Error fetching latest deck from cloud:', err);
+        alert('Failed to fetch latest deck from cloud: ' + (err.message || err));
+        handleCloseDeckModal();
+        return;
+      }
+      // --- Step 2: Parse and upsert the card into deck_data ---
+      let deckDataObj;
+      try {
+        deckDataObj = latestDeckRecord.properties && latestDeckRecord.properties.deck_data
+          ? JSON.parse(latestDeckRecord.properties.deck_data)
+          : null;
+      } catch (e) {
+        deckDataObj = null;
+      }
+      if (!deckDataObj) {
+        deckDataObj = {
+          v: "1.1_shortkeys",
+          adn: latestDeckRecord.properties.decks || 'Untitled Deck',
+          cmd: null,
+          mb: [],
+          ls: new Date().toISOString()
+        };
+      }
+      let found = false;
+      for (let i = 0; i < deckDataObj.mb.length; i++) {
+        if (deckDataObj.mb[i].n === selectedCardForAdding.name) {
+          if ((selectedCardForAdding.type_line || '').toLowerCase().includes('basic land')) {
+            deckDataObj.mb[i].q = (deckDataObj.mb[i].q || 1) + 1;
+          }
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        deckDataObj.mb.push({
+          i: selectedCardForAdding.id,
+          n: selectedCardForAdding.name,
+          q: 1,
+          t: selectedCardForAdding.type_line,
+          c: selectedCardForAdding.cmc,
+          ct: selectedCardForAdding.type_line
+        });
+      }
+      deckDataObj.ls = new Date().toISOString();
+      console.log('[AddCard] deckDataObj after upsert:', deckDataObj);
+      // --- Step 3: Send PUT request to update only deck_data field ---
+      try {
+        // Build the properties object using the correct property keys for Decks and Deck Data (not the full field keys)
+        const putProperties = {
+          decks: latestDeckRecord.properties["decks"] || "Untitled Deck", // always required
+          deck_data: JSON.stringify(deckDataObj) // Deck Data by property key
+        };
+        console.log('[AddCard] PUT Properties:', putProperties);
+        const putRes = await fetch(
+          `https://services.leadconnectorhq.com/objects/custom_objects.decks/records/${deckId}?locationId=zKZ8Zy6VvGR1m7lNfRkY`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_GHL_API_KEY}`,
+              'Version': '2021-07-28',
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ properties: putProperties })
+          }
+        );
+        console.log('[AddCard] PUT response status:', putRes.status);
+        let putResBody = null;
+        try { putResBody = await putRes.json(); } catch (e) { putResBody = null; }
+        console.log('[AddCard] PUT response body:', putResBody);
+        if (!putRes.ok) {
+          throw new Error((putResBody && putResBody.message) || `Failed to update deck: ${putRes.status}`);
+        }
+        await fetchAndSetUserDecks(currentUser.contactId || currentUser.id);
+        alert(`${selectedCardForAdding.name} added to ${latestDeckRecord.properties['custom_objects.decks.decks'] || 'deck'} and saved to cloud!`);
+      } catch (err) {
+        console.error('[AddCard] Error updating deck in cloud:', err);
+        alert('Failed to update deck in cloud: ' + (err.message || err));
+      }
       handleCloseDeckModal();
     }
   };
@@ -261,7 +381,6 @@ const CardSearchPage = () => {
                   <div 
                     key={card.id} 
                     className={`group relative glassmorphism-card p-0 overflow-hidden border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 hover:scale-105 hover:shadow-modern-primary ${gameChangerEffect} flex flex-col h-full`}
-                    onClick={() => handleOpenCardDetailsModal(card)}
                   >
                     {/* Card Image */}
                     <div className="relative h-48 overflow-hidden flex-shrink-0">
@@ -307,9 +426,37 @@ const CardSearchPage = () => {
                       <p className="text-xs text-slate-400 flex-shrink-0">
                         {card.type_line || card.type}
                       </p>
-                      <p className="text-xs text-slate-300 leading-relaxed line-clamp-3 flex-grow overflow-hidden">
-                        {card.description}
-                      </p>
+                      {/* Card summary/description */}
+                      <div className="text-xs text-slate-300 leading-relaxed line-clamp-3 flex-grow overflow-hidden">
+                        {parseManaSymbols(card.description || card.oracle_text)}
+                      </div>
+                      {/* Action buttons - side by side - Fixed at bottom */}
+                      <div className="flex space-x-2 pt-2 mt-auto">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenCardDetailsModal(card);
+                          }}
+                          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
+                        >
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Details</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDeckModal(card);
+                          }}
+                          className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
+                        >
+                          <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          <span>Add</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -344,49 +491,54 @@ const CardSearchPage = () => {
                 </svg>
                 <span>Add "{selectedCardForAdding.name}"</span>
               </h3>
-              
-              <div className="space-y-3 max-h-60 overflow-y-auto mb-6">
-                {/* Current Deck Option */}
-                <button 
-                  onClick={() => handleAddCardToDeck('current')}
-                  className="w-full btn-modern btn-modern-primary btn-modern-md text-left"
-                >
-                  <div className="flex items-center space-x-3">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <span>Current Deck: {currentDeckName || 'Untitled'}</span>
-                  </div>
-                </button>
-
-                {/* Saved Decks */}
-                {savedDecks && savedDecks.length > 0 && (
-                  <>
-                    <div className="border-t border-slate-700/50 pt-3 mt-3">
-                      <p className="text-sm text-slate-400 mb-3">Or add to saved deck:</p>
+              {isDecksLoadingForModal ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary-500 border-t-transparent rounded-full mr-4"></div>
+                  <span className="text-slate-300 text-lg">Loading decks...</span>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-60 overflow-y-auto mb-6">
+                  {/* Current Deck Option */}
+                  <button 
+                    onClick={() => handleAddCardToDeck('current')}
+                    className="w-full btn-modern btn-modern-primary btn-modern-md text-left"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <span>Current Deck: {currentDeckName || 'Untitled'}</span>
                     </div>
-                    {savedDecks.map((deck) => (
-                      <button 
-                        key={deck.id}
-                        onClick={() => handleAddCardToDeck(deck.id)}
-                        className="w-full btn-modern btn-modern-secondary btn-modern-sm text-left"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                          <span>{deck.name}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </>
-                )}
+                  </button>
 
-                {(!savedDecks || savedDecks.length === 0) && (
-                  <p className="text-xs text-slate-500 text-center py-4">No other saved decks found.</p>
-                )}
-              </div>
+                  {/* Saved Decks */}
+                  {savedDecks && savedDecks.length > 0 && (
+                    <>
+                      <div className="border-t border-slate-700/50 pt-3 mt-3">
+                        <p className="text-sm text-slate-400 mb-3">Or add to saved deck:</p>
+                      </div>
+                      {savedDecks.map((deck) => (
+                        <button 
+                          key={deck.id}
+                          onClick={() => handleAddCardToDeck(deck.id)}
+                          className="w-full btn-modern btn-modern-secondary btn-modern-sm text-left"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            <span>{deck.name}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </>
+                  )}
 
+                  {(!savedDecks || savedDecks.length === 0) && !isDecksLoadingForModal && (
+                    <p className="text-xs text-slate-500 text-center py-4">No other saved decks found.</p>
+                  )}
+                </div>
+              )}
               <button 
                 onClick={handleCloseDeckModal}
                 className="w-full btn-modern btn-modern-outline btn-modern-md"

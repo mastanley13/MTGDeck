@@ -6,6 +6,8 @@ import { parseManaSymbols } from '../utils/manaSymbols';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 import { validateCardForCommander } from '../utils/deckValidator';
 import { toast } from 'react-toastify';
+import AddToDeckModal from '../components/ui/AddToDeckModal';
+import SelectDeckModal from '../components/ui/SelectDeckModal';
 
 const CheckIcon = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" {...props}>
@@ -27,16 +29,29 @@ const TutorAiPage = () => {
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [selectedCardForAdding, setSelectedCardForAdding] = useState(null);
 
-  const { savedDecks, fetchAndSetUserDecks, loading: decksLoading, error: decksError, addCard, currentDeckName } = useDeck();
+  // Remove the old deck dropdown and replace with a button to open the modal
+  const [showAddDeckModal, setShowAddDeckModal] = useState(false);
+
+  // Deck selection modal state
+  const [showSelectDeckModal, setShowSelectDeckModal] = useState(false);
+
+  const { savedDecks, fetchAndSetUserDecks, loading: decksLoading, error: decksError, addCard, currentDeckName, saveCurrentDeckToGHL } = useDeck();
   const { currentUser } = useAuth();
 
   const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
   useEffect(() => {
-    if (currentUser && currentUser.contactId) {
-      fetchAndSetUserDecks(currentUser.contactId);
+    // Use both contactId and id for maximum compatibility, just like CardSearchPage.jsx
+    if (currentUser && (currentUser.contactId || currentUser.id)) {
+      const userId = currentUser.contactId || currentUser.id;
+      console.log('TutorAiPage: Fetching decks for userId:', userId);
+      fetchAndSetUserDecks(userId);
     }
   }, [currentUser, fetchAndSetUserDecks]);
+
+  useEffect(() => {
+    console.log('TutorAiPage: savedDecks', savedDecks);
+  }, [savedDecks]);
 
   const handleDeckSelectChange = (event) => {
     const deckId = event.target.value;
@@ -235,35 +250,126 @@ const TutorAiPage = () => {
     setIsDeckModalOpen(false);
   };
 
-  const handleAddCardToDeck = (deckId) => {
+  const handleAddCardToDeck = async (deckId) => {
     if (!selectedCardForAdding) return;
 
-    // Get the target deck
-    const targetDeck = savedDecks.find(deck => deck.id === deckId);
-    if (!targetDeck || !targetDeck.commander) {
-      toast.error('Please select a valid deck with a commander.');
+    if (deckId === 'current') {
+      addCard(selectedCardForAdding, deckId);
+      toast.success(`Added ${selectedCardForAdding.name} to current deck`);
+      handleCloseDeckModal();
       return;
     }
 
-    // Validate the card against the commander's color identity
-    const validation = validateCardForCommander(selectedCardForAdding, targetDeck.commander);
-    if (!validation.valid) {
-      toast.error(validation.message);
+    // --- Step 1: Fetch the latest version of the selected deck from GHL ---
+    let latestDeckRecord = null;
+    try {
+      const res = await fetch(
+        `https://services.leadconnectorhq.com/objects/custom_objects.decks/records/${deckId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_GHL_API_KEY}`,
+            'Version': '2021-07-28',
+            'Accept': 'application/json',
+          },
+        }
+      );
+      if (!res.ok) throw new Error('Failed to fetch latest deck from GHL');
+      const data = await res.json();
+      latestDeckRecord = data.record;
+    } catch (err) {
+      toast.error('Failed to fetch latest deck from cloud: ' + (err.message || err));
+      handleCloseDeckModal();
       return;
     }
 
-    // Check for duplicates (except basic lands)
-    const isBasicLand = selectedCardForAdding.type_line?.toLowerCase().includes('basic land');
-    const existingCard = targetDeck.cards.find(c => c.name === selectedCardForAdding.name);
-    if (existingCard && !isBasicLand) {
-      toast.warning('This card is already in your deck (Commander decks can only have one copy of each card except basic lands).');
-      return;
+    // --- Step 2: Parse and upsert the card into deck_data ---
+    let deckDataObj;
+    try {
+      deckDataObj = latestDeckRecord.properties && latestDeckRecord.properties.deck_data
+        ? JSON.parse(latestDeckRecord.properties.deck_data)
+        : null;
+    } catch (e) {
+      deckDataObj = null;
     }
+    if (!deckDataObj) {
+      deckDataObj = {
+        v: "1.1_shortkeys",
+        adn: latestDeckRecord.properties.decks || 'Untitled Deck',
+        cmd: null,
+        mb: [],
+        ls: new Date().toISOString()
+      };
+    }
+    let found = false;
+    for (let i = 0; i < deckDataObj.mb.length; i++) {
+      if (deckDataObj.mb[i].n === selectedCardForAdding.name) {
+        if ((selectedCardForAdding.type_line || '').toLowerCase().includes('basic land')) {
+          deckDataObj.mb[i].q = (deckDataObj.mb[i].q || 1) + 1;
+        }
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      deckDataObj.mb.push({
+        i: selectedCardForAdding.id,
+        n: selectedCardForAdding.name,
+        q: 1,
+        t: selectedCardForAdding.type_line,
+        c: selectedCardForAdding.cmc,
+        ct: selectedCardForAdding.type_line
+      });
+    }
+    deckDataObj.ls = new Date().toISOString();
 
-    // Add the card to the deck
-    addCard(selectedCardForAdding, deckId);
-    toast.success(`Added ${selectedCardForAdding.name} to ${targetDeck.name}`);
+    // --- Step 3: Send PUT request to update only deck_data field ---
+    try {
+      const putProperties = {
+        decks: latestDeckRecord.properties.decks || "Untitled Deck",
+        deck_data: JSON.stringify(deckDataObj)
+      };
+      const putRes = await fetch(
+        `https://services.leadconnectorhq.com/objects/custom_objects.decks/records/${deckId}?locationId=zKZ8Zy6VvGR1m7lNfRkY`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_GHL_API_KEY}`,
+            'Version': '2021-07-28',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({ properties: putProperties })
+        }
+      );
+      let putResBody = null;
+      try { putResBody = await putRes.json(); } catch (e) { putResBody = null; }
+      if (!putRes.ok) {
+        throw new Error((putResBody && putResBody.message) || `Failed to update deck: ${putRes.status}`);
+      }
+      await fetchAndSetUserDecks(currentUser.contactId || currentUser.id);
+      toast.success(`${selectedCardForAdding.name} added to ${latestDeckRecord.properties.decks || 'deck'} and saved to cloud!`);
+    } catch (err) {
+      toast.error('Failed to update deck in cloud: ' + (err.message || err));
+    }
     handleCloseDeckModal();
+  };
+
+  // Handler for selecting a deck from the modal
+  const handleSelectDeck = (deck) => {
+    setSelectedDeckId(deck.id);
+    // Build decklist string for manual entry area
+    let decklistString = '';
+    if (deck.commander) {
+      decklistString += `${deck.commander.name} (Commander)\n`;
+    }
+    if (deck.cards && Array.isArray(deck.cards)) {
+      deck.cards.forEach(card => {
+        decklistString += `${card.quantity || 1}x ${card.name}\n`;
+      });
+    }
+    setCurrentDecklist(decklistString.trim());
+    setShowSelectDeckModal(false);
   };
 
   return (
@@ -319,37 +425,22 @@ const TutorAiPage = () => {
             </h2>
 
             <div className="space-y-2">
-              <label htmlFor="deckSelect" className="block text-sm font-semibold text-white">
+              <label className="block text-sm font-semibold text-white">
                 Choose from your saved decks:
               </label>
-              <div className="relative">
-                <select
-                  id="deckSelect"
-                  name="deckSelect"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50 appearance-none"
-                  value={selectedDeckId}
-                  onChange={handleDeckSelectChange}
-                  disabled={decksLoading || isLoading}
-                >
-                  <option value="">-- Select a Deck --</option>
-                  {decksLoading && <option value="" disabled>Loading decks...</option>}
-                  {!decksLoading && savedDecks && savedDecks.map(deck => (
-                    <option key={deck.id} value={deck.id}>
-                      {deck.name} (Commander: {deck.commander ? deck.commander.name : 'N/A'})
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button
+                type="button"
+                className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white text-left focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 hover:border-slate-500/50 appearance-none"
+                onClick={() => setShowSelectDeckModal(true)}
+                disabled={decksLoading || isLoading}
+              >
+                <span className="flex items-center">
+                  <svg className="h-5 w-5 text-slate-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
-                </div>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
+                  {decksLoading ? 'Loading your saved decks...' : '-- Select a Deck --'}
+                </span>
+              </button>
               {decksError && (
                 <p className="text-sm text-red-300">Error loading decks: {typeof decksError === 'string' ? decksError : decksError.message}</p>
               )}
@@ -581,68 +672,25 @@ const TutorAiPage = () => {
           <CardDetailModal card={selectedCardForModal} onClose={handleCloseModal} />
         )}
 
-        {/* Add to Deck Modal */}
-        {isDeckModalOpen && selectedCardForAdding && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="glassmorphism-card p-8 max-w-md w-full border-primary-500/30">
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center space-x-2">
-                <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span>Add "{selectedCardForAdding.name}"</span>
-              </h3>
-              
-              <div className="space-y-3 max-h-60 overflow-y-auto mb-6">
-                {/* Current Deck Option */}
-                <button 
-                  onClick={() => handleAddCardToDeck('current')}
-                  className="w-full btn-modern btn-modern-primary btn-modern-md text-left"
-                >
-                  <div className="flex items-center space-x-3">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <span>Current Deck: {currentDeckName || 'Untitled'}</span>
-                  </div>
-                </button>
+        {/* AddToDeckModal for TutorAiPage */}
+        <AddToDeckModal
+          isOpen={showAddDeckModal}
+          card={selectedCardForAdding}
+          savedDecks={savedDecks}
+          isLoading={decksLoading}
+          onAddToDeck={handleAddCardToDeck}
+          onClose={() => setShowAddDeckModal(false)}
+          currentDeckName={currentDeckName}
+        />
 
-                {/* Saved Decks */}
-                {savedDecks && savedDecks.length > 0 && (
-                  <>
-                    <div className="border-t border-slate-700/50 pt-3 mt-3">
-                      <p className="text-sm text-slate-400 mb-3">Or add to saved deck:</p>
-                    </div>
-                    {savedDecks.map((deck) => (
-                      <button 
-                        key={deck.id}
-                        onClick={() => handleAddCardToDeck(deck.id)}
-                        className="w-full btn-modern btn-modern-secondary btn-modern-sm text-left"
-                      >
-                        <div className="flex items-center space-x-3">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                          <span>{deck.name}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </>
-                )}
-
-                {(!savedDecks || savedDecks.length === 0) && (
-                  <p className="text-xs text-slate-500 text-center py-4">No other saved decks found.</p>
-                )}
-              </div>
-
-              <button 
-                onClick={handleCloseDeckModal}
-                className="w-full btn-modern btn-modern-outline btn-modern-md"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
+        {/* SelectDeckModal for TutorAiPage */}
+        <SelectDeckModal
+          isOpen={showSelectDeckModal}
+          savedDecks={savedDecks}
+          isLoading={decksLoading}
+          onSelect={handleSelectDeck}
+          onClose={() => setShowSelectDeckModal(false)}
+        />
       </div>
     </div>
   );

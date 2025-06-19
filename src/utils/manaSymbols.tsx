@@ -33,11 +33,12 @@ export const parseManaSymbols = (text: string | undefined): React.ReactNode => {
         }
       }
       
-      // Handle two-color hybrid mana e.g. {WU}, {UB}
-      if (symbolKey.length === 2 && símboloManaMap[symbolKey.charAt(0)] && símboloManaMap[symbolKey.charAt(1)]) {
-        const firstColor = symbolKey.charAt(0).toLowerCase();
-        const secondColor = symbolKey.charAt(1).toLowerCase();
-        // Ensure it's a valid color combination for ms-cost styling or specific hybrid classes if available
+      // Handle two-color hybrid mana e.g. {WU}, {UB}, and also {W/U}, {G/W}, etc.
+      // Accept both {GW} and {G/W} formats
+      const hybridMatch = symbolKey.match(/^([WUBRG])\/?([WUBRG])$/i);
+      if (hybridMatch) {
+        const firstColor = hybridMatch[1].toLowerCase();
+        const secondColor = hybridMatch[2].toLowerCase();
         return <i key={index} className={`ms ms-${firstColor}${secondColor} ms-cost`} />;
       }
 
