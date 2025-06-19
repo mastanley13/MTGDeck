@@ -533,21 +533,6 @@ const Navbar = () => {
                   <span>Home</span>
                 </div>
               </Link>
-              
-              <Link
-                to="/builder"
-                onClick={() => setIsMenuOpen(false)}
-                className={`block w-full p-3 rounded-xl transition-all duration-200 ${
-                  isActive('/builder')
-                    ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
-                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <span>Deck Builder</span>
-                </div>
-              </Link>
-              
               {isAuthenticated && (
                 <Link
                   to="/decks"
@@ -563,12 +548,25 @@ const Navbar = () => {
                   </div>
                 </Link>
               )}
-
+              
               {/* AI Tools section */}
               <div className="pt-2">
                 <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 px-3">
                   AI Tools
                 </div>
+                <Link
+                  to="/builder"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/builder')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>Deck Builder</span>
+                  </div>
+                </Link>
                 <Link
                   to="/commander-ai"
                   onClick={() => setIsMenuOpen(false)}
@@ -626,6 +624,32 @@ const Navbar = () => {
                 >
                   <div className="flex items-center space-x-3">
                     <span>How to Play</span>
+                  </div>
+                </Link>
+                <Link
+                  to="/affiliate"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/affiliate')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>Become an Affiliate</span>
+                  </div>
+                </Link>
+                <Link
+                  to="/contact"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/contact')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>Contact Us</span>
                   </div>
                 </Link>
               </div>
