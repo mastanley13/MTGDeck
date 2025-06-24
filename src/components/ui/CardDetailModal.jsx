@@ -299,25 +299,28 @@ const CardDetailModal = ({ card, onClose }) => {
           'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: 'o3-2025-04-16',
           messages: [{
+            role: 'system',
+            content: 'You are an expert Magic: The Gathering strategist specializing in Commander/EDH format. Provide structured, actionable strategic analysis.'
+          }, {
             role: 'user',
-            content: `Analyze this Magic: The Gathering card for Commander/EDH format. Consider its strategic value, common use cases, and synergies:
+            content: `Analyze ${card.name} for Commander format. Provide a concise strategic overview:
 
-Card Name: ${card.name}
+Card: ${card.name}
 Type: ${card.type_line}
 Mana Cost: ${card.mana_cost || 'N/A'}
-Oracle Text: ${card.oracle_text || 'N/A'}
-Color Identity: ${card.color_identity?.join('') || 'Colorless'}
+Text: ${card.oracle_text || 'N/A'}
 
-Please provide a concise strategic overview focusing on:
-1. Key strengths and potential weaknesses
-2. Notable synergies and combos
-3. Types of decks that commonly use this card
-4. Power level assessment for Commander format`
+Provide a brief analysis covering:
+- Primary role and strategy
+- Key strengths 
+- Common deck types that use this card
+- Power level assessment
+
+Keep response under 150 words total. Be direct and actionable.`
           }],
-          temperature: 0.7,
-          max_tokens: 500,
+          max_completion_tokens: 8000,
         }),
       });
 
@@ -326,11 +329,16 @@ Please provide a concise strategic overview focusing on:
       }
 
       const data = await response.json();
-      const overview = data.choices[0]?.message?.content;
-
+      let overview = data.choices[0]?.message?.content;
+      if (!overview && data.choices[0]?.text) {
+        overview = data.choices[0].text;
+      }
       if (overview) {
         setAiOverview(overview);
         aiOverviewCache.set(cacheKey, overview);
+      } else {
+        console.error('No AI overview found. Full choices:', data.choices);
+        setAiOverview('Failed to generate AI overview. Please try again later.');
       }
     } catch (error) {
       console.error('Error fetching AI overview:', error);

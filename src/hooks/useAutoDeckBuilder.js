@@ -3,6 +3,162 @@ import { useDeck } from '../context/DeckContext';
 import { getOpenAIApiKey } from '../utils/openaiAPI';
 import { useSubscription } from '../context/SubscriptionContext';
 import { validateColorIdentity } from '../utils/deckValidator';
+import { validateDeckWithAI } from '../services/deckValidationService.js';
+import { generateSmartReplacements, applySmartReplacements } from '../services/smartReplacementService.js';
+
+// Enhanced JSON parsing to handle comments from o3 model
+const parseJSONWithComments = (jsonString) => {
+  // Strategy 1: Try with minimal cleaning (most conservative)
+  try {
+    let cleanJson = jsonString;
+    
+    // Only remove markdown code fences and trailing commas
+    cleanJson = cleanJson.replace(/```json\s*/g, '');
+    cleanJson = cleanJson.replace(/```\s*/g, '');
+    cleanJson = cleanJson.replace(/,(\s*[}\]])/g, '$1');
+    cleanJson = cleanJson.trim();
+    
+    return JSON.parse(cleanJson);
+  } catch (error) {
+    console.log('Strategy 1 (conservative) failed, trying strategy 2...');
+  }
+  
+  // Strategy 2: Extract just the JSON array
+  try {
+    console.log('Attempting to extract JSON array from response...');
+    
+    const arrayMatch = jsonString.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      let extractedJson = arrayMatch[0];
+      
+      // Clean up the extracted JSON - only trailing commas
+      extractedJson = extractedJson.replace(/,(\s*[}\]])/g, '$1');
+      
+      return JSON.parse(extractedJson);
+    } else {
+      throw new Error('No JSON array found in response');
+    }
+  } catch (error) {
+    console.log('Strategy 2 (array extraction) failed, trying strategy 3...');
+  }
+  
+  // Strategy 3: Try with very careful comment removal (last resort)
+  try {
+    let cleanJson = jsonString;
+    
+    // Remove markdown code fences
+    cleanJson = cleanJson.replace(/```json\s*/g, '');
+    cleanJson = cleanJson.replace(/```\s*/g, '');
+    
+    // Only remove C-style comments /* ... */ (safer than line comments)
+    cleanJson = cleanJson.replace(/\/\*[\s\S]*?\*\//g, '');
+    
+    // Remove trailing commas
+    cleanJson = cleanJson.replace(/,(\s*[}\]])/g, '$1');
+    
+    // Clean up extra whitespace
+    cleanJson = cleanJson.trim();
+    
+    return JSON.parse(cleanJson);
+  } catch (error) {
+    console.error('All JSON parsing strategies failed:', error);
+    console.error('Original string length:', jsonString.length);
+    console.error('Original string preview:', jsonString.substring(0, 500) + '...');
+    
+    throw new Error('Failed to parse deck list from AI response');
+  }
+};
+
+// Commander format banned cards list
+const commanderBannedCards = [
+  'Ancestral Recall',
+  'Balance',
+  'Biorhythm',
+  'Black Lotus',
+  'Braids, Cabal Minion',
+  'Chaos Orb',
+  'Coalition Victory',
+  'Emrakul, the Aeons Torn',
+  'Erayo, Soratami Ascendant',
+  'Falling Star',
+  'Fastbond',
+  'Flash',
+  'Gifts Ungiven',
+  'Griselbrand',
+  'Hullbreacher',
+  'Iona, Shield of Emeria',
+  'Karakas',
+  'Leovold, Emissary of Trest',
+  'Library of Alexandria',
+  'Limited Resources',
+  'Lutri, the Spellchaser',
+  'Mana Crypt',
+  'Mox Emerald',
+  'Mox Jet',
+  'Mox Pearl',
+  'Mox Ruby',
+  'Mox Sapphire',
+  'Painter\'s Servant',
+  'Panoptic Mirror',
+  'Paradox Engine',
+  'Primeval Titan',
+  'Prophet of Kruphix',
+  'Recurring Nightmare',
+  'Rofellos, Llanowar Emissary',
+  'Shahrazad',
+  'Sundering Titan',
+  'Sway of the Stars',
+  'Sylvan Primordial',
+  'Time Vault',
+  'Time Walk',
+  'Tinker',
+  'Tolarian Academy',
+  'Trade Secrets',
+  'Upheaval',
+  'Worldfire',
+  'Yawgmoth\'s Bargain'
+];
+
+// Check if a card is legal in Commander format
+const isLegalInCommander = (cardName) => {
+  return !commanderBannedCards.some(banned => 
+    banned.toLowerCase() === cardName.toLowerCase()
+  );
+};
+
+// Validate card color identity against commander
+const validateCardColorIdentity = (cardName, commanderColorIdentity) => {
+  // Known problematic cards that violate color identity
+  const knownViolations = {
+    'Raugrin Triome': ['R', 'U', 'W'],
+    'Talisman of Dominance': ['B', 'U'],
+    'Enthusiastic Mechanaut': ['R', 'U'],
+    'Savai Triome': ['R', 'W', 'B'],
+    'Zagoth Triome': ['B', 'G', 'U'],
+    'Ketria Triome': ['G', 'U', 'R'],
+    'Indatha Triome': ['W', 'B', 'G'],
+    'Talisman of Creativity': ['U', 'R'],
+    'Talisman of Curiosity': ['G', 'U'],
+    'Talisman of Hierarchy': ['W', 'B'],
+    'Talisman of Impulse': ['R', 'G'],
+    'Talisman of Indulgence': ['B', 'R'],
+    'Talisman of Progress': ['W', 'U'],
+    'Talisman of Resilience': ['B', 'G'],
+    'Talisman of Unity': ['G', 'W'],
+    'Talisman of Conviction': ['R', 'W']
+  };
+  
+  if (knownViolations[cardName]) {
+    const cardColors = knownViolations[cardName];
+    const isValid = cardColors.every(color => commanderColorIdentity.includes(color));
+    if (!isValid) {
+      console.warn(`Color identity violation detected: ${cardName} requires [${cardColors.join(', ')}] but commander only allows [${commanderColorIdentity.join(', ')}]`);
+    }
+    return isValid;
+  }
+  
+  return true; // Unknown cards pass initial check
+};
 
 /**
  * Hook for automatically building complete decks based on a commander
@@ -12,6 +168,13 @@ export const useAutoDeckBuilder = () => {
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
   const [paywallBlocked, setPaywallBlocked] = useState(false);
+  
+  // New state for progressive UI
+  const [buildingStage, setBuildingStage] = useState('');
+  const [currentCards, setCurrentCards] = useState([]);
+  const [currentViolations, setCurrentViolations] = useState([]);
+  const [appliedFixes, setAppliedFixes] = useState([]);
+
   const { canMakeAIRequest, incrementAIRequests, isPremium } = useSubscription();
   const deckContext = useDeck(); // Use the whole context object
   const { 
@@ -137,13 +300,13 @@ export const useAutoDeckBuilder = () => {
         return {
           ...baseRules,
           prompt: `
-            Keep the estimated deck cost under $250.
+            Keep the estimated deck cost under $150.
             Minimize expensive lands; favor basics and budget alternatives.
             Focus on efficient budget staples and synergistic commons/uncommons.
             Include budget-friendly removal and interaction options.
             Look for cost-effective alternatives to expensive staples.
           `,
-          maxBudget: 250,
+          maxBudget: 150,
           targetBracket: { min: 1, max: 3 },
           maxGameChangers: 2, // Limited by budget naturally
           cardDistribution: {
@@ -231,7 +394,7 @@ export const useAutoDeckBuilder = () => {
   };
 
   /**
-   * Build a complete competitive deck based on the selected commander
+   * Build a complete deck using the three-stage pipeline
    * @param {string} deckStyle - The desired deck style/strategy
    */
   const buildCompleteDeck = async (deckStyle = 'competitive') => {
@@ -240,14 +403,13 @@ export const useAutoDeckBuilder = () => {
       return false;
     }
 
-    // Check API key availability
+    // Check API key and paywall limits
     const apiKey = getOpenAIApiKey();
     if (!apiKey) {
-      setError('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
+      setError('OpenAI API key is not configured.');
       return false;
     }
 
-    // Check paywall limits before making multiple AI requests
     if (!isPremium && !canMakeAIRequest) {
       setPaywallBlocked(true);
       setError('AI request limit reached. Upgrade to Premium for unlimited deck building.');
@@ -258,469 +420,572 @@ export const useAutoDeckBuilder = () => {
       setIsLoading(true);
       setError(null);
       setPaywallBlocked(false);
-      setProgress(10);
       
-      // Increment AI request counter for the main deck building request
       if (!isPremium) {
         incrementAIRequests();
       }
       
-      // First clear the deck except for the commander
       resetDeckExceptCommander();
       
-      // Get archetype-specific rules
+      // STAGE 1: High-Quality Initial Generation with o3
+      setBuildingStage('Generating initial deck structure...');
+      setProgress(10);
+      console.log('Stage 1: Starting comprehensive generation with o3');
+      
       const archetypeRules = getArchetypeRules(deckStyle);
+      const stageOneStart = Date.now();
+      const initialCards = await generateInitialDeckWithO3(commander, deckStyle, archetypeRules);
+      console.log(`Stage 1 completed in ${Date.now() - stageOneStart}ms`);
       
-      // Analyze commander to better understand its strategy
-      const commanderAnalysis = await analyzeCommander(commander, deckStyle);
-      setProgress(25);
-
-      // Create a prompt for the AI to build a deck
-      const { min: minLands, max: maxLands } = archetypeRules.cardDistribution.lands;
-      const { min: minRamp, max: maxRamp } = archetypeRules.cardDistribution.ramp;
-      const { min: minDraw, max: maxDraw } = archetypeRules.cardDistribution.cardDraw;
-      const { min: minRemoval, max: maxRemoval } = archetypeRules.cardDistribution.removal;
-      const { min: minWipes, max: maxWipes } = archetypeRules.cardDistribution.boardWipes;
-      const { min: minProtection, max: maxProtection } = archetypeRules.cardDistribution.protection;
-      const { min: minStrategy, max: maxStrategy } = archetypeRules.cardDistribution.strategy;
-
-      const prompt = `
-        Create a COMMANDER deck for ${commander.name} with EXACTLY 99 cards (NOT including the commander).
-        
-        Commander: ${commander.name} (${commander.type_line || ''})
-        Commander analysis: ${commanderAnalysis}
-        
-        Color identity: ${commander.color_identity?.join('') || ''}
-        Deck style: ${deckStyle}
-        
-        ${archetypeRules.prompt}
-        
-        IMPORTANT RULES:
-        1. The deck MUST contain EXACTLY 99 cards TOTAL. DO NOT include the commander in this count.
-        2. All cards must be within the commander's color identity (${commander.color_identity?.join('') || ''})
-        3. Follow Commander format rules (singleton, color identity restrictions)
-        4. Ensure a proper mana curve with adequate low-cost cards
-        ${archetypeRules.maxBudget !== Infinity ? `5. Keep total deck cost under $${archetypeRules.maxBudget}` : ''}
-        
-        Card distribution:
-        - ${minLands}-${maxLands} lands (including non-basics appropriate for the color identity)
-        - ${minRamp}-${maxRamp} ramp spells (mana rocks, dorks, land search)
-        - ${minDraw}-${maxDraw} card draw/advantage sources
-        - ${minRemoval}-${maxRemoval} targeted removal spells
-        - ${minWipes}-${maxWipes} board wipes/mass removal
-        - ${minProtection}-${maxProtection} protection/interaction cards
-        - ${minStrategy}-${maxStrategy} cards that directly support the commander's strategy
-        
-        Format response as a JSON array with EXACTLY 99 card objects with this structure:
-        {
-          "name": "Exact Card Name",
-          "quantity": 1,
-          "category": "Land, Ramp, Card Draw, Removal, Board Wipe, Protection, Strategy, Utility, Finisher"
-        }
-        
-        Basic lands can have quantity > 1, all other cards must have quantity of 1.
-        DOUBLE-CHECK your response to make sure it contains EXACTLY 99 cards total.
-        COUNT all quantities to ensure the TOTAL is EXACTLY 99 cards.
-      `;
-      
-      // Call OpenAI API with fallback models
-      const API_URL = 'https://api.openai.com/v1/chat/completions';
+      setCurrentCards(initialCards);
       setProgress(35);
       
-      const models = ['gpt-4o', 'gpt-4', 'gpt-3.5-turbo'];
-      let response;
-      let lastError;
+      // STAGE 2: AI Validation Scanner with o3
+      setBuildingStage('Scanning for validation issues...');
+      console.log('Stage 2: Starting validation scan with o3');
       
-      for (const model of models) {
-        try {
-          console.log(`Trying OpenAI model: ${model}`);
-          response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${getOpenAIApiKey()}`
-            },
-            body: JSON.stringify({
-              model: model,
-              messages: [
-                { 
-                  role: 'system', 
-                  content: 'You are a Magic: The Gathering deck building expert specializing in optimized Commander decks. You have deep knowledge of all MTG cards, their synergies, and competitive deck construction principles. Your most important job is to create EXACTLY 99 cards for a Commander deck.'
-                },
-                { 
-                  role: 'user', 
-                  content: prompt 
-                }
-              ],
-              temperature: 0.7,
-              max_tokens: 4000
-            })
-          });
-          
-          if (response.ok) {
-            console.log(`Successfully using model: ${model}`);
-            break;
-          } else {
-            const errorData = await response.json();
-            console.warn(`Model ${model} failed:`, errorData);
-            lastError = errorData;
-          }
-        } catch (error) {
-          console.warn(`Model ${model} failed with error:`, error);
-          lastError = error;
-        }
-      }
+      const stageTwoStart = Date.now();
+      const validationResult = await validateDeckWithAI(initialCards, commander);
+      console.log(`Stage 2 completed in ${Date.now() - stageTwoStart}ms`);
       
-      // Check if we got a successful response
-      if (!response || !response.ok) {
-        console.error('All OpenAI models failed. Last error:', lastError);
-        throw new Error(`OpenAI API error: ${lastError?.error?.message || lastError?.message || 'All models failed'}`);
-      }
-      
-      const data = await response.json();
-      console.log('OpenAI API Response:', data); // Debug logging
+      setCurrentViolations(validationResult.violations || []);
       setProgress(60);
       
-      if (data.choices && data.choices[0] && data.choices[0].message) {
-        // Parse the message content as JSON and add cards to deck
-        const content = data.choices[0].message.content;
+      let finalCardList = initialCards;
+      
+      // STAGE 3: Smart Replacement with o3 (only if violations found)
+      if (validationResult.violations && validationResult.violations.length > 0) {
+        setBuildingStage(`Fixing ${validationResult.violations.length} validation issues...`);
+        console.log(`Stage 3: Fixing ${validationResult.violations.length} violations with o3`);
         
-        // Extract JSON from the response
-        const jsonMatch = content.match(/\[[\s\S]*\]/);
-        if (!jsonMatch) {
-          throw new Error('Could not parse card list from response');
+        const stageThreeStart = Date.now();
+        
+        // Convert violations to problematic cards format
+        const problematicCards = validationResult.violations.map(violation => ({
+          name: violation.card || violation.cardName,
+          category: violation.replacement_category || 'Unknown',
+          cmc: 2, // Default CMC, could be improved with actual card data
+          violation_reason: violation.reason || violation.message
+        }));
+        
+        const replacements = await generateSmartReplacements(
+          problematicCards, 
+          commander, 
+          initialCards
+        );
+        
+        const fixedCards = applySmartReplacements(initialCards, replacements);
+        console.log(`Stage 3 completed in ${Date.now() - stageThreeStart}ms`);
+        
+        // Additional singleton validation after replacements
+        const singletonValidatedCards = validateAndFixSingletonViolations(fixedCards);
+        if (singletonValidatedCards.length !== fixedCards.length) {
+          console.log(`Fixed ${fixedCards.length - singletonValidatedCards.length} additional singleton violations`);
         }
         
-        let cardList;
-        try {
-          cardList = JSON.parse(jsonMatch[0]);
-        } catch (parseError) {
-          console.error('Failed to parse JSON response:', parseError);
-          throw new Error('Failed to parse card data');
-        }
+        setAppliedFixes(replacements?.replacements || []);
+        setCurrentCards(singletonValidatedCards);
+        finalCardList = singletonValidatedCards;
+        setProgress(85);
         
-        // Verify card count
-        const totalCards = cardList.reduce((sum, card) => sum + (card.quantity || 1), 0);
-        console.log(`AI suggested ${cardList.length} unique cards (${totalCards} total with quantities)`);
-        
-        if (totalCards !== 99) {
-          console.warn(`Card count mismatch: AI suggested ${totalCards} cards instead of 99`);
+        // Optional final validation pass for critical violations
+        if (validationResult.summary && validationResult.summary.critical > 0) {
+          setBuildingStage('Final validation check...');
+          const finalValidation = await validateDeckWithAI(fixedCards, commander);
           
-          // Adjust the card list to have exactly 99 cards
-          if (totalCards > 99) {
-            cardList = trimCardList(cardList, 99);
-          } else if (totalCards < 99) {
-            cardList = addBasicLands(cardList, 99 - totalCards, commander.color_identity);
-          }
-          
-          // Double-check our fix worked
-          const adjustedCount = cardList.reduce((sum, card) => sum + (card.quantity || 1), 0);
-          console.log(`Adjusted card count: ${adjustedCount}`);
-          
-          if (adjustedCount !== 99) {
-            console.error(`Failed to adjust card count to 99, got ${adjustedCount}`);
-            // As a last resort, forcibly add or remove cards
-            if (adjustedCount < 99) {
-              const forceBasicLands = generateBasicLands(commander.color_identity, 99 - adjustedCount);
-              cardList = [...cardList, ...forceBasicLands];
-            } else if (adjustedCount > 99) {
-              // Sort by least important first
-              cardList.sort((a, b) => {
-                if (a.category.toLowerCase().includes('land') && !b.category.toLowerCase().includes('land')) 
-                  return 1;
-                if (!a.category.toLowerCase().includes('land') && b.category.toLowerCase().includes('land')) 
-                  return -1;
-                return 0;
-              });
-              // Trim to exactly 99 cards
-              let currentTotal = 0;
-              cardList = cardList.filter(card => {
-                const qty = card.quantity || 1;
-                if (currentTotal + qty <= 99) {
-                  currentTotal += qty;
-                  return true;
-                }
-                return false;
-              });
-            }
+          if (finalValidation.violations && finalValidation.violations.length > 0) {
+            console.warn('Some violations remain after smart replacement:', finalValidation.violations);
           }
         }
-        
-        // Validate color identity before adding cards to deck
-        console.log('Validating color identity for AI-generated deck...');
-        const validationResult = validateColorIdentity(commander, cardList);
-        
-        if (!validationResult.valid && validationResult.violations.length > 0) {
-          console.warn(`Found ${validationResult.violations.length} color identity violations:`, validationResult.violations);
-          
-          // Filter out violating cards
-          const validCards = cardList.filter(card => {
-            const cardColors = card.color_identity || [];
-            const commanderColors = commander.color_identity || [];
-            return cardColors.every(color => commanderColors.includes(color));
-          });
-          
-          const removedCount = cardList.length - validCards.length;
-          if (removedCount > 0) {
-            console.log(`Removed ${removedCount} cards due to color identity violations`);
-            cardList = validCards;
-            
-            // Recalculate total and add basic lands if needed
-            const newTotal = cardList.reduce((sum, card) => sum + (card.quantity || 1), 0);
-            if (newTotal < 99) {
-              const shortfall = 99 - newTotal;
-              console.log(`Adding ${shortfall} basic lands to compensate for removed cards`);
-              cardList = addBasicLands(cardList, shortfall, commander.color_identity);
-            }
-          }
-        } else {
-          console.log('All AI-suggested cards pass color identity validation');
-        }
-        
-        // Fetch actual card data and add to deck
-        setProgress(70);
-        await addCardsFromList(cardList, setProgress, deckStyle);
-        
-        // Make a final check after all cards are added
-        setTimeout(() => {
-          const finalCardCount = getCurrentNonCommanderCardCount(); // Use ref-based count
-          if (finalCardCount !== 99) {
-            console.warn(`After processing, ended up with ${finalCardCount} cards instead of 99 (expected 99).`);
-            // setError might be too strong if DeckContext cap worked, but AI suggested wrong number initially.
-            // setError(`Generated ${finalCardCount} cards instead of 99. DeckContext cap might have intervened.`);
-          } else {
-            console.log("Successfully created a 99-card Commander deck (as per current context count)!");
-          }
-        }, 1000); // Give time for state to update
-        
-        return true; // Successful completion
       } else {
-        console.error('Unexpected API response structure:', data);
-        throw new Error(`Invalid response from API. Expected choices array but got: ${JSON.stringify(data).substring(0, 200)}...`);
+        console.log('Stage 3: No violations found, skipping replacement stage');
       }
+      
+      setProgress(90);
+      
+      // STAGE 4: Fetch Card Data and Build Final Deck
+      setBuildingStage('Fetching card data and building deck...');
+      console.log('Stage 4: Building final deck');
+      
+      const stageFourStart = Date.now();
+      const cardDataMap = await fetchCardDataBatch(finalCardList);
+      await addCardsFromBatchData(finalCardList, cardDataMap, appliedFixes);
+      console.log(`Stage 4 completed in ${Date.now() - stageFourStart}ms`);
+      
+      setBuildingStage('Deck complete!');
+      setProgress(100);
+      
+      console.log('Three-stage deck building completed successfully');
+      return true;
+      
     } catch (error) {
-      console.error('Error building deck:', error);
+      console.error('Three-stage deck building error:', error);
       setError(error.message || 'Failed to build deck');
       return false;
     } finally {
       setIsLoading(false);
+      setBuildingStage('');
       setProgress(0);
+      setCurrentCards([]);
+      setCurrentViolations([]);
+      setAppliedFixes([]);
     }
   };
 
   /**
-   * Remove excess cards to bring the deck down to the target count
-   * @param {number} excessCount - Number of cards to remove
+   * Generate a complete deck using AI based on commander and style
+   * @param {Object} commander - Commander card object
+   * @param {string} deckStyle - Desired deck style (competitive, casual, budget, etc.)
+   * @param {Object} archetypeRules - Archetype-specific rules and constraints
+   * @returns {Array} - Array of card objects with names and categories
    */
-  const removeExcessCards = async (excessCount, currentActualCards) => {
-    // Get current cards (excluding commander)
-    const cardsToRemoveFrom = [...currentActualCards]; // Use passed cards
-    let remainingToRemove = excessCount;
+  const generateDeckWithAI = async (commander, deckStyle, archetypeRules) => {
+    if (!commander) {
+      throw new Error('Commander is required for AI deck generation');
+    }
+
+    const apiKey = getOpenAIApiKey();
+    if (!apiKey) {
+      throw new Error('OpenAI API key is not configured');
+    }
+
+    // Build the prompt based on archetype rules
+    const { prompt: archetypePrompt, cardDistribution, maxBudget, targetBracket } = archetypeRules;
     
-    if (cardsToRemoveFrom.length === 0) { // Changed from currentCards.length <=1 as commander is not in this list
-      console.warn("No cards to remove for removeExcessCards.");
-      return;
+    const budgetConstraint = maxBudget !== Infinity ? 
+      `Keep the total deck cost under $${maxBudget}.` : '';
+
+    const bracketConstraint = `Target power level should be between bracket ${targetBracket.min}-${targetBracket.max} (1=casual, 5=cEDH).`;
+
+    // Format card distribution requirements
+    const distributionRequirements = Object.entries(cardDistribution)
+      .map(([category, { min, max }]) => `${category}: ${min}-${max} cards`)
+      .join(', ');
+
+    const prompt = `You are an expert Magic: The Gathering deck builder specialized in the Commander format.
+
+Build a complete 99-card Commander deck with the following specifications:
+
+Commander: ${commander.name}
+Color Identity: ${commander.color_identity?.join('') || 'Colorless'}
+Commander Type: ${commander.type_line}
+Commander Text: ${commander.oracle_text || 'No text available'}
+Deck Style: ${deckStyle}
+
+Requirements:
+- Exactly 99 cards (excluding the commander)
+- All cards must be legal in Commander format
+- All cards must fit within the commander's color identity
+- ${bracketConstraint}
+- ${budgetConstraint}
+- Card distribution target: ${distributionRequirements}
+
+${archetypePrompt}
+
+Additional Guidelines:
+- Include staple cards appropriate for the power level
+- Ensure proper mana base with appropriate lands
+- Include ramp, card draw, removal, and protection
+- Focus on synergies with the commander's abilities and strategy
+- All card names must be spelled exactly as they appear on official Magic cards
+
+Format your response as a JSON array of objects with these properties:
+- name: The exact card name (be very precise with spelling)
+- category: One of: "Lands", "Ramp", "Card Draw", "Removal", "Board Wipes", "Protection", "Strategy", "Utility", "Finisher"
+
+Only include the JSON array in your response, nothing else. Ensure exactly 99 cards are included.`;
+
+    try {
+      const API_URL = 'https://api.openai.com/v1/chat/completions';
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'o3-2025-04-16',
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are an expert Magic: The Gathering deck builder with comprehensive knowledge of all cards, formats, and optimal deck construction strategies for Commander format.'
+            },
+            { role: 'user', content: prompt }
+          ],
+          max_completion_tokens: 8000
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      const responseText = data.choices?.[0]?.message?.content;
+
+      if (!responseText) {
+        throw new Error('No response received from OpenAI');
+      }
+
+      // Parse the JSON response using the enhanced parser
+      try {
+        // Extract JSON from the response (handle markdown backticks)
+        const jsonMatch = responseText.match(/\[[\s\S]*\]/) || 
+                          responseText.match(/\{[\s\S]*\}/);
+        
+        const jsonText = jsonMatch ? jsonMatch[0] : responseText;
+        const cardList = parseJSONWithComments(jsonText);
+
+        // Validate the response
+        if (!Array.isArray(cardList)) {
+          throw new Error('AI response is not an array');
+        }
+
+        if (cardList.length === 0) {
+          throw new Error('AI returned empty card list');
+        }
+
+        // Validate each card entry
+        const validatedCards = cardList.filter(card => {
+          if (!card.name || typeof card.name !== 'string') {
+            console.warn('Invalid card entry (missing name):', card);
+            return false;
+          }
+          
+          // Check for banned cards
+          if (!isLegalInCommander(card.name)) {
+            console.warn(`Skipping banned card: ${card.name}`);
+            return false;
+          }
+
+          // Check color identity (basic validation)
+          if (!validateCardColorIdentity(card.name, commander.color_identity)) {
+            console.warn(`Color identity violation: ${card.name}`);
+            return false;
+          }
+
+          return true;
+        });
+
+        console.log(`AI generated ${cardList.length} cards, ${validatedCards.length} passed validation`);
+
+        if (validatedCards.length < 50) {
+          throw new Error(`Too few valid cards generated (${validatedCards.length}). Please try again.`);
+        }
+
+        return validatedCards;
+
+      } catch (parseError) {
+        console.error('Error parsing AI deck response:', parseError);
+        console.error('Raw response:', responseText);
+        throw new Error('Failed to parse deck list from AI response');
+      }
+
+    } catch (error) {
+      console.error('Error generating deck with AI:', error);
+      if (error.message.includes('API key')) {
+        throw new Error('AI service configuration error');
+      }
+      throw error;
+    }
+  };
+
+  /**
+   * Generate initial deck quickly using AI
+   */
+  const generateInitialDeckFast = async (commander, deckStyle, archetypeRules) => {
+    try {
+      // Generate deck without caching
+      const cards = await generateDeckWithAI(commander, deckStyle, archetypeRules);
+      return cards;
+    } catch (error) {
+      console.error('Failed to generate initial deck:', error);
+      throw error;
+    }
+  };
+
+  /**
+   * Fetch card data with fallback to individual requests
+   * @param {Array} cardList - List of cards to fetch
+   * @returns {Map} Map of card names to card data
+   */
+  const fetchCardDataBatch = async (cardList) => {
+    const cardMap = new Map();
+    
+    // First try batch fetching
+    try {
+      console.log('Attempting batch fetch for', cardList.length, 'cards...');
+      const batchSize = 75; // Scryfall's limit
+      
+      for (let i = 0; i < cardList.length; i += batchSize) {
+        const batch = cardList.slice(i, i + batchSize);
+        
+        const response = await fetch('https://api.scryfall.com/cards/collection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            identifiers: batch.map(card => ({ name: card.name }))
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.data) {
+            data.data.forEach(card => {
+              cardMap.set(card.name, card);
+            });
+          }
+          } else {
+          throw new Error(`Batch request failed: ${response.status}`);
+        }
+        
+        // Small delay between batches
+        if (i + batchSize < cardList.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      console.log(`Batch fetch successful: ${cardMap.size} cards`);
+      return cardMap;
+      
+    } catch (error) {
+      console.warn('Batch fetch failed, falling back to individual requests:', error.message);
+      
+      // Fallback to individual card fetching
+      return await fetchCardsIndividually(cardList);
+    }
+  };
+
+  /**
+   * Fetch cards individually as fallback
+   * @param {Array} cardList - List of cards to fetch
+   * @returns {Map} Map of card names to card data
+   */
+  const fetchCardsIndividually = async (cardList) => {
+    const cardMap = new Map();
+    const { searchCardByName } = await import('../utils/scryfallAPI');
+    
+    console.log('Fetching cards individually...');
+    
+    for (let i = 0; i < cardList.length; i++) {
+      const cardEntry = cardList[i];
+      
+      try {
+        const result = await searchCardByName(cardEntry.name);
+        
+        if (result.data && result.data.length > 0) {
+          const card = result.data[0];
+          cardMap.set(cardEntry.name, card);
+    } else {
+          console.warn(`No data found for card: ${cardEntry.name}`);
+          // Create a minimal card object for basic lands and common cards
+          const basicCard = createFallbackCard(cardEntry.name, cardEntry.category);
+          if (basicCard) {
+            cardMap.set(cardEntry.name, basicCard);
+          }
+        }
+        
+        // Rate limiting - delay between requests
+        if (i < cardList.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+      } catch (error) {
+        console.warn(`Failed to fetch ${cardEntry.name}:`, error.message);
+        // Create a fallback card for essential cards
+        const basicCard = createFallbackCard(cardEntry.name, cardEntry.category);
+        if (basicCard) {
+          cardMap.set(cardEntry.name, basicCard);
+        }
+      }
     }
     
-    // First try to find non-lands to remove
-    const nonLands = cardsToRemoveFrom.filter(card => 
-      !card.type_line?.toLowerCase().includes('land') && 
-      card.id !== commander.id // commander should not be in currentActualCards anyway if it's just the 99
-    );
+    console.log(`Individual fetch complete: ${cardMap.size} cards`);
+    return cardMap;
+  };
+  
+  /**
+   * Create a minimal fallback card object for essential cards
+   * @param {string} name - Card name
+   * @param {string} category - Card category
+   * @returns {Object|null} Basic card object or null
+   */
+  const createFallbackCard = (name, category) => {
+    // Only create fallbacks for essential cards
+    const essentialCards = {
+      'Sol Ring': { 
+        mana_cost: '{1}', 
+        type_line: 'Artifact', 
+        colors: [],
+        color_identity: [],
+        cmc: 1
+      },
+      'Command Tower': { 
+        mana_cost: '', 
+        type_line: 'Land', 
+        colors: [],
+        color_identity: [],
+        cmc: 0
+      },
+      'Arcane Signet': { 
+        mana_cost: '{2}', 
+        type_line: 'Artifact', 
+        colors: [],
+        color_identity: [],
+        cmc: 2
+      },
+      'Plains': { 
+        mana_cost: '', 
+        type_line: 'Basic Land — Plains', 
+        colors: [],
+        color_identity: ['W'],
+        cmc: 0
+      },
+      'Island': { 
+        mana_cost: '', 
+        type_line: 'Basic Land — Island', 
+        colors: [],
+        color_identity: ['U'],
+        cmc: 0
+      },
+      'Swamp': { 
+        mana_cost: '', 
+        type_line: 'Basic Land — Swamp', 
+        colors: [],
+        color_identity: ['B'],
+        cmc: 0
+      },
+      'Mountain': { 
+        mana_cost: '', 
+        type_line: 'Basic Land — Mountain', 
+        colors: [],
+        color_identity: ['R'],
+        cmc: 0
+      },
+      'Forest': { 
+        mana_cost: '', 
+        type_line: 'Basic Land — Forest', 
+        colors: [],
+        color_identity: ['G'],
+        cmc: 0
+      }
+    };
     
-    // Then lands as fallback
-    const lands = cardsToRemoveFrom.filter(card => 
-      card.type_line?.toLowerCase().includes('land') && 
-      !card.type_line?.toLowerCase().includes('legendary')
-    );
+    const cardData = essentialCards[name];
+    if (cardData) {
+      return {
+        id: `fallback-${name.toLowerCase().replace(/\s+/g, '-')}`,
+        name: name,
+        ...cardData,
+        oracle_text: `Fallback card data for ${name}`,
+        prices: { usd: '0.00' },
+        legalities: { commander: 'legal' },
+        set: 'fallback',
+        set_name: 'Fallback Set',
+        rarity: 'common',
+        ai_category: category,
+        _fallback: true
+      };
+    }
     
-    // Remove cards
-    if (nonLands.length >= remainingToRemove) {
-      // Remove non-lands first
-      for (let i = 0; i < remainingToRemove; i++) {
-        if (i < nonLands.length) {
-          if (nonLands[i].id !== commander?.id) { // commander might be null
-            await removeSingleCard(nonLands[i].id);
+    return null;
+  };
+  
+  /**
+   * Add cards to deck using pre-fetched data
+   * @param {Array} cardList - List of cards to add
+   * @param {Map} cardDataMap - Pre-fetched card data
+   * @param {Array} appliedFixes - Applied fixes for user feedback
+   */
+  const addCardsFromBatchData = async (cardList, cardDataMap, appliedFixes = []) => {
+    resetDeckExceptCommander();
+    
+    let addedCount = 0;
+    const targetCount = 99;
+    
+    console.log(`Starting deck assembly with ${cardList.length} cards and ${cardDataMap.size} fetched data entries`);
+    
+    for (const cardEntry of cardList) {
+      if (addedCount >= targetCount) break;
+      
+      const cardData = cardDataMap.get(cardEntry.name);
+      if (cardData) {
+        try {
+          // Add metadata from our processing
+          const enhancedCard = {
+            ...cardData,
+            ai_category: cardEntry.category,
+            ai_replacement: appliedFixes.some(fix => fix.replacement === cardEntry.name)
+          };
+          
+          addCard(enhancedCard);
+          addedCount++;
+          
+          if (addedCount % 10 === 0) {
+            console.log(`Added ${addedCount} cards so far...`);
+          }
+        } catch (error) {
+          if (error.message?.includes('quota exceeded')) {
+            addCard(cardData, false); // Skip caching
+            addedCount++;
+          } else {
+            console.warn(`Failed to add ${cardEntry.name}:`, error);
+          }
+        }
+      } else {
+        console.warn(`No data found for card: ${cardEntry.name}`);
+      }
+    }
+    
+    console.log(`Successfully added ${addedCount} cards from generated list`);
+    
+    // Fill remaining slots with basic lands if needed
+    if (addedCount < 99) {
+      const missingCount = 99 - addedCount;
+      console.log(`Adding ${missingCount} basic lands to complete deck`);
+      
+      try {
+        const basicLands = await fetchBasicLands(commander.color_identity, missingCount);
+        for (const land of basicLands) {
+          if (getCurrentNonCommanderCardCount() < 99) {
+            try {
+              addCard(land, false); // Skip caching for basic lands
+              addedCount++;
+            } catch (error) {
+              console.error('Error adding basic land:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch basic lands, using fallback generation:', error);
+        const basicLands = generateBasicLands(commander.color_identity, missingCount);
+        for (const land of basicLands) {
+          if (getCurrentNonCommanderCardCount() < 99) {
+            try {
+              addCard(land, false); // Skip caching for basic lands
+              addedCount++;
+            } catch (error) {
+              console.error('Error adding fallback basic land:', error);
+            }
           }
         }
       }
-    } else {
-      // Remove all non-lands first
-      for (let i = 0; i < nonLands.length; i++) {
-        if (nonLands[i].id !== commander?.id) {
-          await removeSingleCard(nonLands[i].id);
-        }
-      }
-      
-      // Then remove lands to reach the target
-      remainingToRemove -= nonLands.length;
-      for (let i = 0; i < remainingToRemove; i++) {
-        if (i < lands.length) {
-          await removeSingleCard(lands[i].id);
-        }
-      }
+    }
+    
+    const finalCount = getCurrentNonCommanderCardCount();
+    console.log(`Deck assembly complete: ${finalCount} cards added (target: 99)`);
+    
+    if (finalCount < 99) {
+      console.warn(`Warning: Deck only has ${finalCount} cards instead of 99`);
     }
   };
   
   /**
-   * Helper function to remove a card from the deck
-   * @param {string} cardId - Card ID to remove
-   */
-  const removeSingleCard = async (cardId) => {
-    return new Promise(resolve => {
-      try {
-        removeCard(cardId); // Uses removeCard from deckContext destructuring
-        resolve();
-      } catch (error) {
-        console.error('Error removing card:', error);
-        resolve(); // Continue despite errors
-      }
-    });
-  };
-  
-  /**
-   * Trim a card list to the target count
-   * @param {Array} cardList - List of cards
-   * @param {number} targetCount - Target number of cards
-   * @returns {Array} - Trimmed card list
-   */
-  const trimCardList = (cardList, targetCount) => {
-    let currentTotal = cardList.reduce((sum, card) => sum + (card.quantity || 1), 0);
-    if (currentTotal <= targetCount) return cardList;
-    
-    // First, separate cards into categories
-    const lands = cardList.filter(card => card.category.toLowerCase().includes('land'));
-    const nonLands = cardList.filter(card => !card.category.toLowerCase().includes('land'));
-    
-    // Sort non-lands by some priority (assuming excess cards should be removed from the bottom)
-    nonLands.sort((a, b) => {
-      // Priority ranking of categories (higher = more important)
-      const categoryRank = {
-        'ramp': 5,
-        'card draw': 5,
-        'removal': 4,
-        'protection': 4,
-        'strategy': 3,
-        'utility': 2,
-        'finisher': 2,
-        'board wipe': 1
-      };
-      
-      // Get rank (default to 0 if category not found)
-      const rankA = Object.entries(categoryRank).find(([key]) => a.category.toLowerCase().includes(key))?.[1] || 0;
-      const rankB = Object.entries(categoryRank).find(([key]) => b.category.toLowerCase().includes(key))?.[1] || 0;
-      
-      return rankB - rankA; // Higher priority cards first
-    });
-    
-    // Start with all lands and add non-lands until we reach the target
-    let result = [...lands];
-    currentTotal = result.reduce((sum, card) => sum + (card.quantity || 1), 0);
-    
-    // Add non-lands until we reach the target
-    for (const card of nonLands) {
-      const cardCount = card.quantity || 1;
-      if (currentTotal + cardCount <= targetCount) {
-        result.push(card);
-        currentTotal += cardCount;
-      }
-      
-      if (currentTotal >= targetCount) break;
-    }
-    
-    // If we still don't have enough cards, adjust basic land quantities
-    if (currentTotal < targetCount) {
-      const basicLands = result.filter(card => card.name.match(/^(Plains|Island|Swamp|Mountain|Forest|Wastes)$/));
-      
-      if (basicLands.length > 0) {
-        // Distribute the remaining cards among basic lands
-        const remaining = targetCount - currentTotal;
-        const addPerLand = Math.floor(remaining / basicLands.length);
-        let leftover = remaining % basicLands.length;
-        
-        for (const land of basicLands) {
-          const extra = leftover > 0 ? 1 : 0;
-          if (leftover > 0) leftover--;
-          
-          land.quantity = (land.quantity || 1) + addPerLand + extra;
-        }
-      }
-    }
-    
-    return result;
-  };
-  
-  /**
-   * Add basic lands to a card list to reach the target count
-   * @param {Array} cardList - List of cards
-   * @param {number} count - Number of lands to add
-   * @param {Array} colorIdentity - Color identity array
-   * @returns {Array} - Updated card list
-   */
-  const addBasicLands = (cardList, count, colorIdentity) => {
-    if (count <= 0) return cardList;
-
-    // Define basic land types and their colors
-    const landTypes = {
-      'Plains': 'W',
-      'Island': 'U',
-      'Swamp': 'B',
-      'Mountain': 'R',
-      'Forest': 'G'
-    };
-
-    // Filter lands by color identity
-    const availableLands = Object.entries(landTypes)
-      .filter(([_, color]) => colorIdentity.includes(color))
-      .map(([name]) => ({
-        name,
-        type_line: `Basic Land — ${name}`,
-        category: 'Lands',
-        quantity: 1
-      }));
-
-    if (availableLands.length === 0) {
-      // If no colors match (colorless commander), just use Plains
-      availableLands.push({
-        name: 'Plains',
-        type_line: 'Basic Land — Plains',
-        category: 'Lands',
-        quantity: 1
-      });
-    }
-
-    // Calculate distribution
-    const landsPerType = Math.floor(count / availableLands.length);
-    const remainder = count % availableLands.length;
-
-    // Add lands to the list
-    const updatedList = [...cardList];
-    for (let i = 0; i < availableLands.length; i++) {
-      const numToAdd = i === 0 ? 
-        landsPerType + remainder : // Add remainder to first land type
-        landsPerType;
-      
-      for (let j = 0; j < numToAdd; j++) {
-        updatedList.push({ ...availableLands[i] });
-      }
-    }
-
-    return updatedList;
-  };
-  
-  /**
-   * Analyze a commander to understand its strategy and synergies
-   * @param {Object} commander - Commander card object
-   * @param {string} deckStyle - Desired deck style
-   * @returns {string} - Analysis of the commander
+   * Analyze commander's strategy and synergies
    */
   const analyzeCommander = async (commander, deckStyle) => {
     try {
-      // Get more details about the commander from Scryfall
-      const response = await fetch(`https://api.scryfall.com/cards/${commander.id}`);
-      const data = await response.json();
-      
-      // Call OpenAI for an analysis
       const API_URL = 'https://api.openai.com/v1/chat/completions';
       const aiResponse = await fetch(API_URL, {
         method: 'POST',
@@ -729,37 +994,82 @@ export const useAutoDeckBuilder = () => {
           'Authorization': `Bearer ${getOpenAIApiKey()}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'o3-2025-04-16',
           messages: [
             { 
               role: 'system', 
-              content: 'You are a Magic: The Gathering deck building expert specializing in commander strategy analysis.'
+              content: 'You are a Magic: The Gathering deck building expert.'
             },
             { 
               role: 'user', 
-              content: `Analyze this commander for a ${deckStyle} deck style:
+              content: `Analyze this commander for a ${deckStyle} deck:
                 Name: ${commander.name}
                 Type: ${commander.type_line || ''}
                 Text: ${commander.oracle_text || ''}
-                Colors: ${commander.colors?.join('') || ''}
-                
-                Provide a concise analysis of key strategies, synergies, and card types that work well with this commander.
-                Keep your response under 150 words and focus on specific card types and mechanics that synergize with the commander.`
+                Colors: ${commander.colors?.join('') || ''}`
             }
           ],
-          temperature: 0.7,
-          max_tokens: 300
+          max_completion_tokens: 2000
+        })
+      });
+
+      const aiData = await aiResponse.json();
+      
+      // Debug response
+      console.error('o3 Response Debug:', {
+        status: aiResponse.status,
+        choices: aiData.choices,
+        usage: aiData.usage,
+        finish_reason: aiData.choices?.[0]?.finish_reason
+      });
+
+      const content = aiData.choices?.[0]?.message?.content;
+      
+      if (!content) {
+        return await analyzeCommanderFallback(commander, deckStyle);
+      }
+      
+      return content;
+    } catch (error) {
+      console.error('Error analyzing commander with o3:', error);
+      return await analyzeCommanderFallback(commander, deckStyle);
+    }
+  };
+  
+  const analyzeCommanderFallback = async (commander, deckStyle) => {
+    try {
+      const API_URL = 'https://api.openai.com/v1/chat/completions';
+      const aiResponse = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getOpenAIApiKey()}`
+        },
+        body: JSON.stringify({
+          model: 'o3-2025-04-16',
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are a Magic: The Gathering deck building expert.'
+            },
+            { 
+              role: 'user', 
+              content: `Analyze this commander for a ${deckStyle} deck:
+                Name: ${commander.name}
+                Type: ${commander.type_line || ''}
+                Text: ${commander.oracle_text || ''}
+                Colors: ${commander.colors?.join('') || ''}`
+            }
+          ],
+          max_completion_tokens: 2000
         })
       });
       
       const aiData = await aiResponse.json();
-      if (aiData.choices && aiData.choices[0] && aiData.choices[0].message) {
-        return aiData.choices[0].message.content;
-      } else {
-        return "Standard commander deck focused on the commander's color identity and abilities.";
-      }
+      return aiData.choices?.[0]?.message?.content || 
+        "Standard commander deck focused on the commander's color identity and abilities.";
     } catch (error) {
-      console.error('Error analyzing commander:', error);
+      console.error('Fallback analysis also failed:', error);
       return "Standard commander deck focused on the commander's color identity and abilities.";
     }
   };
@@ -1159,207 +1469,212 @@ export const useAutoDeckBuilder = () => {
     return cardList;
   };
 
-  /**
-   * Add cards from a list to the deck by fetching their data
-   * @param {Array} cardList - List of cards from AI response
-   * @param {Function} progressCallback - Callback for updating progress
-   * @param {string} deckStyle - The deck style/archetype being built
-   */
-  const addCardsFromList = async (cardList, progressCallback, deckStyle) => {
-    resetDeckExceptCommander();
-    
-    // Make sure we're not adding too many cards
-    if (cardList.length > 99) {
-      console.warn(`Limiting card list from ${cardList.length} to 99 cards`);
-      cardList = cardList.slice(0, 99);
-    }
-    
-    // Get the current archetype rules
-    const archetypeRules = getArchetypeRules(deckStyle);
-    
-    // Check for game changers
-    const gameChangers = identifyGameChangers(cardList);
-    if (gameChangers.length > archetypeRules.maxGameChangers) {
-      console.warn(`Too many game changers (${gameChangers.length}/${archetypeRules.maxGameChangers} max)`);
-      cardList = cardList.filter(card => !gameChangers.slice(archetypeRules.maxGameChangers).some(gc => gc.name === card.name));
-    }
-
-    // Validate budget constraints before adding cards
-    const budgetValidation = validateBudgetConstraints(cardList, archetypeRules.maxBudget);
-    if (!budgetValidation.valid) {
-      console.warn('Budget validation failed:', budgetValidation.violations);
-      if (archetypeRules.maxBudget !== Infinity) {
-        cardList = await replaceBudgetViolations(cardList, budgetValidation, archetypeRules.maxBudget);
-      }
-    }
-
-    // Enforce bracket requirements
-    cardList = await enforceBracketRequirements(cardList, archetypeRules.targetBracket);
-
-    // Validate card distribution
-    const distributionValidation = validateCardDistribution(cardList, archetypeRules.cardDistribution);
-    if (!distributionValidation.valid) {
-      console.warn('Distribution validation failed:', distributionValidation.violations);
-      cardList = await fixDistributionViolations(cardList, distributionValidation, archetypeRules);
-    }
-
-    // Track how many cards we've added
-    let addedCardCount = 0;
-    const targetCardCount = 99;
-    
-    // Process cards in smaller batches to avoid rate limits
-    const batchSize = 20;
-    for (let i = 0; i < cardList.length && addedCardCount < targetCardCount; i += batchSize) {
-      const batch = cardList.slice(i, Math.min(i + batchSize, cardList.length));
-      
-      try {
-        // Get card data from Scryfall
-        const response = await fetch('https://api.scryfall.com/cards/collection', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            identifiers: batch.map(card => ({ name: card.name }))
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Scryfall API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (data.data) {
-          // Create a map of card name to card data
-          const cardMap = new Map(data.data.map(card => [card.name, card]));
-          
-          // Add each card to the deck
-          for (const cardEntry of batch) {
-            if (addedCardCount >= targetCardCount) break;
-            
-            const cardData = cardMap.get(cardEntry.name);
-            if (cardData) {
-              try {
-                // Store card category if available
-                if (cardEntry.category) {
-                  cardData.ai_category = cardEntry.category;
-                }
-                
-                addCard(cardData);
-                addedCardCount++;
-              } catch (error) {
-                if (error.message?.includes('quota exceeded')) {
-                  console.warn('Cache quota exceeded, continuing without caching');
-                  addCard(cardData, false);
-                  addedCardCount++;
-                } else {
-                  throw error;
-                }
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error in batch processing:', error);
-      }
-      
-      // Update progress
-      if (progressCallback) {
-        progressCallback(Math.min(Math.round((addedCardCount / targetCardCount) * 100), 99));
-      }
-      
-      // Add a small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    // If we don't have enough cards, add basic lands
-    const finalCount = getCurrentNonCommanderCardCount();
-    if (finalCount < 99) {
-      const missingCount = 99 - finalCount;
-      console.log(`Adding ${missingCount} basic lands to reach 99 cards`);
-      
-      try {
-        const basicLands = await fetchBasicLands(commander.color_identity, missingCount);
-        for (const land of basicLands) {
-          if (getCurrentNonCommanderCardCount() < 99) {
-            try {
-              addCard(land);
-            } catch (error) {
-              if (error.message?.includes('quota exceeded')) {
-                addCard(land, false);
-              } else {
-                throw error;
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error adding basic lands:', error);
-      }
-    }
-
-    // Final verification
-    const actualFinalCount = getCurrentNonCommanderCardCount();
-    if (actualFinalCount !== 99) {
-      console.warn(`Final count is ${actualFinalCount}, expected 99. Review deck building logic.`);
-      
-      // One last attempt to fix the count
-      if (actualFinalCount < 99) {
-        const lastResortLands = generateBasicLands(commander.color_identity, 99 - actualFinalCount);
-        for (const land of lastResortLands) {
-          if (getCurrentNonCommanderCardCount() < 99) {
-            try {
-              addCard(land, false); // Skip caching for these
-            } catch (error) {
-              console.error('Error adding last resort land:', error);
-            }
-          }
-        }
-      }
-    }
-
-    return getCurrentNonCommanderCardCount() === 99;
-  };
-  
-  /**
-   * Replace expensive cards with budget alternatives
-   * @param {Array} cardList - Original card list
-   * @param {Object} budgetValidation - Budget validation results
-   * @param {number} maxBudget - Maximum allowed budget
-   * @returns {Array} - Updated card list with budget alternatives
-   */
-  const replaceBudgetViolations = async (cardList, budgetValidation, maxBudget) => {
-    const expensiveCards = budgetValidation.violations
-      .find(v => v.type === 'expensive_cards')?.cards || [];
-
-    for (const expensiveCard of expensiveCards) {
-      try {
-        // Search for budget alternatives with similar functionality
-        const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(`f:commander usd<${maxBudget * 0.1} ${expensiveCard.name}`)}}`);
-        const data = await response.json();
-        
-        if (data.data && data.data.length > 0) {
-          // Replace the expensive card with the first budget alternative
-          const index = cardList.findIndex(card => card.name === expensiveCard.name);
-          if (index !== -1) {
-            cardList[index] = {
-              ...data.data[0],
-              category: cardList[index].category,
-              quantity: 1
-            };
-          }
-        }
-      } catch (error) {
-        console.error(`Error finding budget alternative for ${expensiveCard.name}:`, error);
-      }
-    }
-
-    return cardList;
-  };
-
   // Clear paywall blocked state
   const clearPaywallBlocked = () => {
     setPaywallBlocked(false);
     setError(null);
+  };
+
+  /**
+   * Validate and fix singleton violations in a card list
+   * @param {Array} cardList - List of cards to validate
+   * @returns {Array} - Fixed card list with singleton violations resolved
+   */
+  const validateAndFixSingletonViolations = (cardList) => {
+    const cardCounts = new Map();
+    const validatedCards = [];
+    const duplicateReplacements = [
+      'Arcane Signet', 'Commander\'s Sphere', 'Mind Stone', 'Fellwar Stone',
+      'Worn Powerstone', 'Hedron Archive', 'Thran Dynamo', 'Gilded Lotus',
+      'Swiftfoot Boots', 'Lightning Greaves', 'Wayfarer\'s Bauble',
+      'Evolving Wilds', 'Terramorphic Expanse', 'Myriad Landscape',
+      'Chromatic Lantern', 'Burnished Hart', 'Solemn Simulacrum',
+      'Thought Vessel', 'Pristine Talisman', 'Opaline Unicorn',
+      'Rupture Spire', 'Transguild Promenade', 'Gateway Plaza'
+    ];
+    let replacementIndex = 0;
+
+    for (const card of cardList) {
+      const cardName = card.name;
+      
+      // Basic lands are exempt from singleton rule
+      const isBasicLand = card.type_line && 
+        card.type_line.includes('Basic') && 
+        card.type_line.includes('Land');
+      
+      if (isBasicLand) {
+        validatedCards.push(card);
+        continue;
+      }
+      
+      // Check if we've seen this card before
+      if (cardCounts.has(cardName)) {
+        console.warn(`Singleton violation detected: ${cardName} appears multiple times, replacing duplicate`);
+        
+        // Find a replacement that hasn't been used
+        let replacementName = null;
+        while (replacementIndex < duplicateReplacements.length) {
+          const candidate = duplicateReplacements[replacementIndex];
+          if (!cardCounts.has(candidate)) {
+            replacementName = candidate;
+            break;
+          }
+          replacementIndex++;
+        }
+        
+        if (replacementName) {
+          // Create replacement card
+          const replacementCard = createFallbackCard(replacementName, card.category || 'Utility');
+          if (replacementCard) {
+            validatedCards.push({
+              ...replacementCard,
+              singleton_replacement: true,
+              original_duplicate: cardName
+            });
+            cardCounts.set(replacementName, 1);
+          }
+        } else {
+          console.warn(`No more unique replacements available, skipping duplicate ${cardName}`);
+        }
+      } else {
+        // First occurrence of this card
+        validatedCards.push(card);
+        cardCounts.set(cardName, 1);
+      }
+    }
+    
+    return validatedCards;
+  };
+
+  /**
+   * Generate initial deck using o3 for superior quality and comprehensive analysis (Stage 1)
+   */
+  const generateInitialDeckWithO3 = async (commander, deckStyle, archetypeRules) => {
+    if (!commander) {
+      throw new Error('Commander is required for AI deck generation');
+    }
+
+    const apiKey = getOpenAIApiKey();
+    if (!apiKey) {
+      throw new Error('OpenAI API key is not configured');
+    }
+
+    const { prompt: archetypePrompt, cardDistribution, maxBudget, targetBracket } = archetypeRules;
+    
+    const budgetConstraint = maxBudget !== Infinity ? 
+      `Keep the total deck cost under $${maxBudget}.` : '';
+
+    const bracketConstraint = `Target power level should be between bracket ${targetBracket.min}-${targetBracket.max} (1=casual, 5=cEDH).`;
+
+    const distributionRequirements = Object.entries(cardDistribution)
+      .map(([category, { min, max }]) => `${category}: ${min}-${max} cards`)
+      .join(', ');
+
+    const prompt = `You are an expert Magic: The Gathering deck builder specialized in Commander format.
+
+Build a complete 99-card Commander deck optimized for SPEED and broad synergy:
+
+Commander: ${commander.name}
+Color Identity: ${commander.color_identity?.join('') || 'Colorless'}
+Commander Type: ${commander.type_line}
+Commander Text: ${commander.oracle_text || 'No text available'}
+Deck Style: ${deckStyle}
+
+SPEED PRIORITY: Generate functional deck quickly. Focus on:
+- Strong synergies with commander abilities
+- Proper mana base foundation (32-34 lands)
+- Essential staples for the archetype
+- ${distributionRequirements}
+- ${bracketConstraint}
+- ${budgetConstraint}
+
+${archetypePrompt}
+
+IMPORTANT GUIDELINES:
+- Include staple cards appropriate for the power level
+- Don't worry about perfect validation - we'll fix issues later
+- Focus on deck function over edge case compliance
+- All card names must be spelled exactly as they appear on official Magic cards
+- For double-faced cards, use only the front face name (e.g., "Brightclimb Pathway" not "Brightclimb Pathway // Grimclimb Pathway")
+
+FORMAT REQUIREMENTS:
+- Return ONLY a valid JSON array
+- NO comments, explanations, or text outside the JSON
+- NO // characters except in card names where absolutely necessary
+- Use this exact format for each card:
+
+{"name": "Card Name", "category": "Category"}
+
+Categories must be one of: "Lands", "Ramp", "Card Draw", "Removal", "Board Wipes", "Protection", "Strategy", "Utility", "Finisher"
+
+CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, nothing else.`;
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'o3-2025-04-16', // Use o3 for superior deck generation quality
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are an expert MTG deck builder with deep knowledge of all cards and synergies. Generate highly optimized decks with perfect card choices and strategic coherence.'
+            },
+            { role: 'user', content: prompt }
+          ],
+          max_completion_tokens: 8000 // Large token limit for comprehensive deck generation
+          // Note: o3 model uses default temperature (1) - no temperature parameter needed
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      const responseText = data.choices?.[0]?.message?.content;
+
+      if (!responseText) {
+        throw new Error('No response received from OpenAI');
+      }
+
+      // Parse the JSON response
+      try {
+        const jsonMatch = responseText.match(/\[[\s\S]*\]/) || 
+                          responseText.match(/\{[\s\S]*\}/);
+        
+        const jsonText = jsonMatch ? jsonMatch[0] : responseText;
+        const cardList = parseJSONWithComments(jsonText);
+
+        // Basic validation
+        if (!Array.isArray(cardList)) {
+          throw new Error('AI response is not an array');
+        }
+
+        if (cardList.length === 0) {
+          throw new Error('AI returned empty card list');
+        }
+
+        console.log(`Stage 1 completed: Generated ${cardList.length} cards`);
+        return cardList;
+
+      } catch (parseError) {
+        console.error('Error parsing AI deck response:', parseError);
+        console.error('Raw response:', responseText);
+        throw new Error('Failed to parse deck list from AI response');
+      }
+
+    } catch (error) {
+      console.error('Error generating deck with o3:', error);
+      if (error.message.includes('API key')) {
+        throw new Error('AI service configuration error');
+      }
+      throw error;
+    }
   };
 
   return {
@@ -1371,5 +1686,10 @@ export const useAutoDeckBuilder = () => {
     clearPaywallBlocked,
     canMakeAIRequest,
     isPremium,
+    // Progressive UI state
+    buildingStage,
+    currentCards,
+    currentViolations,
+    appliedFixes
   };
 }; 

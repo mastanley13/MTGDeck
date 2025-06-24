@@ -122,7 +122,7 @@ Return the response in this JSON format:
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
-          model: options.model || 'gpt-4',
+          model: options.model || 'o3-2025-04-16',
           messages: [
             {
               role: 'system',
@@ -133,8 +133,7 @@ Return the response in this JSON format:
               content: prompt
             }
           ],
-          max_tokens: options.maxTokens || 3000,
-          temperature: options.temperature || 0.7
+          max_completion_tokens: options.maxTokens || 3000,
         },
         {
           headers: {

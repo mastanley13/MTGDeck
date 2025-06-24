@@ -174,10 +174,9 @@ const TutorAiPage = () => {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: 'o3-2025-04-16',
           messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7,
-          max_tokens: 3000,
+          max_completion_tokens: 15000,
         }),
       });
 
@@ -188,7 +187,16 @@ const TutorAiPage = () => {
       }
 
       const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content;
+      let aiResponse = data.choices[0]?.message?.content;
+      if (!aiResponse && data.choices[0]?.text) {
+        aiResponse = data.choices[0].text;
+      }
+      if (!aiResponse) {
+        console.error('No AI response found. Full choices:', data.choices);
+        setError('Received no response content from AI.');
+        setIsLoading(false);
+        return;
+      }
 
       if (aiResponse) {
         let parsedAiSuggestions = [];

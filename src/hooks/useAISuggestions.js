@@ -56,7 +56,7 @@ export const useAISuggestions = (options = {}) => {
       const aiSuggestions = await getSuggestions(commander, cards, {
         apiKey: getOpenAIApiKey(), // Always use the hardcoded key
         maxSuggestions: maxSuggestions, // Use the state variable instead of options
-        model: options.model || 'gpt-4o', // Use GPT-4 by default for better suggestions
+        model: 'o3-2025-04-16',
         categories: focusCategories,
         deckTheme: deckTheme,
       });

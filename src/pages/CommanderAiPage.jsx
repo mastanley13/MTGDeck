@@ -7,6 +7,7 @@ import { useDeck } from '../context/DeckContext';
 import { useAuth } from '../context/AuthContext.jsx';
 import { isDeckValid } from '../utils/deckValidator.js';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
+import { parseManaSymbols } from '../utils/manaSymbols';
 
 // Checkmark Icon Component
 const CheckIcon = (props) => (
@@ -92,26 +93,22 @@ const CommanderAiPage = () => {
     setSuggestions([]);
     setError(null);
 
-    const prompt = `
-      You are an expert Magic: The Gathering Commander suggestion AI.
-      A user is looking for commander suggestions based on the following preferences: "${preferences}"
-      Please suggest 15 commanders that fit these preferences.
-      For each commander, provide:
-      1. name: The full name of the commander card.
-      2. colors: An array of strings representing the commander's color identity (e.g., ["W", "U", "B", "R", "G"]).
-      3. description: A brief explanation (1-2 sentences) of why this commander fits the preferences or its general strategy. This description will be shown on the card tile.
+    const prompt = `Suggest 12 MTG commanders for: "${preferences}"
 
-      Return your response as a valid JSON array of objects, like this example:
-      [
-        {
-          "name": "Atraxa, Praetors\' Voice",
-          "colors": ["W", "U", "B", "G"],
-          "description": "Atraxa excels with +1/+1 counters, proliferate mechanics, and can support various strategies like Superfriends or Infect."
-        }
-        // ... more commanders
-      ]
-      Ensure the JSON is well-formed and contains only the JSON array.
-    `;
+Return JSON array only:
+[
+  {
+    "name": "Commander Name",
+    "colors": ["W","U","B","R","G"],
+    "description": "Brief strategy explanation (1-2 sentences)"
+  }
+]
+
+Requirements:
+- Valid commander cards only
+- Accurate color identity
+- Concise descriptions
+- Well-formed JSON`;
 
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -121,10 +118,9 @@ const CommanderAiPage = () => {
           'Authorization': `Bearer ${OPENAI_API_KEY}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'o3-2025-04-16',
           messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7,
-          max_tokens: 2000,
+          max_completion_tokens: 4000, // Reduced from 12000 to avoid truncation
         }),
       });
 
@@ -135,16 +131,64 @@ const CommanderAiPage = () => {
       }
 
       const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content;
+      console.log('OpenAI API raw response:', data); // Debug log
+      
+      // Check for truncated response
+      const choice = data.choices[0];
+      if (choice?.finish_reason === 'length') {
+        console.warn('OpenAI response was truncated due to token limits');
+        setError('The AI response was too long and got cut off. Please try a more specific request or try again.');
+        setIsLoading(false);
+        return;
+      }
+      
+      let aiResponse = choice?.message?.content;
+      if (!aiResponse && choice?.text) {
+        aiResponse = choice.text;
+      }
+      
+      if (!aiResponse || aiResponse.trim() === '') {
+        console.error('No AI response found. Full choices:', data.choices);
+        setError('No response received from AI. Please try again.');
+        setIsLoading(false);
+        return;
+      }
 
       if (aiResponse) {
         let parsedAiSuggestions = [];
         try {
-          const cleanedJsonResponse = aiResponse.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+          // Clean the response - remove code blocks and trim
+          let cleanedJsonResponse = aiResponse.trim();
+          cleanedJsonResponse = cleanedJsonResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          cleanedJsonResponse = cleanedJsonResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+          
+          // Try to find JSON array in the response
+          const jsonMatch = cleanedJsonResponse.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            cleanedJsonResponse = jsonMatch[0];
+          }
+          
           parsedAiSuggestions = JSON.parse(cleanedJsonResponse);
+          
+          // Validate the parsed data
+          if (!Array.isArray(parsedAiSuggestions)) {
+            throw new Error('Response is not an array');
+          }
+          
+          if (parsedAiSuggestions.length === 0) {
+            throw new Error('No commanders found in response');
+          }
+          
+          // Validate each commander object
+          parsedAiSuggestions.forEach((commander, index) => {
+            if (!commander.name || !commander.colors || !commander.description) {
+              throw new Error(`Invalid commander at index ${index}: missing required fields`);
+            }
+          });
+          
         } catch (parseError) {
           console.error('Failed to parse AI response:', parseError, "Raw response:", aiResponse);
-          setError('Received an invalid format from AI. Please try again.');
+          setError(`Failed to parse AI response: ${parseError.message}. Please try again.`);
           setIsLoading(false);
           return;
         }
@@ -183,7 +227,7 @@ const CommanderAiPage = () => {
         );
         setSuggestions(suggestionsWithFullData);
       } else {
-        setError('Received no response content from AI.');
+        setError('No response received from AI. Please check your API key and try again.');
       }
     } catch (apiError) {
       console.error('API call failed:', apiError);

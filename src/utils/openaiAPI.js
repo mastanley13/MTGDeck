@@ -13,7 +13,7 @@ const API_URL = 'https://api.openai.com/v1/chat/completions';
  * @param {Object} options - Additional options for the suggestion
  * @param {string} options.apiKey - OpenAI API key
  * @param {number} options.maxSuggestions - Maximum number of cards to suggest (default: 15)
- * @param {string} options.model - OpenAI model to use (default: gpt-4o)
+ * @param {string} options.model - OpenAI model to use (default: o3-2025-04-16)
  * @param {Array} options.categories - Card categories to focus on
  * @param {string} options.deckTheme - Deck theme or strategy
  * @returns {Promise<Array>} - Promise resolving to an array of suggested cards
@@ -21,9 +21,8 @@ const API_URL = 'https://api.openai.com/v1/chat/completions';
 export const getSuggestions = async (commander, currentDeck, options = {}) => {
   const {
     maxSuggestions = 15,
-    model = 'gpt-4o',
+    model = 'o3-2025-04-16',
     categories = [],
-    temperature = 0.8,
     deckTheme = '',
   } = options;
 
@@ -93,18 +92,17 @@ Only include the JSON array in your response, nothing else.`;
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${currentApiKey}`
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { 
-            role: 'system', 
-            content: 'You are an expert Magic: The Gathering deck builder assistant with deep knowledge of the Commander format, all card interactions, and optimal deck building strategies.' 
-          },
-          { role: 'user', content: prompt }
-        ],
-        temperature,
-        max_tokens: Math.min(4000, 500 + (requestedSuggestions * 100)),
-      })
+              body: JSON.stringify({
+          model,
+          messages: [
+            { 
+              role: 'system', 
+              content: 'You are an expert Magic: The Gathering deck builder assistant with deep knowledge of the Commander format, all card interactions, and optimal deck building strategies.' 
+            },
+            { role: 'user', content: prompt }
+          ],
+          max_completion_tokens: Math.min(4000, 500 + (requestedSuggestions * 100)),
+        })
     });
 
     if (!response.ok) {

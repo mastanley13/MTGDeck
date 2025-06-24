@@ -10,12 +10,15 @@
     "lint": "eslint .",
     "test:webhooks": "node src/scripts/testWebhooks.js",
     "test:ghl": "node src/scripts/testGHLWebhook.js",
+    "test:legality": "node src/scripts/testLegalityService.js",
+    "test:integration": "node src/scripts/testIntegration.js",
     "generate:secret": "node src/scripts/generateSecret.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.1",
     "@saeris/typeface-beleren-bold": "^1.0.1",
     "@tabler/icons-react": "^3.33.0",
+    "@vercel/analytics": "^1.5.0",
     "axios": "^1.9.0",
     "chart.js": "^4.4.9",
     "comlink": "^4.4.1",

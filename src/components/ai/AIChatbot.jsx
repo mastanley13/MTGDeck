@@ -61,7 +61,7 @@ const AIChatbot = () => {
           'Authorization': `Bearer ${getOpenAIApiKey()}`
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'o3-2025-04-16',
           messages: [
             { 
               role: 'system', 
@@ -72,17 +72,19 @@ const AIChatbot = () => {
             ...messages.map(m => ({ role: m.role, content: m.content })),
             userMessage
           ],
-          temperature: 0.7,
-          max_tokens: 500
+          max_completion_tokens: 1024
         })
       });
       
       const data = await response.json();
-      
-      if (data.choices && data.choices[0] && data.choices[0].message) {
-        setMessages(prev => [...prev, data.choices[0].message]);
+      let aiMessage = data.choices[0]?.message?.content;
+      if (!aiMessage && data.choices[0]?.text) {
+        aiMessage = data.choices[0].text;
+      }
+      if (aiMessage) {
+        setMessages(prev => [...prev, { role: 'assistant', content: aiMessage }]);
       } else {
-        // Handle error
+        console.error('No AI response found. Full choices:', data.choices);
         setMessages(prev => [...prev, { 
           role: 'assistant', 
           content: 'Sorry, I had trouble processing that. Please try again.' 

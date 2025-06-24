@@ -5,9 +5,8 @@ export const blogAutomationConfig = {
   // OpenAI Configuration
   openai: {
     apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-    model: import.meta.env.VITE_OPENAI_MODEL || 'gpt-4',
-    maxTokens: parseInt(import.meta.env.VITE_OPENAI_MAX_TOKENS) || 3000,
-    temperature: parseFloat(import.meta.env.VITE_OPENAI_TEMPERATURE) || 0.7
+    model: import.meta.env.VITE_OPENAI_MODEL || 'o3-2025-04-16',
+    max_completion_tokens: parseInt(import.meta.env.VITE_OPENAI_MAX_TOKENS) || 3000
   },
 
   // GoHighLevel Configuration
@@ -158,9 +157,8 @@ export const envTemplate = `
 
 # OpenAI Settings
 VITE_OPENAI_API_KEY=sk-your-openai-api-key-here
-VITE_OPENAI_MODEL=gpt-4
+VITE_OPENAI_MODEL=o3-2025-04-16
 VITE_OPENAI_MAX_TOKENS=3000
-VITE_OPENAI_TEMPERATURE=0.7
 
 # GoHighLevel Settings
 VITE_GHL_API_KEY=your-ghl-api-key-here

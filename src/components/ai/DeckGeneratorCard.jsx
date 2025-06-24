@@ -45,7 +45,7 @@ const DeckGeneratorCard = ({ onDraftComplete }) => {
           <h2 className="text-xl font-bold">Commander Deck Generator</h2>
           {commander && (
             <div className="text-xs bg-white bg-opacity-20 rounded-full px-3 py-1">
-              {nonCommanderCardCount} / 99 cards
+              {totalCardCount} / 100 cards
             </div>
           )}
         </div>
