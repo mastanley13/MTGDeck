@@ -28,8 +28,10 @@ const LoginForm = () => {
       // Decode the JWT token to get user info
       const decoded = jwtDecode(credentialResponse.credential);
       
-      // Check if user exists in GHL by email
-      const response = await fetch(`${GHL_API_BASE_URL}/contacts/search/duplicate`, {
+      // Use upsert to create or update user automatically
+      console.log('Processing Google user with upsert:', decoded.email);
+      
+      const upsertResponse = await fetch(`${GHL_API_BASE_URL}/contacts/upsert`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${GHL_API_TOKEN}`,
@@ -39,71 +41,42 @@ const LoginForm = () => {
         },
         body: JSON.stringify({
           locationId: GHL_LOCATION_ID,
+          firstName: decoded.given_name,
+          lastName: decoded.family_name,
           email: decoded.email,
+          source: 'Google OAuth',
+          customFields: [
+            {
+              id: PASSWORD_CUSTOM_FIELD_ID,
+              value: 'GOOGLE_AUTH', // Special marker for Google-authenticated users
+            },
+          ],
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to verify Google account');
+      console.log('GHL Upsert Response Status:', upsertResponse.status);
+      if (!upsertResponse.ok) {
+        const errorText = await upsertResponse.text();
+        console.error('GHL Upsert Error Response:', errorText);
+        throw new Error(`Failed to process Google account: ${upsertResponse.status} - ${errorText}`);
       }
 
-      const data = await response.json();
+      const upsertData = await upsertResponse.json();
+      console.log('GHL upsert response:', upsertData);
       
-      if (data.contacts && data.contacts.length > 0) {
-        // User exists, log them in
-        const contact = data.contacts[0];
-        const userData = {
-          id: contact.id,
-          email: contact.email,
-          firstName: contact.firstNameLowerCase || decoded.given_name,
-          lastName: contact.lastNameLowerCase || decoded.family_name,
-          customFields: contact.customFields || [],
-          googleAuth: true, // Flag to indicate Google authentication
-        };
-        login(userData);
-        const from = location.state?.from || '/decks';
-        navigate(from, { replace: true });
-      } else {
-        // User doesn't exist, create new account
-        const createResponse = await fetch(`${GHL_API_BASE_URL}/contacts/`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${GHL_API_TOKEN}`,
-            'Version': GHL_API_VERSION,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify({
-            locationId: GHL_LOCATION_ID,
-            email: decoded.email,
-            firstName: decoded.given_name,
-            lastName: decoded.family_name,
-            customFields: [
-              {
-                id: PASSWORD_CUSTOM_FIELD_ID,
-                value: 'GOOGLE_AUTH', // Special marker for Google-authenticated users
-              },
-            ],
-          }),
-        });
-
-        if (!createResponse.ok) {
-          throw new Error('Failed to create account with Google');
-        }
-
-        const createData = await createResponse.json();
-        const userData = {
-          id: createData.contact.id,
-          email: decoded.email,
-          firstName: decoded.given_name,
-          lastName: decoded.family_name,
-          customFields: createData.contact.customFields || [],
-          googleAuth: true,
-        };
-        login(userData);
-        const from = location.state?.from || '/decks';
-        navigate(from, { replace: true });
-      }
+      const userData = {
+        id: upsertData.contact.id,
+        email: upsertData.contact.email,
+        firstName: upsertData.contact.firstName || decoded.given_name,
+        lastName: upsertData.contact.lastName || decoded.family_name,
+        customFields: upsertData.contact.customFields || [],
+        googleAuth: true,
+      };
+      
+      console.log('Logging in Google user:', userData);
+      login(userData);
+      const from = location.state?.from || '/decks';
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.message || 'Google login failed. Please try again.');
     } finally {
@@ -126,18 +99,15 @@ const LoginForm = () => {
     setError('');
 
     try {
-      const response = await fetch(`${GHL_API_BASE_URL}/contacts/search/duplicate`, {
-        method: 'POST',
+      // Search for contacts by email using a more reliable endpoint
+      const response = await fetch(`${GHL_API_BASE_URL}/contacts/?locationId=${GHL_LOCATION_ID}&email=${encodeURIComponent(email)}`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${GHL_API_TOKEN}`,
           'Version': GHL_API_VERSION,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          locationId: GHL_LOCATION_ID,
-          email: email,
-        }),
       });
 
       if (!response.ok) {
@@ -145,16 +115,18 @@ const LoginForm = () => {
       }
 
       const data = await response.json();
+      console.log('Login search response:', data);
 
       if (data.contacts && data.contacts.length > 0) {
         const contact = data.contacts[0];
-        const passwordField = contact.customFields.find(cf => cf.id === PASSWORD_CUSTOM_FIELD_ID);
+        const passwordField = contact.customFields?.find(cf => cf.id === PASSWORD_CUSTOM_FIELD_ID);
 
         if (passwordField && (passwordField.value === password || passwordField.value === 'GOOGLE_AUTH')) {
           const userData = {
             id: contact.id,
             email: contact.email,
-            firstName: contact.firstNameLowerCase,
+            firstName: contact.firstName || contact.firstNameLowerCase,
+            lastName: contact.lastName || contact.lastNameLowerCase,
             customFields: contact.customFields || [],
           };
           login(userData);
