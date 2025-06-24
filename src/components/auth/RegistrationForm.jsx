@@ -378,16 +378,24 @@ const RegistrationForm = () => {
 
       {/* Google Registration Button */}
       <div className="w-full">
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          useOneTap={false}
-          theme="filled_black"
-          size="large"
-          width="100%"
-          text="signup_with"
-          shape="rectangular"
-        />
+        {import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap={false}
+            theme="filled_black"
+            size="large"
+            text="signup_with"
+            shape="rectangular"
+            width={400}
+          />
+        ) : (
+          <div className="w-full p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-xl text-center">
+            <p className="text-yellow-300 text-sm">
+              Google signup not configured. Please set VITE_GOOGLE_CLIENT_ID environment variable.
+            </p>
+          </div>
+        )}
       </div>
     </form>
   );
