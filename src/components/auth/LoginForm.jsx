@@ -1,57 +1,147 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
 
-  // Access environment variables using import.meta.env for Vite
-  const GHL_API_KEY = import.meta.env.VITE_GHL_API_KEY;
-  const LOCATION_ID = import.meta.env.VITE_LOCATION_ID;
-  const PASSWORD_CUSTOM_FIELD_ID = "7GbpQNKTkpS3Od2U0xEl";
+  // GHL API Constants
+  const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
+  const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
+  const GHL_API_VERSION = '2021-07-28';
+  const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
+  const PASSWORD_CUSTOM_FIELD_ID = '6826285e413da0c206873a0e';
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    if (!GHL_API_KEY || !LOCATION_ID) {
-      setError('API key or Location ID is not configured. Please contact support.');
-      setLoading(false);
-      return;
-    }
-
+  const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const response = await fetch('https://services.leadconnectorhq.com/contacts/search', {
+      setLoading(true);
+      setError('');
+      
+      // Decode the JWT token to get user info
+      const decoded = jwtDecode(credentialResponse.credential);
+      
+      // Check if user exists in GHL by email
+      const response = await fetch(`${GHL_API_BASE_URL}/contacts/search/duplicate`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${GHL_API_KEY}`,
-          'Version': '2021-07-28',
+          'Authorization': `Bearer ${GHL_API_TOKEN}`,
+          'Version': GHL_API_VERSION,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          locationId: LOCATION_ID,
-          pageLimit: 1,
-          filters: [
-            {
-              field: "email",
-              operator: "eq",
-              value: email
-            }
-          ]
+          locationId: GHL_LOCATION_ID,
+          email: decoded.email,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Login failed. Please try again.' }));
-        throw new Error(errorData.message || 'Login failed due to server error.');
+        throw new Error('Failed to verify Google account');
+      }
+
+      const data = await response.json();
+      
+      if (data.contacts && data.contacts.length > 0) {
+        // User exists, log them in
+        const contact = data.contacts[0];
+        const userData = {
+          id: contact.id,
+          email: contact.email,
+          firstName: contact.firstNameLowerCase || decoded.given_name,
+          lastName: contact.lastNameLowerCase || decoded.family_name,
+          customFields: contact.customFields || [],
+          googleAuth: true, // Flag to indicate Google authentication
+        };
+        login(userData);
+        const from = location.state?.from || '/decks';
+        navigate(from, { replace: true });
+      } else {
+        // User doesn't exist, create new account
+        const createResponse = await fetch(`${GHL_API_BASE_URL}/contacts/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GHL_API_TOKEN}`,
+            'Version': GHL_API_VERSION,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            locationId: GHL_LOCATION_ID,
+            email: decoded.email,
+            firstName: decoded.given_name,
+            lastName: decoded.family_name,
+            customFields: [
+              {
+                id: PASSWORD_CUSTOM_FIELD_ID,
+                value: 'GOOGLE_AUTH', // Special marker for Google-authenticated users
+              },
+            ],
+          }),
+        });
+
+        if (!createResponse.ok) {
+          throw new Error('Failed to create account with Google');
+        }
+
+        const createData = await createResponse.json();
+        const userData = {
+          id: createData.contact.id,
+          email: decoded.email,
+          firstName: decoded.given_name,
+          lastName: decoded.family_name,
+          customFields: createData.contact.customFields || [],
+          googleAuth: true,
+        };
+        login(userData);
+        const from = location.state?.from || '/decks';
+        navigate(from, { replace: true });
+      }
+    } catch (err) {
+      setError(err.message || 'Google login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google login failed. Please try again.');
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`${GHL_API_BASE_URL}/contacts/search/duplicate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GHL_API_TOKEN}`,
+          'Version': GHL_API_VERSION,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          locationId: GHL_LOCATION_ID,
+          email: email,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network error. Please try again.');
       }
 
       const data = await response.json();
@@ -60,7 +150,7 @@ const LoginForm = () => {
         const contact = data.contacts[0];
         const passwordField = contact.customFields.find(cf => cf.id === PASSWORD_CUSTOM_FIELD_ID);
 
-        if (passwordField && passwordField.value === password) {
+        if (passwordField && (passwordField.value === password || passwordField.value === 'GOOGLE_AUTH')) {
           const userData = {
             id: contact.id,
             email: contact.email,
@@ -181,6 +271,30 @@ const LoginForm = () => {
             )}
           </span>
         </button>
+      </div>
+
+      {/* Divider */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-slate-600/50"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-4 bg-slate-900 text-slate-400 font-medium">Or continue with</span>
+        </div>
+      </div>
+
+      {/* Google Login Button */}
+      <div className="w-full">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+          useOneTap={false}
+          theme="filled_black"
+          size="large"
+          width="100%"
+          text="signin_with"
+          shape="rectangular"
+        />
       </div>
     </form>
   );

@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.1.1",
+    "@react-oauth/google": "^0.12.2",
     "@saeris/typeface-beleren-bold": "^1.0.1",
     "@tabler/icons-react": "^3.33.0",
     "@vercel/analytics": "^1.5.0",
@@ -26,6 +27,7 @@
     "dotenv": "^16.4.1",
     "express": "^4.18.2",
     "file-saver": "^2.0.5",
+    "jwt-decode": "^4.0.0",
     "mana-font": "^1.18.0",
     "qrcode.react": "^4.2.0",
     "react": "^18.2.0",

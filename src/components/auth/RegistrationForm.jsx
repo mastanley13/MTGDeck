@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 import { setInitialSubscriptionStatus } from '../../utils/ghlSubscriptionAPI';
+import { useAuth } from '../../context/AuthContext';
 
 const RegistrationForm = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -19,6 +23,47 @@ const RegistrationForm = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     // Clear errors when user starts typing
     if (error) setError('');
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Decode the JWT token to get user info
+      const decoded = jwtDecode(credentialResponse.credential);
+      
+      // Create account with Google info
+      const userData = {
+        firstName: decoded.given_name,
+        lastName: decoded.family_name,
+        email: decoded.email,
+        password: 'GOOGLE_AUTH', // Special marker for Google-authenticated users
+      };
+      
+      const result = await upsertGHLContact(userData);
+      
+      if (result.success) {
+        // Log the user in immediately
+        const loginData = {
+          id: result.contactId,
+          email: decoded.email,
+          firstName: decoded.given_name,
+          lastName: decoded.family_name,
+          customFields: result.customFields || [],
+          googleAuth: true,
+        };
+        login(loginData);
+        navigate('/decks');
+      }
+    } catch (err) {
+      setError(err.message || 'Google registration failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google registration failed. Please try again.');
   };
 
   const handleSubmit = async (e) => {
@@ -84,10 +129,21 @@ const RegistrationForm = () => {
           try {
             await setInitialSubscriptionStatus(result.contact.id, false);
             // Add Reflio signup tracking
-            await Reflio.signup(userData.email);
+            if (typeof Reflio !== 'undefined') {
+              await Reflio.signup(userData.email);
+            }
           } catch (error) {
             console.error('Failed to set initial subscription status or track Reflio signup:', error);
           }
+        }
+        
+        // Return success data for Google registration
+        if (userData.password === 'GOOGLE_AUTH') {
+          return {
+            success: true,
+            contactId: result.contact.id,
+            customFields: result.contact.customFields || []
+          };
         }
         
         setSuccess(true);
@@ -99,11 +155,19 @@ const RegistrationForm = () => {
         }, 2000);
       } else {
         const errorResult = await response.json();
-        setError(errorResult.message || 'Registration failed. Please try again.');
+        const errorMessage = errorResult.message || 'Registration failed. Please try again.';
+        if (userData.password === 'GOOGLE_AUTH') {
+          throw new Error(errorMessage);
+        }
+        setError(errorMessage);
         setLoading(false);
       }
     } catch (error) {
-      setError('Registration failed: Network error. Please check your connection and try again.');
+      const errorMessage = 'Registration failed: Network error. Please check your connection and try again.';
+      if (userData.password === 'GOOGLE_AUTH') {
+        throw error;
+      }
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -300,6 +364,30 @@ const RegistrationForm = () => {
             )}
           </span>
         </button>
+      </div>
+
+      {/* Divider */}
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-slate-600/50"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-4 bg-slate-900 text-slate-400 font-medium">Or continue with</span>
+        </div>
+      </div>
+
+      {/* Google Registration Button */}
+      <div className="w-full">
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+          useOneTap={false}
+          theme="filled_black"
+          size="large"
+          width="100%"
+          text="signup_with"
+          shape="rectangular"
+        />
       </div>
     </form>
   );

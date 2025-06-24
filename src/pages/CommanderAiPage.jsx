@@ -93,7 +93,7 @@ const CommanderAiPage = () => {
     setSuggestions([]);
     setError(null);
 
-    const prompt = `Suggest 12 MTG commanders for: "${preferences}"
+    const prompt = `Suggest 15 MTG commanders for: "${preferences}"
 
 Return JSON array only:
 [
@@ -120,7 +120,7 @@ Requirements:
         body: JSON.stringify({
           model: 'o3-2025-04-16',
           messages: [{ role: 'user', content: prompt }],
-          max_completion_tokens: 4000, // Reduced from 12000 to avoid truncation
+          max_completion_tokens: 8000, // Reduced from 12000 to avoid truncation
         }),
       });
 
@@ -303,9 +303,16 @@ Requirements:
   const handleSaveNewDeckFromAI = async (commanderToSaveAsNewDeck) => {
     if (!isAuthenticated) {
         setAlertModalConfig({
-            title: 'Login Required',
-            message: 'Please log in to save a new deck.',
-            showCancelButton: false,
+            title: 'Login Required to Save Deck',
+            message: 'To save your deck to the cloud, please log in or create an account. You can continue exploring commanders without logging in!',
+            onConfirm: () => {
+                setIsAlertModalOpen(false);
+                navigate('/login', { state: { from: '/commander-ai' } });
+            },
+            confirmText: 'Go to Login',
+            showCancelButton: true,
+            cancelText: 'Continue Exploring',
+            onCloseOverride: () => setIsAlertModalOpen(false)
         });
         setIsAlertModalOpen(true);
         return;

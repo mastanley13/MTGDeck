@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import './App.css';
 import HomePage from './pages/HomePage.jsx';
 import DeckBuilderPage from './pages/DeckBuilder.jsx';
@@ -25,11 +26,14 @@ import Navbar from './components/ui/Navbar.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 
 function App() {
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
   return (
-    <AuthProvider>
-      <SubscriptionProvider>
-        <DeckProvider>
-          <Router>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthProvider>
+        <SubscriptionProvider>
+          <DeckProvider>
+            <Router>
             <div className="app min-h-screen bg-theme-bg-primary">
               <Navbar />
               <main className="px-4 md:px-6 lg:px-8 pb-12 max-w-7xl mx-auto">
@@ -48,9 +52,9 @@ function App() {
 
                   <Route path="/commander-ai" element={<CommanderAiPage />} />
                   <Route path="/tutor-ai" element={<TutorAiPage />} />
+                  <Route path="/builder" element={<DeckBuilderPage />} />
 
                   <Route element={<ProtectedRoute />}>
-                    <Route path="/builder" element={<DeckBuilderPage />} />
                     <Route path="/decks" element={<DeckViewer />} />
                     <Route path="/decks/:deckId" element={<DeckViewer />} />
                     <Route path="/profile" element={<UserProfilePage />} />
@@ -100,6 +104,7 @@ function App() {
         </DeckProvider>
       </SubscriptionProvider>
     </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

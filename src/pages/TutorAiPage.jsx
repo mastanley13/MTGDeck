@@ -288,6 +288,13 @@ const TutorAiPage = () => {
       return;
     }
 
+    // Check authentication for saving to cloud decks
+    if (!currentUser) {
+      toast.error('Please log in to add cards to saved decks');
+      handleCloseDeckModal();
+      return;
+    }
+
     // --- Step 1: Fetch the latest version of the selected deck from GHL ---
     let latestDeckRecord = null;
     try {

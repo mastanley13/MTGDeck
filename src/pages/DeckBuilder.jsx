@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CommanderSearch from '../components/search/CommanderSearch.jsx';
 import SearchBar from '../components/search/SearchBar.jsx';
 import SearchResults from '../components/search/SearchResults.jsx';
@@ -27,6 +28,7 @@ import { IconCrown } from '@tabler/icons-react';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 
 const DeckBuilderAIPage = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('deck'); // 'search', 'deck', 'stats', 'playbook'
   const [validationError, setValidationError] = useState(null);
   const [isCommanderSearchModalOpen, setIsCommanderSearchModalOpen] = useState(false);
@@ -197,9 +199,16 @@ const DeckBuilderAIPage = () => {
     }
     if (!currentUser || !currentUser.id) {
         setAlertModalConfig({
-            title: 'User Not Found',
-            message: 'Could not identify user. Please ensure you are logged in to save to the cloud.',
-            showCancelButton: false,
+            title: 'Login Required to Save Deck',
+            message: 'To save your deck to the cloud, please log in or create an account. Your progress will be preserved!',
+            onConfirm: () => {
+                setIsAlertModalOpen(false);
+                navigate('/login', { state: { from: '/builder' } });
+            },
+            confirmText: 'Go to Login',
+            showCancelButton: true,
+            cancelText: 'Continue Building',
+            onCloseOverride: () => setIsAlertModalOpen(false)
         });
         setIsAlertModalOpen(true);
         return;
