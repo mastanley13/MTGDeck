@@ -18,6 +18,7 @@ import BlogPage from './pages/BlogPage.jsx';
 import AffiliatePage from './pages/AffiliatePage.jsx';
 import BlogPostPage from './pages/BlogPostPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
+import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx';
 import CardDebugger from './components/debug/CardDebugger.jsx';
 import { DeckProvider } from './context/DeckContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -43,6 +44,7 @@ function App() {
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/card-search" element={<CardSearchPage />} />
                   <Route path="/subscription" element={<SubscriptionPage />} />
+                  <Route path="/payment-success" element={<PaymentSuccessPage />} />
                   <Route path="/how-to-play" element={<HowToPlayPage />} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />

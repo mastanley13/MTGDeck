@@ -52,7 +52,7 @@ const AffiliatePage = () => {
                 onClick={handleApplyClick}
                 className="btn-modern btn-modern-primary btn-modern-xl premium-glow group">
                 <span className="flex items-center space-x-3">
-                  <span>⚡ Apply Now</span>
+                  <span>Join Now</span>
                   <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
@@ -134,9 +134,9 @@ const AffiliatePage = () => {
                 </div>
               </div>
               <div className="ml-6">
-                <h3 className="text-xl font-bold text-white mb-2">Apply</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Create Reflio Account</h3>
                 <p className="text-slate-300">
-                  Complete our simple application form to become an affiliate partner. We'll review your application and get back to you within 24 hours.
+                  Sign up for a free Reflio account to get started with our affiliate program.
                 </p>
               </div>
             </div>
@@ -148,9 +148,9 @@ const AffiliatePage = () => {
                 </div>
               </div>
               <div className="ml-6">
-                <h3 className="text-xl font-bold text-white mb-2">Share</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Join AIDeckTutor Campaign</h3>
                 <p className="text-slate-300">
-                  Get your unique affiliate link and promotional materials. Share them with your audience through your preferred channels.
+                  Join our campaign and get your unique affiliate link to start sharing with your audience.
                 </p>
               </div>
             </div>
@@ -162,9 +162,9 @@ const AffiliatePage = () => {
                 </div>
               </div>
               <div className="ml-6">
-                <h3 className="text-xl font-bold text-white mb-2">Earn</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Add PayPal and Earn</h3>
                 <p className="text-slate-300">
-                  Earn 30% commission on every premium subscription purchase. Track your earnings in real-time and receive monthly payouts.
+                  Connect your PayPal account and start earning 30% commission on every premium subscription purchase.
                 </p>
               </div>
             </div>
@@ -175,7 +175,7 @@ const AffiliatePage = () => {
           <button 
             onClick={handleApplyClick}
             className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-            Apply Now
+            Join Now
           </button>
           <p className="mt-4 text-sm text-gray-500">
             Questions? Contact our affiliate support team at support@aideckbuilder.com
