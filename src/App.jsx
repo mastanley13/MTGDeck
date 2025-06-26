@@ -29,8 +29,17 @@ import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 function App() {
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+  // Add error handling for missing client ID
+  if (!GOOGLE_CLIENT_ID) {
+    console.error('Missing GOOGLE_CLIENT_ID environment variable');
+  }
+
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider 
+      clientId={GOOGLE_CLIENT_ID}
+      onScriptLoadError={(err) => console.error('Google OAuth Script Load Error:', err)}
+      onScriptLoadSuccess={() => console.log('Google OAuth Script Loaded Successfully')}
+    >
       <AuthProvider>
         <SubscriptionProvider>
           <DeckProvider>

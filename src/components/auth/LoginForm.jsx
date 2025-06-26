@@ -18,7 +18,8 @@ const LoginForm = () => {
   const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
   const GHL_API_VERSION = '2021-07-28';
   const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
-  const PASSWORD_CUSTOM_FIELD_ID = '6826285e413da0c206873a0e';
+  const PASSWORD_CUSTOM_FIELD_ID = '7GbpQNKTkpS3Od2U0xEl';
+  const BACKUP_PASSWORD_FIELD_ID = 'jlDlXSAPDElE3BaA9Usa';
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
@@ -99,27 +100,47 @@ const LoginForm = () => {
     setError('');
 
     try {
-      // Search for contacts by email using a more reliable endpoint
-      const response = await fetch(`${GHL_API_BASE_URL}/contacts/?locationId=${GHL_LOCATION_ID}&email=${encodeURIComponent(email)}`, {
+      // Search for contacts by email using the correct endpoint
+      const response = await fetch(`${GHL_API_BASE_URL}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID}&email=${encodeURIComponent(email)}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${GHL_API_TOKEN}`,
           'Version': GHL_API_VERSION,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
-        },
+        }
       });
 
       if (!response.ok) {
-        throw new Error('Network error. Please try again.');
+        const errorData = await response.text();
+        console.error('GHL API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          email: email
+        });
+        
+        if (response.status === 422) {
+          throw new Error('Invalid email format or missing required fields.');
+        } else if (response.status === 403) {
+          throw new Error('Authentication failed. Please check your credentials.');
+        } else if (response.status === 404) {
+          throw new Error('Email not found. Please check your email or register.');
+        } else {
+          throw new Error('Network error. Please try again.');
+        }
       }
 
       const data = await response.json();
       console.log('Login search response:', data);
 
-      if (data.contacts && data.contacts.length > 0) {
-        const contact = data.contacts[0];
-        const passwordField = contact.customFields?.find(cf => cf.id === PASSWORD_CUSTOM_FIELD_ID);
+      if (data.contact) {
+        const contact = data.contact;
+        const passwordField = contact.customFields?.find(cf => 
+          cf.id === PASSWORD_CUSTOM_FIELD_ID || cf.id === BACKUP_PASSWORD_FIELD_ID
+        );
+
+        console.log('Found password field:', passwordField); // Debug log
 
         if (passwordField && (passwordField.value === password || passwordField.value === 'GOOGLE_AUTH')) {
           const userData = {
@@ -134,6 +155,11 @@ const LoginForm = () => {
           const from = location.state?.from || '/decks';
           navigate(from, { replace: true });
         } else {
+          console.log('Password mismatch:', {
+            provided: password,
+            stored: passwordField?.value,
+            isGoogleAuth: passwordField?.value === 'GOOGLE_AUTH'
+          }); // Debug log
           setError('Invalid email or password. Please try again or register.');
           setLoading(false);
         }
