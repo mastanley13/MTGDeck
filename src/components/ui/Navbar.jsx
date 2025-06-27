@@ -205,7 +205,7 @@ const Navbar = () => {
                   <button
                     onClick={() => setIsToolsDropdownOpen(!isToolsDropdownOpen)}
                     className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap flex items-center ${
-                      (isActive('/card-search') || isActive('/how-to-play'))
+                      (isActive('/card-search') || isActive('/how-to-play') || isActive('/affiliate') || isActive('/contact') || isActive('/socials'))
                         ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
                         : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
                     }`}
@@ -219,7 +219,7 @@ const Navbar = () => {
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
-                    {!(isActive('/card-search') || isActive('/how-to-play')) && (
+                    {!(isActive('/card-search') || isActive('/how-to-play') || isActive('/affiliate') || isActive('/contact') || isActive('/socials')) && (
                       <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     )}
                   </button>
@@ -276,6 +276,19 @@ const Navbar = () => {
                       >
                         <div className="flex items-center space-x-3">
                           <span>Contact Us</span>
+                        </div>
+                      </Link>
+                      <Link
+                        to="/socials"
+                        onClick={() => setIsToolsDropdownOpen(false)}
+                        className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
+                          isActive('/socials')
+                            ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span>Socials</span>
                         </div>
                       </Link>
                     </div>
@@ -650,6 +663,19 @@ const Navbar = () => {
                 >
                   <div className="flex items-center space-x-3">
                     <span>Contact Us</span>
+                  </div>
+                </Link>
+                <Link
+                  to="/socials"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/socials')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>Socials</span>
                   </div>
                 </Link>
               </div>
