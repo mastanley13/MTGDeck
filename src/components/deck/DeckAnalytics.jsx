@@ -440,7 +440,8 @@ const DeckInsights = ({ analysis }) => {
   const insights = [];
   
   // Calculate non-land cards for mana curve analysis
-  const nonLandCards = analysis.totalCards - (analysis.typeBreakdown.Land || 0);
+  // Use mainDeckCards for non-land calculation since lands are part of the 99
+  const nonLandCards = analysis.mainDeckCards - (analysis.typeBreakdown.Land || 0);
   const landCount = analysis.typeBreakdown.Land || 0;
   
   // Add game changer analysis
@@ -815,7 +816,7 @@ const DeckAnalytics = ({ deck }) => {
         <StatCard
           title="Total Cards"
           value={analysis.totalCards}
-          subtitle="cards in deck"
+          subtitle={`${analysis.mainDeckCards} main deck + ${analysis.hasCommander ? '1 commander' : '0 commander'}`}
           icon={<IconCards size={24} />}
           gradient={true}
         />

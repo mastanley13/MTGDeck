@@ -1,12 +1,22 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
 import { getCachedCard, cacheCard } from '../utils/cardCache';
 import { getCardById } from '../utils/scryfallAPI';
+import { 
+  validateDeckStructure, 
+  getTotalCardCount, 
+  getMainDeckCardCount, 
+  getAllCards, 
+  isDeckComplete, 
+  isMainDeckFull, 
+  getDeckCompletionInfo, 
+  getCardType 
+} from '../utils/deckHelpers.js';
 
 // GHL API Constants
 const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
 const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
 const GHL_API_VERSION = '2021-07-28';
-const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
+const GHL_LOCATION_ID = import.meta.env.VITE_LOCATION_ID;
 const GHL_DECK_OBJECT_KEY = 'custom_objects.decks';
 const GHL_ASSOCIATION_ID = '6826283c413da0c2068739e9';
 const GHL_SHORT_DECK_NAME_FIELD_KEY = 'decks';
@@ -145,25 +155,18 @@ const deckReducer = (state, action) => {
     case Actions.ADD_CARD: {
       const card = action.payload;
       
-      // Calculate current non-commander card quantity
-      const currentNonCommanderCardsCount = state.cards.reduce((sum, c) => sum + (c.quantity || 1), 0);
+      // Use standardized counting function
+      const currentMainDeckCount = getMainDeckCardCount(state.cards);
 
-      // If deck is already at 99 non-commander cards, block additions/increments
-      if (currentNonCommanderCardsCount >= 99) {
+      // If main deck is already at 99 cards, block additions/increments
+      if (currentMainDeckCount >= 99) {
         const isExistingCard = state.cards.some(c => c.id === card.id);
-        // Allow incrementing quantity only if the card is already in the deck AND its increment won't push total over 99
-        // However, simpler is: if count is 99, only allow if it's an existing card AND its quantity won't increase total.
-        // Safest: if current count >= 99, only allow adding if it's an existing card AND we are NOT increasing its quantity.
-        // But the original logic was just to add a card. The goal is to not exceed 99 total.
+        
         if (isExistingCard) {
-          // If card exists, existing logic tries to increment quantity.
-          // If currentNonCommanderCardsCount is 99, incrementing an existing card's quantity also makes it > 99.
-          // So, if count is 99, no more additions or increments.
-          console.warn(`Deck has ${currentNonCommanderCardsCount} non-commander cards. Cannot add/increment card ${card.name} as deck would exceed 99 cards.`);
+          console.warn(`Main deck has ${currentMainDeckCount} cards. Cannot increment card ${card.name} as deck would exceed 99 cards.`);
           return state;
         } else {
-          // Trying to add a new card type when deck is already at 99.
-          console.warn(`Deck has ${currentNonCommanderCardsCount} non-commander cards. Cannot add NEW card ${card.name} as deck is full.`);
+          console.warn(`Main deck has ${currentMainDeckCount} cards. Cannot add new card ${card.name} as deck is full.`);
           return state;
         }
       }
@@ -331,12 +334,19 @@ const deckReducer = (state, action) => {
       
     case Actions.UPDATE_CARD_CATEGORY: {
       const { cardId, category } = action.payload;
+      const updatedCategories = { ...state.cardCategories };
+      
+      if (category === null) {
+        // Remove the custom category (revert to default)
+        delete updatedCategories[cardId];
+      } else {
+        // Set the custom category
+        updatedCategories[cardId] = category;
+      }
+      
       return {
         ...state,
-        cardCategories: {
-          ...state.cardCategories,
-          [cardId]: category
-        }
+        cardCategories: updatedCategories
       };
     }
     
@@ -394,35 +404,53 @@ export const DeckProvider = ({ children }) => {
       const savedDecks = localStorage.getItem('mtg_saved_decks');
       if (savedDecks) {
         const parsedDecks = JSON.parse(savedDecks);
+        // Validate each deck structure to fix any issues
+        const validatedDecks = parsedDecks.map(deck => validateDeckStructure(deck)).filter(deck => deck !== null);
         dispatch({ 
           type: Actions.INIT_SAVED_DECKS, 
-          payload: parsedDecks 
+          payload: validatedDecks 
         });
       }
     } catch (error) {
       console.error('Error loading saved decks:', error);
     }
   }, []);
+
+  // Save to localStorage whenever savedDecks changes (this handles the auto-save)
+  useEffect(() => {
+    if (state.savedDecks && state.savedDecks.length > 0) {
+      try {
+        localStorage.setItem('mtg_saved_decks', JSON.stringify(state.savedDecks));
+      } catch (error) {
+        console.error('Error saving decks to localStorage:', error);
+      }
+    }
+  }, [state.savedDecks]);
   
   // Derived state computations (memoized)
-  const { cardsByType, totalCardCount } = useMemo(() => {
+  const { cardsByType, totalCardCount, mainDeckCardCount, deckCompletionInfo } = useMemo(() => {
     const newCardsByType = {};
-    let newTotalCardCount = 0;
+    const completionInfo = getDeckCompletionInfo(state.cards, state.commander);
 
     if (state.cards && Array.isArray(state.cards)) {
       state.cards.forEach(card => {
         const customCategory = state.cardCategories && state.cardCategories[card.id];
-        const category = customCategory || getCardType(card); // getCardType must be stable or defined outside
+        const category = customCategory || getCardType(card);
 
         if (!newCardsByType[category]) {
           newCardsByType[category] = [];
         }
         newCardsByType[category].push(card);
-        newTotalCardCount += (card.quantity || 1);
       });
     }
-    return { cardsByType: newCardsByType, totalCardCount: newTotalCardCount };
-  }, [state.cards, state.cardCategories]); // Dependencies: state.cards and state.cardCategories
+    
+    return { 
+      cardsByType: newCardsByType, 
+      totalCardCount: completionInfo.totalCount,  // Total including commander
+      mainDeckCardCount: completionInfo.mainDeckCount,  // Main deck only
+      deckCompletionInfo: completionInfo
+    };
+  }, [state.cards, state.cardCategories, state.commander]);
   
   // Action creators
   const setCommander = (commander) => {
@@ -479,15 +507,39 @@ export const DeckProvider = ({ children }) => {
   };
   
   // New function for updating card categories
-  const updateCardCategory = (cardId, category) => {
+  const updateCardCategory = useCallback((cardId, category) => {
     dispatch({
       type: Actions.UPDATE_CARD_CATEGORY,
       payload: { cardId, category }
     });
-  };
+    
+    // Auto-save the current deck after updating categories
+    setTimeout(() => {
+      dispatch({
+        type: Actions.SAVE_DECK,
+        payload: {
+          name: state.currentDeckName,
+          description: state.deckDescription
+        }
+      });
+      // Deck auto-saved with categories
+    }, 100);
+  }, [state.currentDeckName, state.deckDescription]);
   
   // New function to save deck to GHL and then locally
   const saveCurrentDeckToGHL = useCallback(async (contactId, commanderNameForGHLInput, localDeckName, deckToSave) => {
+    // Validate required environment variables first
+    if (!GHL_API_TOKEN) {
+      console.error("GHL API Token is missing. Please check VITE_GHL_API_KEY environment variable.");
+      dispatch({ type: Actions.SAVE_DECK_GHL_ERROR, payload: "GHL API Token is missing. Please check configuration." });
+      return false;
+    }
+    if (!GHL_LOCATION_ID || typeof GHL_LOCATION_ID !== 'string' || GHL_LOCATION_ID.trim() === '') {
+      console.error("GHL Location ID is missing or invalid. Please check VITE_LOCATION_ID environment variable.");
+      dispatch({ type: Actions.SAVE_DECK_GHL_ERROR, payload: "locationId must be a string,locationId should not be empty" });
+      return false;
+    }
+
     // Use deckToSave if provided, otherwise fall back to context state
     const commander = deckToSave?.commander || state.commander;
     const cards = deckToSave?.cards || state.cards;
@@ -533,6 +585,16 @@ export const DeckProvider = ({ children }) => {
       [GHL_SHORT_DECK_NAME_FIELD_KEY]: commanderNameForGHL,
       [GHL_SHORT_DECK_DATA_FIELD_KEY]: JSON.stringify(deckDataToStoreInGHLField)
     };
+    
+    console.log('📦 Prepared deck data for GHL:', {
+      localDeckName,
+      commanderNameForGHL,
+      commanderName: commander?.name,
+      cardsCount: cards?.length || 0,
+      minimizedMainboardCount: minimizedMainboard?.length || 0,
+      deckDataKeys: Object.keys(deckDataToStoreInGHLField),
+      propertiesKeys: Object.keys(propertiesForGHLRecord)
+    });
     try {
       const deckDataStringForLengthCheck = JSON.stringify(deckDataToStoreInGHLField);
       if (deckDataStringForLengthCheck.length > 12000) {
@@ -543,7 +605,14 @@ export const DeckProvider = ({ children }) => {
       let recordResult, newGHLDeckRecordId;
       if (deckId) {
         // UPDATE EXISTING DECK (PUT)
-        const updateResponse = await fetch(`${GHL_API_BASE_URL}/objects/${GHL_DECK_OBJECT_KEY}/records/${deckId}`,
+        console.log('🔄 Updating existing deck in GHL:', {
+          deckId,
+          url: `${GHL_API_BASE_URL}/objects/${GHL_DECK_OBJECT_KEY}/records/${deckId}?locationId=${GHL_LOCATION_ID}`,
+          propertiesKeys: Object.keys(propertiesForGHLRecord),
+          deckDataLength: JSON.stringify(deckDataToStoreInGHLField).length
+        });
+        
+        const updateResponse = await fetch(`${GHL_API_BASE_URL}/objects/${GHL_DECK_OBJECT_KEY}/records/${deckId}?locationId=${GHL_LOCATION_ID}`,
           {
             method: 'PUT',
             headers: {
@@ -553,16 +622,21 @@ export const DeckProvider = ({ children }) => {
               'Accept': 'application/json',
             },
             body: JSON.stringify({
-              locationId: GHL_LOCATION_ID,
               properties: propertiesForGHLRecord
             })
           }
         );
+        
+        console.log('📡 GHL Update Response Status:', updateResponse.status);
+        
         if (!updateResponse.ok) {
           const errorData = await updateResponse.json().catch(() => ({ message: 'Failed to update deck in GHL.' }));
+          console.error('❌ GHL Update Error:', errorData);
           throw new Error(errorData.message || `GHL Update Record Error: ${updateResponse.status} - ${await updateResponse.text()}`);
         }
+        
         recordResult = await updateResponse.json();
+        console.log('✅ GHL Update Success:', recordResult);
         newGHLDeckRecordId = deckId; // Keep the same ID
         // No need to create association again
       } else {
@@ -633,6 +707,19 @@ export const DeckProvider = ({ children }) => {
       dispatch({ type: Actions.FETCH_USER_DECKS_ERROR, payload: "Contact ID is required to fetch decks." });
       return;
     }
+    
+    // Validate required environment variables
+    if (!GHL_API_TOKEN) {
+      console.error("GHL API Token is missing. Please check VITE_GHL_API_KEY environment variable.");
+      dispatch({ type: Actions.FETCH_USER_DECKS_ERROR, payload: "GHL API Token is missing. Please check configuration." });
+      return;
+    }
+    if (!GHL_LOCATION_ID || typeof GHL_LOCATION_ID !== 'string' || GHL_LOCATION_ID.trim() === '') {
+      console.error("GHL Location ID is missing or invalid. Please check VITE_LOCATION_ID environment variable.");
+      dispatch({ type: Actions.FETCH_USER_DECKS_ERROR, payload: "GHL Location ID is missing. Please check configuration." });
+      return;
+    }
+    
     dispatch({ type: Actions.FETCH_USER_DECKS_START });
 
     try {
@@ -755,7 +842,7 @@ export const DeckProvider = ({ children }) => {
                 }
             });
 
-            return {
+            const deckData = {
               id: record.id, 
               name: parsedDeckGHLData.adn || (record.properties && record.properties[GHL_SHORT_DECK_NAME_FIELD_KEY]) || 'Untitled Deck',
               description: parsedDeckGHLData.dsc || '', 
@@ -764,6 +851,11 @@ export const DeckProvider = ({ children }) => {
               cardCategories: cardCategories,
               lastUpdated: parsedDeckGHLData.ls || record.updatedAt,
             };
+
+            // Validate deck structure to fix common issues like commander double-counting
+            const validatedDeckData = validateDeckStructure(deckData);
+
+            return validatedDeckData;
           } catch (e) {
             console.error(`Error processing GHL deck record ${record.id}: `, e);
             return null;
@@ -783,41 +875,23 @@ export const DeckProvider = ({ children }) => {
     }
   }, [dispatch]);
   
-  // Expose getCardType separately as it's used by other functions and might be needed by components
-  // Ensure getCardType is stable if it's a dependency elsewhere or defined outside the component scope if static
-  function getCardType(card) { // Moved getCardType to be accessible by useMemo
-    const typeLine = card.type_line || '';
-    
-    if (typeLine.includes('Land')) {
-      return 'Lands';
-    } else if (typeLine.includes('Creature')) {
-      return 'Creatures';
-    } else if (typeLine.includes('Artifact')) {
-      if (typeLine.includes('Creature')) { // Check if it's an Artifact Creature
-        return 'Creatures';
-      }
-      return 'Artifacts';
-    } else if (typeLine.includes('Enchantment')) {
-      if (typeLine.includes('Creature')) { // Check if it's an Enchantment Creature
-        return 'Creatures';
-      }
-      return 'Enchantments';
-    } else if (typeLine.includes('Planeswalker')) {
-      return 'Planeswalkers';
-    } else if (typeLine.includes('Instant')) {
-      return 'Instants';
-    } else if (typeLine.includes('Sorcery')) {
-      return 'Sorceries';
-    } else {
-      return 'Other'; // Default category
-    }
-  }
+
   
   // Function to delete a deck from GHL and locally
   const deleteDeckFromGHL = useCallback(async (deckId, contactId) => {
     if (!deckId) {
       console.error('Deck ID is required to delete a deck.');
       return { success: false, error: 'Deck ID is required.' };
+    }
+    
+    // Validate required environment variables
+    if (!GHL_API_TOKEN) {
+      console.error("GHL API Token is missing. Please check VITE_GHL_API_KEY environment variable.");
+      return { success: false, error: 'GHL API Token is missing. Please check configuration.' };
+    }
+    if (!GHL_LOCATION_ID || typeof GHL_LOCATION_ID !== 'string' || GHL_LOCATION_ID.trim() === '') {
+      console.error("GHL Location ID is missing or invalid. Please check VITE_LOCATION_ID environment variable.");
+      return { success: false, error: 'GHL Location ID is missing. Please check configuration.' };
     }
     try {
       // 1. Delete the deck record from GHL (no locationId in URL)
@@ -853,7 +927,9 @@ export const DeckProvider = ({ children }) => {
   const value = {
     ...state,
     cardsByType, // Added back
-    totalCardCount, // Added back
+    totalCardCount, // Total cards including commander (100 for complete deck)
+    mainDeckCardCount, // Main deck cards only (99 for complete deck)
+    deckCompletionInfo, // Detailed completion information
     setCommander,
     addCard,
     removeCard,
@@ -869,7 +945,6 @@ export const DeckProvider = ({ children }) => {
     setDeckDescription,
     importDeck,
     updateCardCategory,
-    getCardType, // Exposing getCardType
     deleteDeckFromGHL, // Expose the new function
   };
   

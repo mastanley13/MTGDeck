@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CommanderSearch from '../components/search/CommanderSearch.jsx';
 import SearchBar from '../components/search/SearchBar.jsx';
@@ -12,6 +12,7 @@ import DeckPlaybook from '../components/deck/DeckPlaybook.jsx';
 // import AIChatbot from '../components/ai/AIChatbot.jsx';
 import AutoDeckBuilder from '../components/ai/AutoDeckBuilder.jsx';
 import StickyCommanderHeader from '../components/deck/StickyCommanderHeader.jsx';
+import DeckImporter from '../components/deck/DeckImporter.jsx';
 import useCardSearch from '../hooks/useCardSearch';
 import { useDeck } from '../context/DeckContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -20,18 +21,21 @@ import PaywallModal from '../components/paywall/PaywallModal.jsx';
 import UsageBanner from '../components/paywall/UsageBanner.jsx';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { validateColorIdentity, validateFormatLegality, isDeckValid } from '../utils/deckValidator';
+import { validateColorIdentity, validateFormatLegality, isDeckValid, useDeckValidation } from '../utils/deckValidator';
 import AlertModal from '../components/ui/AlertModal.jsx';
 import InputModal from '../components/ui/InputModal.jsx';
 import CardDetailModal from '../components/ui/CardDetailModal.jsx';
 import { IconCrown } from '@tabler/icons-react';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
+import { getTotalCardCount, getMainDeckCardCount } from '../utils/deckHelpers.js';
+import debounce from 'lodash/debounce';
 
 const DeckBuilderAIPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('deck'); // 'search', 'deck', 'stats', 'playbook'
   const [validationError, setValidationError] = useState(null);
   const [isCommanderSearchModalOpen, setIsCommanderSearchModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
   // State for the AlertModal
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
@@ -68,7 +72,8 @@ const DeckBuilderAIPage = () => {
   });
 
   const { currentUser } = useAuth();
-  const { canSaveMoreDecks, isPremium } = useSubscription();
+  const { canSaveMoreDecks, isPremium, getCurrentLimits } = useSubscription();
+  const limits = useMemo(() => getCurrentLimits(), [getCurrentLimits]);
 
   const {
     commander,
@@ -91,6 +96,17 @@ const DeckBuilderAIPage = () => {
     order: 'edhrec', // Default sort by popularity
   });
 
+  // Memoize validation results
+  const deckValidation = useDeckValidation(commander, cards);
+  
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((query) => {
+      setSearchQuery(query);
+    }, 300),
+    []
+  );
+
   // Handler to open the card detail modal
   const handleOpenCardDetailModal = (card) => {
     setSelectedCardForDetailModal(card);
@@ -103,8 +119,8 @@ const DeckBuilderAIPage = () => {
     setSelectedCardForDetailModal(null);
   };
 
-  // Handle clicking a card in the search results
-  const handleCardClick = (card) => {
+  // Memoized card click handler
+  const handleCardClick = useCallback((card) => {
     // Clear previous validation errors
     setValidationError(null);
 
@@ -117,21 +133,11 @@ const DeckBuilderAIPage = () => {
       return;
     }
 
-    // Verify color identity compliance
-    const colorIdentityCheck = isColorIdentityCompliant(card);
-    if (!colorIdentityCheck.isCompliant) {
+    // Use memoized validation results
+    const validationResult = deckValidation;
+    if (!validationResult.isValid) {
       setValidationError({
-        message: colorIdentityCheck.message,
-        card
-      });
-      return;
-    }
-
-    // Verify format legality
-    const formatLegalityCheck = isFormatLegal(card);
-    if (!formatLegalityCheck.isLegal) {
-      setValidationError({
-        message: formatLegalityCheck.message,
+        message: validationResult.message,
         card
       });
       return;
@@ -139,196 +145,81 @@ const DeckBuilderAIPage = () => {
 
     // Add the card to the deck
     addCard(card);
-  };
-
-  // Helper function to check color identity compliance
-  const isColorIdentityCompliant = (card) => {
-    if (!commander || !card) {
-      return { 
-        isCompliant: false,
-        message: 'No commander selected.' 
-      };
-    }
-
-    // Extract commander's color identity
-    const commanderColors = commander.color_identity || [];
-    
-    // Extract card's color identity
-    const cardColors = card.color_identity || [];
-    
-    // For each color in the card, check if it's in the commander's color identity
-    const isCompliant = cardColors.every(color => commanderColors.includes(color));
-    
-    return {
-      isCompliant,
-      message: isCompliant 
-        ? 'Color identity compliant.' 
-        : `Card's color identity (${cardColors.join('')}) is not allowed in ${commander.name}'s color identity (${commanderColors.join('')}).`
-    };
-  };
-
-  // Helper function to check format legality
-  const isFormatLegal = (card) => {
-    if (!card || !card.legalities) {
-      return { 
-        isLegal: false,
-        message: 'Unable to verify card legality.' 
-      };
-    }
-
-    const isLegal = card.legalities.commander === 'legal';
-    
-    return {
-      isLegal,
-      message: isLegal 
-        ? 'Card is legal in Commander format.' 
-        : `${card.name} is not legal in Commander format.`
-    };
-  };
+  }, [commander, deckValidation, addCard]);
 
   // Enhanced handleSaveDeck with paywall integration
-  const handleSaveDeck = async (isFabClick = false) => {
+  const handleSaveDeck = useCallback(async (isFabClick = false) => {
     if (!commander) {
-        setAlertModalConfig({
-            title: 'No Commander',
-            message: 'Please select a commander before saving your deck.',
-            showCancelButton: false,
-        });
-        setIsAlertModalOpen(true);
-        return;
-    }
-    if (!currentUser || !currentUser.id) {
-        setAlertModalConfig({
-            title: 'Login Required to Save Deck',
-            message: 'To save your deck to the cloud, please log in or create an account. Your progress will be preserved!',
-            onConfirm: () => {
-                setIsAlertModalOpen(false);
-                navigate('/login', { state: { from: '/builder' } });
-            },
-            confirmText: 'Go to Login',
-            showCancelButton: true,
-            cancelText: 'Continue Building',
-            onCloseOverride: () => setIsAlertModalOpen(false)
-        });
-        setIsAlertModalOpen(true);
-        return;
-    }
-
-    // Check paywall limits before proceeding
-    const existingDeck = savedDecks.find(deck => deck.name === currentDeckName.trim());
-    const isNewDeck = !existingDeck;
-    
-    if (isNewDeck && !isPremium && !canSaveMoreDecks) {
-      setPaywallModalConfig({
-        type: 'deck',
-        title: 'Deck Save Limit Reached',
-        message: `You've reached the maximum of 5 saved decks on the free plan. Upgrade to Premium for unlimited deck saves.`,
-      });
-      setIsPaywallModalOpen(true);
-      return;
-    }
-
-    const deckValidation = isDeckValid(commander, cards);
-
-    const performSaveFlow = async (deckNameToSaveLocally) => {
-      if (!deckNameToSaveLocally || deckNameToSaveLocally.trim() === '') {
-        setAlertModalConfig({
-          title: 'Missing Name',
-          message: 'Please enter a valid deck name for your local records.',
-          showCancelButton: false,
-        });
-        setIsAlertModalOpen(true);
-        return;
-      }
-
-      // Check paywall limits again with the final deck name
-      const finalExistingDeck = savedDecks.find(deck => deck.name === deckNameToSaveLocally.trim());
-      const finalIsNewDeck = !finalExistingDeck;
-      
-      if (finalIsNewDeck && !isPremium && !canSaveMoreDecks) {
-        setPaywallModalConfig({
-          type: 'deck',
-          title: 'Deck Save Limit Reached',
-          message: `You've reached the maximum of 5 saved decks on the free plan. Upgrade to Premium for unlimited deck saves.`,
-        });
-        setIsPaywallModalOpen(true);
-        return;
-      }
-
-      // Call the GHL save function
-      // commander.name will be the name stored in the GHL 'Decks' field
-      // deckNameToSaveLocally will be stored in localStorage and within the GHL JSON payload
-      const success = await saveCurrentDeckToGHL(currentUser.id, commander.name, deckNameToSaveLocally.trim());
-
-      if (success) {
-        // Note: Deck count tracking is now handled automatically by the useDeckWithPaywall hook
-        
-        setAlertModalConfig({
-          title: 'Deck Saved!',
-          message: `Deck "${deckNameToSaveLocally.trim()}" (Commander: ${commander.name}) saved to cloud and locally!`,
-          showCancelButton: false,
-        });
-        setIsAlertModalOpen(true);
-        // Ensure local deck name state is updated if it was prompted or different
-        if (deckNameToSaveLocally.trim() !== currentDeckName) {
-            setDeckName(deckNameToSaveLocally.trim());
-        }
-      } else {
-        // Error is handled by DeckContext and will be in deckContextError
-        // Displaying the error from context
-        setAlertModalConfig({
-          title: 'Save Failed',
-          message: deckContextError || 'An unknown error occurred while saving the deck. Please try again.',
-          showCancelButton: false,
-        });
-        setIsAlertModalOpen(true);
-      }
-    };
-
-    const launchInputModal = (forcePrompt = false) => {
-      setInputModalConfig({
-        title: 'Enter Deck Name for Local Save',
-        message: forcePrompt ? 'Please provide a name for your deck to save it (this name is for your local records).': 'Enter a name for your deck (for local records):',
-        inputLabel: 'Local Deck Name',
-        initialValue: currentDeckName.trim() || commander.name, // Default to commander name if currentDeckName is empty
-        placeholder: 'e.g., My Awesome Deck',
-        onConfirm: async (inputValue) => { // Make onConfirm async
-          setIsInputModalOpen(false);
-          await performSaveFlow(inputValue); // await the save flow
-        },
-        confirmText: 'Confirm & Save',
-      });
-      setIsInputModalOpen(true);
-    };
-
-    if (!deckValidation) { // isDeckValid returns a boolean, so check if false
       setAlertModalConfig({
-        title: 'Validation Issues',
-        message: 'Your deck has validation issues. Do you still want to save it? Click "Save Anyway" to name and save, or "Review Issues" to check them first.',
-        onConfirm: () => {
-          setIsAlertModalOpen(false);
-          launchInputModal(true); 
-        },
-        confirmText: 'Save Anyway',
-        showCancelButton: true,
-        cancelText: 'Review Issues',
-        onCloseOverride: () => { 
-            setIsAlertModalOpen(false);
-            setActiveTab('stats');
-        }
+        title: 'No Commander',
+        message: 'Please select a commander before saving your deck.',
+        showCancelButton: false,
       });
       setIsAlertModalOpen(true);
       return;
     }
 
-    // If deck is valid
-    let deckNameToSaveLocally = currentDeckName.trim();
-    if (isFabClick || !deckNameToSaveLocally) { 
-      launchInputModal(true); 
-    } else {
-      await performSaveFlow(deckNameToSaveLocally); // await the save flow
+    try {
+      // Step 1: Validate deck
+      const validation = await validateDeckAsync(commander, cards);
+      if (!validation.isValid) {
+        setAlertModalConfig({
+          title: 'Validation Error',
+          message: validation.message,
+          showCancelButton: false,
+        });
+        setIsAlertModalOpen(true);
+        return;
+      }
+
+      // Step 2: Check user and paywall status
+      if (!currentUser || !currentUser.id) {
+        setAlertModalConfig({
+          title: 'Login Required to Save Deck',
+          message: 'To save your deck to the cloud, please log in or create an account. Your progress will be preserved!',
+          onConfirm: () => {
+            setIsAlertModalOpen(false);
+            navigate('/login', { state: { from: '/builder' } });
+          },
+          confirmText: 'Go to Login',
+          showCancelButton: true,
+          cancelText: 'Continue Building',
+          onCloseOverride: () => setIsAlertModalOpen(false)
+        });
+        setIsAlertModalOpen(true);
+        return;
+      }
+
+      // Step 3: Check paywall limits
+      const existingDeck = savedDecks.find(deck => deck.name === currentDeckName?.trim());
+      const isNewDeck = !existingDeck;
+      
+      if (isNewDeck && !isPremium && !canSaveMoreDecks) {
+        setPaywallModalConfig({
+          type: 'deck',
+          title: 'Deck Save Limit Reached',
+          message: `Free users can save up to ${limits?.maxDecks || 5} decks. Upgrade to Premium for unlimited deck saves!`
+        });
+        setIsPaywallModalOpen(true);
+        return;
+      }
+
+      // Step 4: Launch input modal or save directly
+      if (isFabClick || !currentDeckName) { 
+        launchInputModal(true); 
+      } else {
+        await performSaveFlow(currentDeckName);
+      }
+    } catch (error) {
+      console.error('Error saving deck:', error);
+      setAlertModalConfig({
+        title: 'Error',
+        message: 'Failed to save deck. Please try again.',
+        showCancelButton: false,
+      });
+      setIsAlertModalOpen(true);
     }
-  };
+  }, [commander, cards, currentUser, isPremium, canSaveMoreDecks, currentDeckName, savedDecks, limits?.maxDecks, navigate]);
 
   const openCommanderSearchModal = () => setIsCommanderSearchModalOpen(true);
   const closeCommanderSearchModal = () => setIsCommanderSearchModalOpen(false);
@@ -337,6 +228,29 @@ const DeckBuilderAIPage = () => {
   const handleCommanderSelectionFromModal = (selectedCmdr) => {
     setCommander(selectedCmdr); // Update global commander state via useDeck
     // Modal closes itself upon selection (if card is not null)
+  };
+
+  // Handle import completion
+  const handleImportComplete = (importedDeck) => {
+    const { name, unresolvedCards, savedToCloud } = importedDeck;
+    
+    // Show results
+    let message = `Successfully imported "${name}" with ${getTotalCardCount(importedDeck)} cards.`;
+    if (unresolvedCards && unresolvedCards.length > 0) {
+      message += ` ${unresolvedCards.length} cards could not be resolved and were skipped.`;
+    }
+    if (savedToCloud) {
+      message += ' Deck saved to cloud!';
+    }
+    
+    setAlertModalConfig({
+      title: 'Import Complete',
+      message,
+      onConfirm: () => setIsAlertModalOpen(false),
+      confirmText: 'OK',
+      showCancelButton: false,
+    });
+    setIsAlertModalOpen(true);
   };
 
   useEffect(() => {
@@ -449,6 +363,14 @@ const DeckBuilderAIPage = () => {
             />
           )}
 
+          {/* Deck Import Modal */}
+          {isImportModalOpen && (
+            <DeckImporter
+              onImportComplete={handleImportComplete}
+              onClose={() => setIsImportModalOpen(false)}
+            />
+          )}
+
           {commander ? (
             <>
               {/* Deck Info Header - Title, Card Count, and potentially Change Commander button */}
@@ -490,7 +412,7 @@ const DeckBuilderAIPage = () => {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
-                        <span>View Deck ({totalCardCount})</span>
+                        <span>View Deck ({getTotalCardCount({ commander, cards })})</span>
                       </div>
                     </button>
 
@@ -551,25 +473,38 @@ const DeckBuilderAIPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleSaveDeck(false)}
-                          disabled={deckContextLoading || !commander} // Disable if loading or no commander
-                          className="btn-modern btn-modern-primary btn-modern-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed premium-glow"
-                        >
-                          {deckContextLoading ? (
-                            <span className="flex items-center space-x-2">
-                              <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                              <span>Saving...</span>
-                            </span>
-                          ) : (
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="btn-modern btn-modern-secondary btn-modern-lg whitespace-nowrap"
+                          >
                             <span className="flex items-center space-x-2">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                               </svg>
-                              <span>Save Deck to Cloud</span>
+                              <span>Import Deck</span>
                             </span>
-                          )}
-                        </button>
+                          </button>
+                          <button
+                            onClick={() => handleSaveDeck(false)}
+                            disabled={deckContextLoading || !commander} // Disable if loading or no commander
+                            className="btn-modern btn-modern-primary btn-modern-lg whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed premium-glow"
+                          >
+                            {deckContextLoading ? (
+                              <span className="flex items-center space-x-2">
+                                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                                <span>Saving...</span>
+                              </span>
+                            ) : (
+                              <span className="flex items-center space-x-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <span>Save Deck to Cloud</span>
+                              </span>
+                            )}
+                          </button>
+                        </div>
                       </div>
                       <DeckBuilderAI 
                         deckSaveControls={null} 

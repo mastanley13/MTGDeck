@@ -1,3 +1,5 @@
+import { getTotalCardCount, getMainDeckCardCount, getAllCards } from './deckHelpers.js';
+
 /**
  * Count the number of cards by converted mana cost (CMC)
  * @param {Array} cards - The deck cards array
@@ -152,8 +154,33 @@ export const getAverageCMC = (cards) => {
 };
 
 /**
+ * Identify game-changing cards in the deck
+ * @param {Array} cards - The deck cards array
+ * @returns {Array} - Array of game-changing cards
+ */
+export const getGameChangers = (cards) => {
+  if (!cards || !Array.isArray(cards)) {
+    return [];
+  }
+
+  // List of known game-changing cards (this could be expanded)
+  const gameChangingCards = [
+    'Sol Ring', 'Mana Crypt', 'Mana Vault', 'Chrome Mox', 'Mox Diamond',
+    'Demonic Tutor', 'Vampiric Tutor', 'Imperial Seal', 'Mystical Tutor',
+    'Cyclonic Rift', 'Rhystic Study', 'Smothering Tithe', 'Dockside Extortionist',
+    'Fierce Guardianship', 'Force of Will', 'Mana Drain', 'Counterspell',
+    'Craterhoof Behemoth', 'Avenger of Zendikar', 'Eldrazi Titans'
+  ];
+
+  return cards.filter(card => 
+    gameChangingCards.includes(card.name) || 
+    (card.cmc >= 7 && card.type_line && card.type_line.includes('Creature'))
+  );
+};
+
+/**
  * Get a full analysis of the deck
- * @param {Object} deck - The deck object
+ * @param {Object} deck - The deck object with cards and commander
  * @returns {Object} - Full deck analysis
  */
 export const analyzeDeck = (deck) => {
@@ -161,13 +188,21 @@ export const analyzeDeck = (deck) => {
     return null;
   }
   
+  // Use standardized functions for consistent counting
+  const allCards = getAllCards(deck.cards, deck.commander);  // Include commander in analysis
+  const totalCards = getTotalCardCount(deck.cards, deck.commander);  // Total including commander
+  const mainDeckCount = getMainDeckCardCount(deck.cards);  // Main deck only
+  
   return {
     deckName: deck.name,
     commander: deck.commander ? deck.commander.name : 'Unknown',
-    totalCards: deck.cards.reduce((total, card) => total + (card.quantity || 1), 0),
-    manaCurve: getManaCurve(deck.cards),
-    colorDistribution: getColorDistribution(deck.cards),
-    typeBreakdown: getCardTypeBreakdown(deck.cards),
-    averageCMC: getAverageCMC(deck.cards)
+    totalCards: totalCards,  // This will now correctly show 100 for complete deck
+    mainDeckCards: mainDeckCount,  // This shows the 99 non-commander cards
+    hasCommander: !!deck.commander,
+    manaCurve: getManaCurve(allCards),  // Include commander in mana curve
+    colorDistribution: getColorDistribution(allCards),  // Include commander in colors
+    typeBreakdown: getCardTypeBreakdown(allCards),  // Include commander in types
+    averageCMC: getAverageCMC(allCards),  // Include commander in average
+    gameChangers: getGameChangers(allCards)  // Include commander in game changers
   };
 }; 

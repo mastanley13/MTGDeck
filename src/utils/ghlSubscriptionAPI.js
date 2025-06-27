@@ -2,7 +2,7 @@
 const GHL_API_BASE_URL = 'https://services.leadconnectorhq.com';
 const GHL_API_TOKEN = import.meta.env.VITE_GHL_API_KEY;
 const GHL_API_VERSION = '2021-07-28';
-const GHL_LOCATION_ID = 'zKZ8Zy6VvGR1m7lNfRkY';
+const GHL_LOCATION_ID = import.meta.env.VITE_LOCATION_ID;
 
 // Subscription field configuration
 // The user's subscription field ID in GoHighLevel

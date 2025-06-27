@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useMemo } from 'react';
 import { getCardImageUris } from '../../utils/scryfallAPI';
 import EnhancedCardImage from '../ui/EnhancedCardImage';
 
@@ -24,14 +24,14 @@ const SearchResults = ({
   onViewDetailsClick,
   totalCards = 0
 }) => {
-  // Sort results to prioritize original cards over Arena cards
-  const sortResultsByCardType = (cards) => {
-    if (!cards || cards.length === 0) return cards;
+  // Memoize sorted results
+  const sortedResults = useMemo(() => {
+    if (!results || results.length === 0) return results;
     
     const originalCards = [];
     const arenaCards = [];
     
-    cards.forEach(card => {
+    results.forEach(card => {
       if (card.name && card.name.startsWith('A-')) {
         arenaCards.push(card);
       } else {
@@ -40,12 +40,11 @@ const SearchResults = ({
     });
     
     return [...originalCards, ...arenaCards];
-  };
+  }, [results]);
 
-  const sortedResults = sortResultsByCardType(results);
   const observer = useRef();
   
-  // Set up intersection observer for infinite scrolling
+  // Memoized intersection observer callback
   const lastCardRef = useCallback(node => {
     if (isLoading) return;
     
@@ -64,19 +63,19 @@ const SearchResults = ({
     }
   }, [isLoading, hasMore, loadMore]);
 
-  // Handle card click
-  const handlePrimaryCardClick = (card) => {
+  // Memoized card click handlers
+  const handlePrimaryCardClick = useCallback((card) => {
     if (onCardClick) {
       onCardClick(card);
     }
-  };
+  }, [onCardClick]);
 
-  const handleViewDetails = (e, card) => {
-    e.stopPropagation(); // Prevent triggering onCardClick when details icon is clicked
+  const handleViewDetails = useCallback((e, card) => {
+    e.stopPropagation();
     if (onViewDetailsClick) {
       onViewDetailsClick(card);
     }
-  };
+  }, [onViewDetailsClick]);
 
   // Display loading state
   if (isLoading && sortedResults.length === 0) {
@@ -121,31 +120,92 @@ const SearchResults = ({
     );
   }
 
+  // Memoized card renderer
+  const CardItem = useMemo(() => ({ card, isLastCard }) => (
+    <div 
+      ref={isLastCard ? lastCardRef : null}
+      key={card.id}
+      className="magic-card group bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 hover:border-primary-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"
+      onClick={() => handlePrimaryCardClick(card)}
+    >
+      <div className="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover mb-3">
+        <EnhancedCardImage
+          card={card}
+          context="GRID_VIEW"
+          aspectRatio="card"
+          className="w-full h-auto"
+          showDoubleFaceToggle={true}
+          alt={`${card.name} Magic: The Gathering card`}
+        />
+        
+        {card.rarity && (
+          <div className={`absolute top-1.5 left-1.5 h-2 w-2 rounded-full z-40
+            ${card.rarity === 'mythic' ? 'bg-orange-500' :
+              card.rarity === 'rare' ? 'bg-yellow-400' :
+              card.rarity === 'uncommon' ? 'bg-gray-300' :
+              'bg-black'}`}>
+          </div>
+        )}
+        
+        {card.name && card.name.startsWith('A-') && (
+          <div className="absolute top-1.5 right-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full font-semibold shadow-lg z-40">
+            Arena
+          </div>
+        )}
+      </div>
+      
+      <div className="mb-3">
+        <div className="text-sm font-semibold text-white leading-tight mb-1">{card.name}</div>
+        <div className="text-xs text-slate-400 truncate">{card.type_line}</div>
+      </div>
+      
+      <div className="flex space-x-2">
+        {onViewDetailsClick && (
+          <button
+            onClick={(e) => handleViewDetails(e, card)}
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-1.5 px-2 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Details</span>
+          </button>
+        )}
+        
+        {onCardClick && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePrimaryCardClick(card);
+            }}
+            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-1.5 px-2 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>Select</span>
+          </button>
+        )}
+      </div>
+    </div>
+  ), [handlePrimaryCardClick, handleViewDetails, lastCardRef]);
+
   return (
     <div className="mt-6">
       <div className="flex justify-between items-center mb-4">
         <div className="text-sm text-gray-400">
           Found {totalCards} card{totalCards !== 1 ? 's' : ''}
         </div>
-        {hasMore && !isLoading && (
-          <button
-            onClick={loadMore}
-            className="text-sm text-primary-400 hover:text-primary-300 font-medium"
-          >
-            Show more results
-          </button>
-        )}
       </div>
       
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {sortedResults.map((card, index) => {
-          // For the last card, add a ref for infinite scrolling
-          const isLastCard = index === sortedResults.length - 1;
-          
-          return (
-                        <div               key={card.id || index}              ref={isLastCard ? lastCardRef : null}              onClick={() => handlePrimaryCardClick(card)}              className="magic-card group bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 hover:border-primary-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer"            >              <div className="relative rounded-xl overflow-hidden shadow-card hover:shadow-card-hover mb-3">                {/* Enhanced card image with lazy loading and optimized quality */}                <EnhancedCardImage                  card={card}                  context="GRID_VIEW"                  aspectRatio="card"                  className="w-full h-auto"                  showDoubleFaceToggle={true}                  alt={`${card.name} Magic: The Gathering card`}                />                                {/* Card rarity indicator */}                {card.rarity && (                  <div className={`absolute top-1.5 left-1.5 h-2 w-2 rounded-full z-40                    ${card.rarity === 'mythic' ? 'bg-orange-500' :                      card.rarity === 'rare' ? 'bg-yellow-400' :                      card.rarity === 'uncommon' ? 'bg-gray-300' :                      'bg-black'}`}>                  </div>                )}                {/* Arena card indicator */}                {card.name && card.name.startsWith('A-') && (                  <div className="absolute top-1.5 right-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full font-semibold shadow-lg z-40">                    Arena                  </div>                )}              </div>                            {/* Card info */}              <div className="mb-3">                <div className="text-sm font-semibold text-white leading-tight mb-1">{card.name}</div>                <div className="text-xs text-slate-400 truncate">{card.type_line}</div>              </div>                            {/* Action buttons - always visible, side by side */}              <div className="flex space-x-2">                {onViewDetailsClick && (                  <button                    onClick={(e) => {                      e.stopPropagation();                      handleViewDetails(e, card);                    }}                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-1.5 px-2 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"                    aria-label={`View details for ${card.name}`}                  >                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />                    </svg>                    <span>Details</span>                  </button>                )}                {onCardClick && (                  <button                    onClick={(e) => {                      e.stopPropagation();                      handlePrimaryCardClick(card);                    }}                    className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-1.5 px-2 rounded-md text-xs font-semibold flex items-center justify-center space-x-1 transition-colors shadow-md hover:shadow-lg transform hover:scale-105 transition-transform duration-200"                    aria-label={`Select ${card.name} as commander`}                  >                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />                    </svg>                    <span>Select</span>                  </button>                )}              </div>            </div>
-          );
-        })}
+        {sortedResults.map((card, index) => (
+          <CardItem
+            key={card.id}
+            card={card}
+            isLastCard={index === sortedResults.length - 1}
+          />
+        ))}
       </div>
       
       {/* Loading more indicator */}
@@ -156,18 +216,6 @@ const SearchResults = ({
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
           <span className="ml-3 text-gray-300">Loading more cards...</span>
-        </div>
-      )}
-      
-      {/* Load more button as fallback */}
-      {!isLoading && hasMore && (
-        <div className="flex justify-center mt-8 pb-4">
-          <button
-            onClick={loadMore}
-            className="btn-modern btn-modern-primary btn-modern-sm"
-          >
-            Load More Cards
-          </button>
         </div>
       )}
       

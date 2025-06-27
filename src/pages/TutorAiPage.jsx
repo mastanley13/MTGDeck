@@ -365,7 +365,7 @@ const TutorAiPage = () => {
         deck_data: JSON.stringify(deckDataObj)
       };
       const putRes = await fetch(
-        `https://services.leadconnectorhq.com/objects/custom_objects.decks/records/${deckId}?locationId=zKZ8Zy6VvGR1m7lNfRkY`,
+        `https://services.leadconnectorhq.com/objects/custom_objects.decks/records/${deckId}?locationId=${import.meta.env.VITE_LOCATION_ID}`,
         {
           method: 'PUT',
           headers: {

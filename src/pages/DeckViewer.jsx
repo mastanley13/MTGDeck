@@ -8,23 +8,79 @@ import DeckExporter from '../components/deck/DeckExporter';
 import DeckShare from '../components/deck/DeckShare';
 import CardDetailModal from '../components/ui/CardDetailModal.jsx';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
+import DeckImporter from '../components/deck/DeckImporter.jsx';
+import AlertModal from '../components/ui/AlertModal.jsx';
+import EditModeToggle from '../components/deck/edit/EditModeToggle.jsx';
+import CardQuantityControls from '../components/deck/edit/CardQuantityControls.jsx';
+import CardSearchPanel from '../components/deck/edit/CardSearchPanel.jsx';
+import UnsavedChangesWarning from '../components/deck/edit/UnsavedChangesWarning.jsx';
+
+import { getTotalCardCount, getMainDeckCardCount, validateDeckStructure } from '../utils/deckHelpers.js';
 
 const DeckViewer = () => {
   const { deckId } = useParams();
-  const { savedDecks, loadDeck, fetchAndSetUserDecks, loading: deckLoading, error: deckError, deleteDeckFromGHL } = useDeck();
+  const { 
+    savedDecks, 
+    loadDeck, 
+    fetchAndSetUserDecks, 
+    loading: deckLoading, 
+    error: deckError, 
+    deleteDeckFromGHL, 
+    cardsByType, 
+    updateCardCategory, 
+    getCardType,
+    updateCardQuantity,
+    removeCard,
+    saveCurrentDeckToGHL,
+    currentDeckName,
+    setDeckName,
+    cards,
+    commander,
+    cardCategories
+  } = useDeck();
   const { currentUser, loadingAuth } = useAuth();
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [activeTab, setActiveTab] = useState('cards');
   const [hasFetchedDecks, setHasFetchedDecks] = useState(false);
   const [isCardDetailModalOpen, setIsCardDetailModalOpen] = useState(false);
   const [selectedCardForModal, setSelectedCardForModal] = useState(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
+  const [alertModalConfig, setAlertModalConfig] = useState({
+    title: '',
+    message: '',
+    onConfirm: null,
+    confirmText: 'OK',
+    showCancelButton: false,
+  });
+  const [isShowingCategoryView, setIsShowingCategoryView] = useState(true);
+  const [isLoadingSpecificDeck, setIsLoadingSpecificDeck] = useState(false);
+  
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [selectedCards, setSelectedCards] = useState(new Set());
+  
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loadingAuth && currentUser && currentUser.id && !deckId && !hasFetchedDecks) {
+    if (!loadingAuth && currentUser && currentUser.id && !hasFetchedDecks) {
       console.log('DeckViewer: Current user found, fetching decks for contact ID:', currentUser.id);
-      fetchAndSetUserDecks(currentUser.id);
-      setHasFetchedDecks(true);
+      setIsLoadingSpecificDeck(true);
+      fetchAndSetUserDecks(currentUser.id)
+        .then(() => {
+          setHasFetchedDecks(true);
+          // Only set loading to false if we're not looking for a specific deck
+          if (!deckId) {
+            setIsLoadingSpecificDeck(false);
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching decks:', error);
+          setIsLoadingSpecificDeck(false);
+          setHasFetchedDecks(true);
+        });
     }
   }, [currentUser, loadingAuth, fetchAndSetUserDecks, deckId, hasFetchedDecks]);
 
@@ -35,14 +91,33 @@ const DeckViewer = () => {
   }, [currentUser]);
 
   useEffect(() => {
-    if (deckId && savedDecks && savedDecks.length > 0) {
-      const deck = savedDecks.find(d => d.id === deckId);
-      if (deck) {
-        setSelectedDeck(deck);
-        loadDeck(deck);
+    if (deckId) {
+      setIsLoadingSpecificDeck(true);
+      
+      if (savedDecks && savedDecks.length > 0) {
+        const deck = savedDecks.find(d => d.id === deckId);
+        if (deck) {
+          // Validate and fix deck structure before setting
+          const validatedDeck = validateDeckStructure(deck);
+          setSelectedDeck(validatedDeck);
+          loadDeck(validatedDeck);
+          setIsLoadingSpecificDeck(false);
+        }
       }
+      
+      // Always set a timeout to ensure loading state persists
+      const timer = setTimeout(() => {
+        if (!savedDecks?.find(d => d.id === deckId)) {
+          setIsLoadingSpecificDeck(false);
+        }
+      }, 5000); // Increased to 5 seconds to give more time for loading
+      
+      return () => clearTimeout(timer);
+    } else {
+      setIsLoadingSpecificDeck(false);
+      setSelectedDeck(null);
     }
-  }, [deckId, savedDecks, loadDeck]);
+  }, [deckId, savedDecks]); // Removed loadDeck from dependencies to prevent infinite loop
 
   const handleOpenCardDetailModal = (card) => {
     setSelectedCardForModal(card);
@@ -52,6 +127,161 @@ const DeckViewer = () => {
   const handleCloseCardDetailModal = () => {
     setIsCardDetailModalOpen(false);
     setSelectedCardForModal(null);
+  };
+
+  // Edit mode handlers
+  const handleToggleEditMode = () => {
+    if (isEditMode) {
+      // Exiting edit mode
+      setIsEditMode(false);
+      setHasUnsavedChanges(false);
+      setSelectedCards(new Set());
+    } else {
+      // Entering edit mode
+      setIsEditMode(true);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!selectedDeck || !currentUser) return;
+    
+    setIsSaving(true);
+    try {
+      console.log('💾 Saving deck changes:', {
+        deckId: selectedDeck.id,
+        commanderName: commander?.name,
+        cardsCount: cards?.length || 0,
+        deckName: currentDeckName || selectedDeck.name
+      });
+      
+      // Pass the current context state (edited cards/commander) instead of selectedDeck
+      const currentDeckState = {
+        id: selectedDeck.id, // Keep the original ID
+        commander: commander, // Use current commander from context
+        cards: cards, // Use current cards from context
+        cardCategories: cardCategories, // Use current card categories from context
+        description: selectedDeck.description || ''
+      };
+      
+      const success = await saveCurrentDeckToGHL(
+        currentUser.id,
+        commander?.name || selectedDeck.commander?.name || 'Unknown',
+        currentDeckName || selectedDeck.name,
+        currentDeckState
+      );
+      
+      if (success) {
+        setHasUnsavedChanges(false);
+        console.log('✅ Deck saved successfully to GHL');
+        
+        // Refresh the deck list to show updated data
+        if (currentUser?.id) {
+          await fetchAndSetUserDecks(currentUser.id);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error saving deck:', error);
+      // Optionally show error message
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    const confirmed = window.confirm('Are you sure you want to discard all unsaved changes?');
+    if (confirmed) {
+      // Reload the deck from saved state
+      if (selectedDeck) {
+        loadDeck(selectedDeck);
+      }
+      setHasUnsavedChanges(false);
+      setSelectedCards(new Set());
+    }
+  };
+
+  const handleCardQuantityUpdate = (cardId, newQuantity) => {
+    console.log('Updating card quantity:', cardId, newQuantity);
+    updateCardQuantity(cardId, newQuantity);
+    setHasUnsavedChanges(true);
+    
+    // Auto-save draft to localStorage
+    setTimeout(() => {
+      saveDraftToLocalStorage();
+    }, 100);
+  };
+
+  const handleCardRemove = (cardId) => {
+    console.log('Removing card:', cardId);
+    removeCard(cardId);
+    setHasUnsavedChanges(true);
+    
+    // Remove from selection if selected
+    setSelectedCards(prev => {
+      const updated = new Set(prev);
+      updated.delete(cardId);
+      return updated;
+    });
+    
+    // Auto-save draft to localStorage
+    setTimeout(() => {
+      saveDraftToLocalStorage();
+    }, 100);
+  };
+
+  const handleCardAdd = (card) => {
+    console.log('Adding card:', card.name);
+    setHasUnsavedChanges(true);
+    // Auto-save draft to localStorage
+    setTimeout(() => {
+      saveDraftToLocalStorage();
+    }, 100);
+  };
+
+  const saveDraftToLocalStorage = () => {
+    if (selectedDeck) {
+      try {
+        // Minimize card data to prevent localStorage quota issues
+        const minimizedCards = cards.map(card => ({
+          id: card.id,
+          name: card.name,
+          quantity: card.quantity,
+          customCategory: card.customCategory
+        }));
+        
+        const minimizedCommander = commander ? {
+          id: commander.id,
+          name: commander.name,
+          customCategory: commander.customCategory
+        } : null;
+        
+        const draftData = {
+          cards: minimizedCards,
+          commander: minimizedCommander,
+          lastSaved: Date.now()
+        };
+        
+        localStorage.setItem(`deck_draft_${selectedDeck.id}`, JSON.stringify(draftData));
+        console.log('Draft saved to localStorage successfully');
+      } catch (error) {
+        console.warn('Failed to save draft to localStorage:', error);
+        // If localStorage is full, try to clear old drafts
+        try {
+          const keys = Object.keys(localStorage);
+          const draftKeys = keys.filter(key => key.startsWith('deck_draft_'));
+          // Remove oldest drafts if we have more than 5
+          if (draftKeys.length > 5) {
+            draftKeys.sort().slice(0, -5).forEach(key => {
+              localStorage.removeItem(key);
+            });
+            // Try saving again
+            localStorage.setItem(`deck_draft_${selectedDeck.id}`, JSON.stringify(draftData));
+            console.log('Draft saved after cleanup');
+          }
+        } catch (cleanupError) {
+          console.error('Failed to save draft even after cleanup:', cleanupError);
+        }
+      }
+    }
   };
 
   const handleDeleteDeck = async () => {
@@ -66,7 +296,39 @@ const DeckViewer = () => {
     }
   };
 
-  if (loadingAuth || deckLoading) {
+  // Handle import completion
+  const handleImportComplete = (importedDeck) => {
+    const { name, unresolvedCards, savedToCloud } = importedDeck;
+    
+    // Validate deck structure to ensure proper card counting
+    const validatedDeck = validateDeckStructure(importedDeck);
+    
+    // Show results
+    let message = `Successfully imported "${name}" with ${getTotalCardCount(validatedDeck)} cards.`;
+    if (unresolvedCards && unresolvedCards.length > 0) {
+      message += ` ${unresolvedCards.length} cards could not be resolved and were skipped.`;
+    }
+    if (savedToCloud) {
+      message += ' Deck saved to cloud!';
+    }
+    
+    setAlertModalConfig({
+      title: 'Import Complete',
+      message,
+      onConfirm: () => {
+        setIsAlertModalOpen(false);
+        // Refresh the deck list to show the new imported deck
+        if (currentUser && currentUser.id) {
+          fetchAndSetUserDecks(currentUser.id);
+        }
+      },
+      confirmText: 'OK',
+      showCancelButton: false,
+    });
+    setIsAlertModalOpen(true);
+  };
+
+  if (loadingAuth || deckLoading || (deckId && (isLoadingSpecificDeck || !hasFetchedDecks))) {
     return (
       <div className="min-h-screen bg-slate-900">
         {/* Add background effects div */}
@@ -78,8 +340,12 @@ const DeckViewer = () => {
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="glassmorphism-card p-12 text-center">
             <div className="animate-spin h-16 w-16 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-6"></div>
-            <h3 className="text-2xl font-bold text-white mb-2">Loading Your Decks</h3>
-            <p className="text-slate-400 text-lg">Fetching your collection...</p>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              {deckId ? 'Loading Deck' : 'Loading Your Decks'}
+            </h3>
+            <p className="text-slate-400 text-lg">
+              {deckId ? 'Fetching deck details...' : 'Fetching your collection...'}
+            </p>
           </div>
         </div>
       </div>
@@ -102,7 +368,7 @@ const DeckViewer = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-red-300 mb-2">Error Loading Decks</h3>
+            <h3 className="text-2xl font-bold text-red-300 mb-4">Error Loading Decks</h3>
             <p className="text-red-200">{deckError}</p>
           </div>
         </div>
@@ -117,106 +383,297 @@ const DeckViewer = () => {
       case 'cards':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <h3 className="text-2xl font-bold text-white flex items-center space-x-2">
                 <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
-                <span>Cards ({selectedDeck.cards.length + (selectedDeck.commander ? 1 : 0)})</span>
+                <span>Cards ({getTotalCardCount(selectedDeck.cards, selectedDeck.commander)})</span>
               </h3>
+              
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setIsShowingCategoryView(!isShowingCategoryView)}
+                  className={`px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+                    isShowingCategoryView 
+                      ? 'bg-primary-600 text-white' 
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white'
+                  }`}
+                  title="Toggle category view"
+                >
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <span>{isShowingCategoryView ? 'Category View' : 'List View'}</span>
+                  </div>
+                </button>
+              </div>
             </div>
             
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {/* Commander Card */} 
-              {selectedDeck.commander && (() => {
-                const commander = selectedDeck.commander;
-                const imageUris = getCardImageUris(commander);
-                const gameChangerEffect = commander.game_changer 
-                  ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
-                  : '';
-                return (
-                  <div
-                    key={commander.id + "-commander"} 
-                    className={`group relative glassmorphism-card p-3 border-yellow-500/50 hover:border-yellow-400/70 transition-all duration-300 cursor-pointer hover:scale-105 ${gameChangerEffect}`}
-                    onClick={() => handleOpenCardDetailModal(commander)}
-                    title={`${commander.name} (Commander)`}
-                  >
-                    {/* Commander Image */}
-                    <div className="relative">
-                      {imageUris ? (
-                        <img
-                          src={imageUris.small}
-                          alt={commander.name}
-                          className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
-                        />
-                      ) : (
-                        <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
-                          <span className="text-slate-300 text-center text-xs">{commander.name}</span>
+            {/* Commander Section */}
+            {selectedDeck.commander && (
+              <div className="space-y-4 mb-8">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full"></div>
+                  <h4 className="text-xl font-bold text-yellow-300">Commander</h4>
+                  <div className="flex-1 h-px bg-gradient-to-r from-yellow-500/50 to-transparent"></div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {(() => {
+                    const commander = selectedDeck.commander;
+                    const imageUris = getCardImageUris(commander);
+                    const gameChangerEffect = commander.game_changer 
+                      ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
+                      : '';
+                    return (
+                      <div
+                        key={commander.id + "-commander"} 
+                        className={`group relative glassmorphism-card p-3 border-yellow-500/50 hover:border-yellow-400/70 transition-all duration-300 cursor-pointer hover:scale-105 ${gameChangerEffect}`}
+                        onClick={() => handleOpenCardDetailModal(commander)}
+                        title={`${commander.name} (Commander)`}
+                      >
+                        {/* Commander Image */}
+                        <div className="relative">
+                          {imageUris ? (
+                            <img
+                              src={imageUris.small}
+                              alt={commander.name}
+                              className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
+                            />
+                          ) : (
+                            <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
+                              <span className="text-slate-300 text-center text-xs">{commander.name}</span>
+                            </div>
+                          )}
+
+                          {/* Game Changer Badge */}
+                          {commander.game_changer && (
+                            <div className="absolute top-2 right-2">
+                              <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
+                            </div>
+                          )}
+
+
                         </div>
-                      )}
 
-                      {/* Game Changer Badge */}
-                      {commander.game_changer && (
-                        <div className="absolute top-2 right-2">
-                          <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
+                        {/* Commander Name */}
+                        <div className="mt-2 flex justify-between items-center">
+                          <span className="text-xs text-yellow-300 truncate mr-1" title={commander.name}>{commander.name}</span>
+                          <span className="text-xs text-yellow-300 font-semibold flex-shrink-0 bg-yellow-500/30 px-2 py-1 rounded-full">Commander</span>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
 
-                    {/* Commander Name */}
-                    <div className="mt-2 flex justify-between items-center">
-                      <span className="text-xs text-yellow-300 truncate mr-1" title={commander.name}>{commander.name}</span>
-                      <span className="text-xs text-yellow-300 font-semibold flex-shrink-0 bg-yellow-500/30 px-2 py-1 rounded-full">Commander</span>
-                    </div>
-                  </div>
-                );
-              })()}
+            {/* Cards Display - Either by Category or as List */}
+            {isShowingCategoryView ? (
+              /* Cards by Category */
+              cardsByType && Object.keys(cardsByType).length > 0 && (
+              <div className="space-y-8">
+                {Object.entries(cardsByType)
+                  .sort(([a], [b]) => {
+                    // Define category order for better organization
+                    const categoryOrder = {
+                      'Creatures': 1,
+                      'Planeswalkers': 2, 
+                      'Instants': 3,
+                      'Sorceries': 4,
+                      'Artifacts': 5,
+                      'Enchantments': 6,
+                      'Lands': 7,
+                      'Other': 8
+                    };
+                    return (categoryOrder[a] || 999) - (categoryOrder[b] || 999);
+                  })
+                  .map(([category, cards]) => {
+                    const categoryCount = cards.reduce((sum, card) => sum + (card.quantity || 1), 0);
+                    
+                    // Define category colors
+                    const categoryColors = {
+                      // Default type-based categories
+                      'Creatures': 'from-green-400 to-green-600',
+                      'Planeswalkers': 'from-purple-400 to-purple-600',
+                      'Instants': 'from-blue-400 to-blue-600',
+                      'Sorceries': 'from-red-400 to-red-600',
+                      'Artifacts': 'from-gray-400 to-gray-600',
+                      'Enchantments': 'from-pink-400 to-pink-600',
+                      'Lands': 'from-amber-400 to-amber-600',
+                      'Other': 'from-slate-400 to-slate-600',
+                      
+                      // Custom functional categories
+                      'Removal': 'from-red-400 to-red-600',
+                      'Protection': 'from-blue-400 to-blue-600',
+                      'Finisher': 'from-yellow-400 to-yellow-600',
+                      'Ramp': 'from-green-500 to-green-700',
+                      'Card Draw': 'from-cyan-400 to-cyan-600',
+                      'Tokens': 'from-orange-400 to-orange-600',
+                      'Combo': 'from-purple-500 to-purple-700',
+                      'Stax': 'from-gray-500 to-gray-700',
+                      'Utility': 'from-slate-400 to-slate-600',
+                      'Maybeboard': 'from-yellow-500 to-yellow-700',
+                      'Sideboard': 'from-indigo-400 to-indigo-600',
+                    };
 
-              {/* Regular Cards */}
-              {selectedDeck.cards.map(card => {
-                const imageUris = getCardImageUris(card);
-                const gameChangerEffect = card.game_changer 
-                  ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
-                  : '';
+                    const categoryTextColors = {
+                      // Default type-based categories
+                      'Creatures': 'text-green-300',
+                      'Planeswalkers': 'text-purple-300',
+                      'Instants': 'text-blue-300',
+                      'Sorceries': 'text-red-300',
+                      'Artifacts': 'text-gray-300',
+                      'Enchantments': 'text-pink-300',
+                      'Lands': 'text-amber-300',
+                      'Other': 'text-slate-300',
+                      
+                      // Custom functional categories
+                      'Removal': 'text-red-400',
+                      'Protection': 'text-blue-400',
+                      'Finisher': 'text-yellow-400',
+                      'Ramp': 'text-green-400',
+                      'Card Draw': 'text-cyan-400',
+                      'Tokens': 'text-orange-400',
+                      'Combo': 'text-purple-400',
+                      'Stax': 'text-gray-400',
+                      'Utility': 'text-slate-400',
+                      'Maybeboard': 'text-yellow-500',
+                      'Sideboard': 'text-indigo-400',
+                    };
 
-                return (
-                  <div 
-                    key={card.id}
-                    className={`group relative glassmorphism-card p-3 border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 cursor-pointer hover:scale-105 ${gameChangerEffect}`}
-                    onClick={() => handleOpenCardDetailModal(card)}
-                    title={card.name}
-                  >
-                    {/* Card Image */}
-                    <div className="relative">
-                      {imageUris ? (
-                        <img
-                          src={imageUris.small}
-                          alt={card.name}
-                          className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
-                        />
-                      ) : (
-                        <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
-                          <span className="text-slate-300 text-center text-xs">{card.name}</span>
+                    const gradientClass = categoryColors[category] || 'from-slate-400 to-slate-600';
+                    const textColorClass = categoryTextColors[category] || 'text-slate-300';
+
+                    return (
+                      <div key={category} className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-8 bg-gradient-to-b ${gradientClass} rounded-full`}></div>
+                          <h4 className={`text-xl font-bold ${textColorClass}`}>
+                            {category} ({categoryCount})
+                          </h4>
+                          <div className={`flex-1 h-px bg-gradient-to-r ${gradientClass.replace('to-', 'to-transparent from-')} opacity-50`}></div>
                         </div>
-                      )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                          {cards.map(card => {
+                            const imageUris = getCardImageUris(card);
+                            const gameChangerEffect = card.game_changer 
+                              ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
+                              : '';
 
-                      {/* Game Changer Badge */}
-                      {card.game_changer && (
-                        <div className="absolute top-2 right-2">
-                          <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
+                            return (
+                              <div 
+                                key={card.id}
+                                className={`group relative glassmorphism-card p-3 border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 cursor-pointer hover:scale-105 ${gameChangerEffect}`}
+                                onClick={() => handleOpenCardDetailModal(card)}
+                                title={card.name}
+                              >
+                                {/* Card Image */}
+                                <div className="relative">
+                                  {imageUris ? (
+                                    <img
+                                      src={imageUris.small}
+                                      alt={card.name}
+                                      className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
+                                    />
+                                  ) : (
+                                    <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
+                                      <span className="text-slate-300 text-center text-xs">{card.name}</span>
+                                    </div>
+                                  )}
+
+                                  {/* Game Changer Badge */}
+                                  {card.game_changer && (
+                                    <div className="absolute top-2 right-2">
+                                      <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
+                                    </div>
+                                  )}
+
+                                  {/* Edit Controls Overlay */}
+                                  <CardQuantityControls
+                                    card={card}
+                                    isEditMode={isEditMode}
+                                    onUpdateQuantity={handleCardQuantityUpdate}
+                                    onRemoveCard={handleCardRemove}
+                                    maxQuantity={['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'].includes(card.name) ? 99 : 4}
+                                  />
+                                </div>
+
+                                {/* Card Name and Quantity */}
+                                <div className="mt-2 flex justify-between items-center">
+                                  <span className="text-xs text-slate-300 truncate mr-1" title={card.name}>{card.name}</span>
+                                  <span className="text-xs text-white font-semibold flex-shrink-0 bg-primary-500/30 px-2 py-1 rounded-full">{card.quantity || 1}x</span>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+              )
+            ) : (
+              /* Simple List View */
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                {selectedDeck.cards && Array.isArray(selectedDeck.cards) ? selectedDeck.cards
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(card => {
+                    const imageUris = getCardImageUris(card);
+                    const gameChangerEffect = card.game_changer 
+                      ? 'ring-4 ring-yellow-400/90 shadow-lg shadow-yellow-400/50' 
+                      : '';
 
-                    {/* Card Name and Quantity */}
-                    <div className="mt-2 flex justify-between items-center">
-                      <span className="text-xs text-slate-300 truncate mr-1" title={card.name}>{card.name}</span>
-                      <span className="text-xs text-white font-semibold flex-shrink-0 bg-primary-500/30 px-2 py-1 rounded-full">{card.quantity || 1}x</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    return (
+                      <div 
+                        key={card.id}
+                        className={`group relative glassmorphism-card p-3 border-slate-700/50 hover:border-primary-500/50 transition-all duration-300 cursor-pointer hover:scale-105 ${gameChangerEffect}`}
+                        onClick={() => handleOpenCardDetailModal(card)}
+                        title={card.name}
+                      >
+                        {/* Card Image */}
+                        <div className="relative">
+                          {imageUris ? (
+                            <img
+                              src={imageUris.small}
+                              alt={card.name}
+                              className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
+                            />
+                          ) : (
+                            <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
+                              <span className="text-slate-300 text-center text-xs">{card.name}</span>
+                            </div>
+                          )}
+
+                          {/* Game Changer Badge */}
+                          {card.game_changer && (
+                            <div className="absolute top-2 right-2">
+                              <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
+                            </div>
+                          )}
+
+                          {/* Edit Controls Overlay */}
+                          <CardQuantityControls
+                            card={card}
+                            isEditMode={isEditMode}
+                            onUpdateQuantity={handleCardQuantityUpdate}
+                            onRemoveCard={handleCardRemove}
+                            maxQuantity={['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'].includes(card.name) ? 99 : 4}
+                          />
+                        </div>
+
+                        {/* Card Name and Quantity */}
+                        <div className="mt-2 flex justify-between items-center">
+                          <span className="text-xs text-slate-300 truncate mr-1" title={card.name}>{card.name}</span>
+                          <span className="text-xs text-white font-semibold flex-shrink-0 bg-primary-500/30 px-2 py-1 rounded-full">{card.quantity || 1}x</span>
+                        </div>
+                      </div>
+                    );
+                  }) : []}
+              </div>
+            )}
           </div>
         );
       case 'analytics':
@@ -239,7 +696,29 @@ const DeckViewer = () => {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 space-y-8">
-        {!deckId && savedDecks.length === 0 ? (
+        {loadingAuth || deckLoading || (deckId && (isLoadingSpecificDeck || !hasFetchedDecks)) ? (
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="glassmorphism-card p-12 text-center">
+              <div className="animate-spin h-16 w-16 border-4 border-primary-500 border-t-transparent rounded-full mx-auto mb-6"></div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                {deckId ? 'Loading Deck' : 'Loading Your Decks'}
+              </h3>
+              <p className="text-slate-400 text-lg">
+                {deckId ? 'Fetching deck details...' : 'Fetching your collection...'}
+              </p>
+            </div>
+          </div>
+        ) : deckError ? (
+          <div className="glassmorphism-card p-12 text-center border-red-500/30 bg-red-500/10">
+            <div className="w-16 h-16 rounded-lg bg-red-500 flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-red-300 mb-4">Error Loading Decks</h3>
+            <p className="text-red-200">{deckError}</p>
+          </div>
+        ) : !deckId && savedDecks.length === 0 ? (
           /* Empty State */
           <div className="space-y-8">
             <div className="text-center">
@@ -262,27 +741,42 @@ const DeckViewer = () => {
                 </svg>
                 <h2 className="text-3xl font-bold text-white mb-4">No Decks Yet</h2>
                 <p className="text-slate-400 text-lg mb-8 max-w-2xl mx-auto">
-                  You haven't saved any decks yet. Start building your first deck and begin your collection!
+                  You haven't saved any decks yet. Start building your first deck or import an existing one to begin your collection!
                 </p>
-                <Link to="/builder" className="btn-modern btn-modern-primary btn-modern-xl premium-glow group">
-                  <span className="flex items-center space-x-3">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                      <path d="M4 13a8 8 0 017 7a6 6 0 003 -5l3.5 -3.5a9 9 0 01 -7 -7a6 6 0 00-3 5l-3.5 3.5" />
-                      <path d="M7 14a6 6 0 003 -5l3.5 -3.5a9 9 0 01 7 7a6 6 0 00-3 5l-3.5 3.5a9 9 0 01-7 -7" />
-                      <path d="M15 9h.01" />
-                    </svg>
-                    <span>Start Building</span>
-                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </span>
-                </Link>
+                <div className="flex flex-col sm:flex-row items-stretch gap-4 justify-center">
+                  <Link to="/builder" className="btn-modern btn-modern-primary btn-modern-xl premium-glow group">
+                    <span className="flex items-center space-x-3">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M4 13a8 8 0 017 7a6 6 0 003 -5l3.5 -3.5a9 9 0 01 -7 -7a6 6 0 00-3 5l-3.5 3.5" />
+                        <path d="M7 14a6 6 0 003 -5l3.5 -3.5a9 9 0 01 7 7a6 6 0 00-3 5l-3.5 3.5a9 9 0 01-7 -7" />
+                        <path d="M15 9h.01" />
+                      </svg>
+                      <span>Start Building</span>
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </span>
+                  </Link>
+                  <button
+                    onClick={() => setIsImportModalOpen(true)}
+                    className="btn-modern btn-modern-secondary btn-modern-xl group"
+                  >
+                    <span className="flex items-center space-x-3">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                      </svg>
+                      <span>Import Deck</span>
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         ) : deckId ? (
-          /* Single Deck View */
           selectedDeck ? (
             <div className="space-y-8">
               {/* Back Navigation */}
@@ -333,13 +827,21 @@ const DeckViewer = () => {
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
-                          <span>{selectedDeck.cards.length + (selectedDeck.commander ? 1 : 0)} cards</span>
+                          <span>{getTotalCardCount(selectedDeck.cards, selectedDeck.commander)} cards</span>
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+              
+              {/* Unsaved Changes Warning */}
+              <UnsavedChangesWarning
+                hasUnsavedChanges={hasUnsavedChanges}
+                onSave={handleSaveChanges}
+                onDiscard={handleDiscardChanges}
+                isSaving={isSaving}
+              />
               
               {/* Tabs */}
               <div className="glassmorphism-card border-slate-700/50">
@@ -348,6 +850,7 @@ const DeckViewer = () => {
                   <nav className="flex space-x-8 px-8">
                     {[
                       { id: 'cards', label: 'Cards', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+                      ...(isEditMode ? [{ id: 'search', label: 'Search & Add', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' }] : []),
                       { id: 'analytics', label: 'Analytics', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
                       { id: 'export', label: 'Export', icon: 'M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
                       { id: 'share', label: 'Share', icon: 'M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z' }
@@ -374,40 +877,61 @@ const DeckViewer = () => {
                 
                 {/* Tab Content */}
                 <div className="p-8">
-                  {renderTabContent()}
+                  {activeTab === 'search' && isEditMode ? (
+                    <CardSearchPanel 
+                      isEditMode={isEditMode}
+                      onCardAdd={handleCardAdd}
+                    />
+                  ) : (
+                    renderTabContent()
+                  )}
                 </div>
               </div>
               
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-4">
-                <Link
-                  to={`/tutor-ai?deck=${selectedDeck.id}`}
-                  state={{ deck: selectedDeck }}
-                  className="btn-modern btn-modern-primary btn-modern-lg group"
-                >
-                  <span className="flex items-center space-x-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    <span>Edit Deck</span>
-                  </span>
-                </Link>
-                <button
-                  onClick={handleDeleteDeck}
-                  className="btn-modern btn-modern-lg group bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg rounded-xl px-8 py-4 font-bold transition-all hover:scale-105"
-                  type="button"
-                >
-                  <span className="flex items-center space-x-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    <span>Delete Deck</span>
-                  </span>
-                </button>
+                <EditModeToggle
+                  isEditMode={isEditMode}
+                  hasUnsavedChanges={hasUnsavedChanges}
+                  onToggleEditMode={handleToggleEditMode}
+                  onSave={handleSaveChanges}
+                  onDiscard={handleDiscardChanges}
+                  isSaving={isSaving}
+                  disabled={!selectedDeck}
+                />
+                
+                {!isEditMode && (
+                  <>
+                    <Link
+                      to={`/tutor-ai?deck=${selectedDeck.id}`}
+                      state={{ deck: selectedDeck }}
+                      className="btn-modern btn-modern-secondary btn-modern-lg group"
+                    >
+                      <span className="flex items-center space-x-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        <span>AI Tutor</span>
+                      </span>
+                    </Link>
+                    <button
+                      onClick={handleDeleteDeck}
+                      className="btn-modern btn-modern-lg group bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg rounded-xl px-8 py-4 font-bold transition-all hover:scale-105"
+                      type="button"
+                    >
+                      <span className="flex items-center space-x-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span>Delete Deck</span>
+                      </span>
+                    </button>
+                  </>
+                )}
               </div>
             </div>
-          ) : (
-            /* Deck Not Found */
+          ) : hasFetchedDecks && !isLoadingSpecificDeck ? (
+            /* Deck Not Found - Only show if we're not loading AND we've completed fetching */
             <div className="glassmorphism-card p-12 text-center border-red-500/30 bg-red-500/10">
               <div className="w-16 h-16 rounded-lg bg-red-500 flex items-center justify-center mx-auto mb-6">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -420,7 +944,7 @@ const DeckViewer = () => {
                 View All Decks
               </Link>
             </div>
-          )
+          ) : null
         ) : (
           /* Deck List View */
           <div className="space-y-8">
@@ -435,6 +959,38 @@ const DeckViewer = () => {
               <p className="text-xl text-slate-400">
                 {savedDecks.length} {savedDecks.length === 1 ? 'deck' : 'decks'} in your collection
               </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-stretch gap-4 justify-center">
+              <Link 
+                to="/builder"
+                className="btn-modern btn-modern-primary btn-modern-xl premium-glow group"
+              >
+                <span className="flex items-center space-x-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Create New Deck</span>
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              </Link>
+              <button
+                onClick={() => setIsImportModalOpen(true)}
+                className="btn-modern btn-modern-secondary btn-modern-xl group"
+              >
+                <span className="flex items-center space-x-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                  </svg>
+                  <span>Import Deck</span>
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -469,7 +1025,7 @@ const DeckViewer = () => {
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
-                          <span>{deck.cards.length} cards</span>
+                          <span>{getTotalCardCount(deck.cards, deck.commander)} cards</span>
                         </span>
                         <span className="flex items-center space-x-1">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
@@ -516,6 +1072,25 @@ const DeckViewer = () => {
             onClose={handleCloseCardDetailModal} 
           />
         )}
+
+        {/* Deck Import Modal */}
+        {isImportModalOpen && (
+          <DeckImporter
+            onImportComplete={handleImportComplete}
+            onClose={() => setIsImportModalOpen(false)}
+          />
+        )}
+
+        {/* Alert Modal */}
+        <AlertModal
+          isOpen={isAlertModalOpen}
+          title={alertModalConfig.title}
+          message={alertModalConfig.message}
+          onConfirm={alertModalConfig.onConfirm}
+          onClose={() => setIsAlertModalOpen(false)}
+          confirmText={alertModalConfig.confirmText}
+          showCancelButton={alertModalConfig.showCancelButton}
+        />
       </div>
     </div>
   );

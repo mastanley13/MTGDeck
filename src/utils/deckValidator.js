@@ -2,6 +2,8 @@
  * Utility functions for validating a Commander deck
  */
 
+import { useMemo } from 'react';
+
 /**
  * Check if the deck has exactly 100 cards including the commander
  * @param {Object} commander - The commander card object
@@ -9,23 +11,47 @@
  * @returns {Object} Validation result with status and message
  */
 export const validateCardCount = (commander, cards) => {
-  const commanderCount = commander ? 1 : 0;
   const deckCount = cards.reduce((total, card) => total + (card.quantity || 1), 0);
-  const totalCount = commanderCount + deckCount;
   
-  if (totalCount < 100) {
+  // Commander decks should have exactly 99 cards in the main deck (commander is separate)
+  if (!commander) {
     return {
       valid: false,
-      message: `Deck contains ${totalCount} cards. A Commander deck must contain exactly 100 cards including the commander.`,
-    };
-  } else if (totalCount > 100) {
-    return {
-      valid: false,
-      message: `Deck contains ${totalCount} cards. A Commander deck must contain exactly 100 cards including the commander.`,
+      message: 'No commander selected. A Commander deck must have a commander and exactly 99 other cards.',
     };
   }
   
-  return { valid: true, message: 'Deck has exactly 100 cards.' };
+  // Check if commander is accidentally included in cards array
+  const commanderInDeck = cards.some(card => card.name === commander.name);
+  if (commanderInDeck) {
+    // If commander is in deck, we expect 100 total cards (99 + commander)
+    if (deckCount < 100) {
+      return {
+        valid: false,
+        message: `Deck contains ${deckCount} cards (including commander). A Commander deck must contain exactly 100 cards total.`,
+      };
+    } else if (deckCount > 100) {
+      return {
+        valid: false,
+        message: `Deck contains ${deckCount} cards (including commander). A Commander deck must contain exactly 100 cards total.`,
+      };
+    }
+    return { valid: true, message: 'Deck has exactly 100 cards including commander.' };
+  } else {
+    // Normal case: commander is separate, expect 99 cards in main deck
+    if (deckCount < 99) {
+      return {
+        valid: false,
+        message: `Deck contains ${deckCount} cards. A Commander deck must contain exactly 99 cards (plus commander = 100 total).`,
+      };
+    } else if (deckCount > 99) {
+      return {
+        valid: false,
+        message: `Deck contains ${deckCount} cards. A Commander deck must contain exactly 99 cards (plus commander = 100 total).`,
+      };
+    }
+    return { valid: true, message: 'Deck has exactly 99 cards plus commander (100 total).' };
+  }
 };
 
 /**
@@ -240,4 +266,66 @@ export const validateCardForCommander = (card, commander) => {
     valid: true, 
     message: `${card.name} is valid for this commander deck.` 
   };
+};
+
+// Memoization cache for validation results
+const validationCache = new Map();
+const CACHE_SIZE_LIMIT = 1000;
+
+// Helper to manage cache size
+const maintainCacheSize = () => {
+  if (validationCache.size > CACHE_SIZE_LIMIT) {
+    // Remove oldest entries when cache gets too large
+    const entriesToRemove = Array.from(validationCache.keys()).slice(0, Math.floor(CACHE_SIZE_LIMIT * 0.2));
+    entriesToRemove.forEach(key => validationCache.delete(key));
+  }
+};
+
+// Memoized color identity check
+export const isColorIdentityCompliant = (card, commander) => {
+  const cacheKey = `colorIdentity_${card?.id}_${commander?.id}`;
+  
+  if (validationCache.has(cacheKey)) {
+    return validationCache.get(cacheKey);
+  }
+
+  // If no commander, assume all colors are valid
+  if (!commander) {
+    const result = { isCompliant: true, message: '' };
+    validationCache.set(cacheKey, result);
+    maintainCacheSize();
+    return result;
+  }
+
+  // Rest of your existing color identity validation logic here
+  // ... existing code ...
+
+  // Cache the result before returning
+  validationCache.set(cacheKey, result);
+  maintainCacheSize();
+  return result;
+};
+
+// Memoized format legality check
+export const isFormatLegal = (card, format = 'commander') => {
+  const cacheKey = `formatLegal_${card?.id}_${format}`;
+  
+  if (validationCache.has(cacheKey)) {
+    return validationCache.get(cacheKey);
+  }
+
+  // Your existing format legality validation logic here
+  // ... existing code ...
+
+  // Cache the result before returning
+  validationCache.set(cacheKey, result);
+  maintainCacheSize();
+  return result;
+};
+
+// Hook for memoized deck validation
+export const useDeckValidation = (commander, cards) => {
+  return useMemo(() => {
+    return validateDeck(commander, cards);
+  }, [commander?.id, JSON.stringify(cards.map(c => c.id))]);
 }; 

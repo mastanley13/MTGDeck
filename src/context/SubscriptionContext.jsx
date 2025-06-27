@@ -236,13 +236,11 @@ export const SubscriptionProvider = ({ children }) => {
   }, [usageData.weekStartDate]);
 
   const value = {
+    isPremium: subscriptionStatus === 'PREMIUM',
     subscriptionStatus,
     usageData,
     loading,
     ghlSyncLoading,
-    isPremium: subscriptionStatus === 'PREMIUM',
-    isFree: subscriptionStatus === 'FREE',
-    limits: getCurrentLimits(),
     canSaveMoreDecks: canSaveMoreDecks(),
     canMakeAIRequest: canMakeAIRequest(),
     incrementSavedDecks,
@@ -250,6 +248,7 @@ export const SubscriptionProvider = ({ children }) => {
     incrementAIRequests,
     updateDeckCount,
     syncWithGoHighLevel,
+    getCurrentLimits,
     getUsagePercentages: getUsagePercentages(),
     getDaysUntilWeeklyReset: getDaysUntilWeeklyReset(),
   };
