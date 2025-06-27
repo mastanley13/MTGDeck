@@ -32,7 +32,7 @@ After investigating the current deck building issues and performance bottlenecks
      (Fast & Broad)         (Specialized)           (Targeted)        (Clean)
 ```
 
-### Stage 1: Fast Initial Generation (gpt-4.1-2025-04-14)
+### Stage 1: Fast Initial Generation (o3-2025-04-16)
 - Generate 99-card deck list quickly (15-20s)
 - Focus on structure and synergy
 - Allow some validation issues to pass through
@@ -43,7 +43,7 @@ After investigating the current deck building issues and performance bottlenecks
 - Return specific replacement recommendations
 - Fast execution (3-5s)
 
-### Stage 3: Smart Replacement System (o4-mini-2025-04-16)
+### Stage 3: Smart Replacement System (o3-2025-04-16)
 - Replace invalid cards with AI-recommended alternatives
 - Maintain deck balance and synergy
 - Preserve original card categories and CMC curve

@@ -19,6 +19,7 @@ import AffiliatePage from './pages/AffiliatePage.jsx';
 import BlogPostPage from './pages/BlogPostPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import SocialsPage from './pages/SocialsPage.jsx';
+import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx';
 import CardDebugger from './components/debug/CardDebugger.jsx';
 import { DeckProvider } from './context/DeckContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -29,8 +30,17 @@ import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 function App() {
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+  // Add error handling for missing client ID
+  if (!GOOGLE_CLIENT_ID) {
+    console.error('Missing GOOGLE_CLIENT_ID environment variable');
+  }
+
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider 
+      clientId={GOOGLE_CLIENT_ID}
+      onScriptLoadError={(err) => console.error('Google OAuth Script Load Error:', err)}
+      onScriptLoadSuccess={() => console.log('Google OAuth Script Loaded Successfully')}
+    >
       <AuthProvider>
         <SubscriptionProvider>
           <DeckProvider>
@@ -44,6 +54,7 @@ function App() {
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/card-search" element={<CardSearchPage />} />
                   <Route path="/subscription" element={<SubscriptionPage />} />
+                  <Route path="/payment-success" element={<PaymentSuccessPage />} />
                   <Route path="/how-to-play" element={<HowToPlayPage />} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />

@@ -2,8 +2,25 @@
 // Direct payment link approach - no API keys required
 import { activatePremiumByEmail, deactivatePremiumByEmail, batchProcessPayments } from './ghlSubscriptionAPI';
 
-// Direct Stripe payment URL
-const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/5kQ9AUf8J2pg0xzab6dZ60x';
+// Direct Stripe payment URL with success/cancel URLs
+const BASE_STRIPE_PAYMENT_URL = 'https://buy.stripe.com/5kQ9AUf8J2pg0xzab6dZ60x';
+
+// Get the current domain for success/cancel URLs
+const getCurrentDomain = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'https://your-domain.com'; // Fallback for server-side rendering
+};
+
+const getStripePaymentUrl = () => {
+  const domain = getCurrentDomain();
+  const successUrl = `${domain}/payment-success`;
+  const cancelUrl = `${domain}/subscription`;
+  
+  // For Stripe payment links, we can append success and cancel URLs as query parameters
+  return `${BASE_STRIPE_PAYMENT_URL}?success_url=${encodeURIComponent(successUrl)}&cancel_url=${encodeURIComponent(cancelUrl)}`;
+};
 
 /**
  * Redirect to Stripe payment page
@@ -24,7 +41,7 @@ export const initiatePremiumCheckout = async (contactId, email, userId) => {
     }));
 
     // Redirect directly to Stripe payment page (same tab for better UX)
-    window.location.href = STRIPE_PAYMENT_URL;
+    window.location.href = getStripePaymentUrl();
     
   } catch (error) {
     console.error('Error redirecting to payment:', error);
@@ -88,7 +105,7 @@ export const getPremiumPrice = () => {
  * @returns {string}
  */
 export const getPaymentUrl = () => {
-  return STRIPE_PAYMENT_URL;
+  return getStripePaymentUrl();
 };
 
 /**
@@ -186,6 +203,15 @@ export const processStripeWebhook = async (webhookEvent) => {
 
     if (result) {
       console.log(`✅ Webhook processed successfully: ${webhookEvent.type}`);
+      
+      // Also send webhook to GoHighLevel
+      try {
+        await sendGoHighLevelWebhook(webhookEvent, result);
+      } catch (error) {
+        console.error('❌ Failed to send GoHighLevel webhook:', error);
+        // Don't fail the main webhook processing if GHL webhook fails
+      }
+      
       return {
         success: true,
         result: result,
@@ -208,6 +234,53 @@ export const processStripeWebhook = async (webhookEvent) => {
       eventType: webhookEvent.type,
       timestamp: new Date().toISOString()
     };
+  }
+};
+
+/**
+ * Send webhook to GoHighLevel
+ * @param {Object} stripeEvent - Original Stripe event
+ * @param {Object} processingResult - Result from processing the webhook
+ * @returns {Promise<void>}
+ */
+const sendGoHighLevelWebhook = async (stripeEvent, processingResult) => {
+  const GHL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/zKZ8Zy6VvGR1m7lNfRkY/webhook-trigger/8af7f178-88cd-4a86-8c44-b6f1079e6d95';
+  
+  try {
+    // Prepare webhook data for GoHighLevel
+    const webhookData = {
+      type: 'stripe_webhook_processed',
+      stripeEventType: stripeEvent.type,
+      email: processingResult.email,
+      contactId: processingResult.contactId,
+      subscriptionStatus: processingResult.newStatus || 'PREMIUM',
+      timestamp: new Date().toISOString(),
+      stripeData: {
+        paymentId: stripeEvent.data.object.payment_intent || stripeEvent.data.object.id,
+        amount: stripeEvent.data.object.amount_total ? (stripeEvent.data.object.amount_total / 100).toFixed(2) : '3.99',
+        subscriptionId: stripeEvent.data.object.subscription
+      }
+    };
+
+    console.log('🔄 Sending webhook to GoHighLevel...', webhookData);
+
+    const response = await fetch(GHL_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(webhookData)
+    });
+
+    if (response.ok) {
+      console.log('✅ GoHighLevel webhook sent successfully');
+    } else {
+      const errorText = await response.text();
+      console.error('❌ GoHighLevel webhook failed:', response.status, errorText);
+    }
+  } catch (error) {
+    console.error('❌ Error sending GoHighLevel webhook:', error);
+    throw error;
   }
 };
 
