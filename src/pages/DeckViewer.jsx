@@ -203,11 +203,6 @@ const DeckViewer = () => {
     console.log('Updating card quantity:', cardId, newQuantity);
     updateCardQuantity(cardId, newQuantity);
     setHasUnsavedChanges(true);
-    
-    // Auto-save draft to localStorage
-    setTimeout(() => {
-      saveDraftToLocalStorage();
-    }, 100);
   };
 
   const handleCardRemove = (cardId) => {
@@ -221,67 +216,11 @@ const DeckViewer = () => {
       updated.delete(cardId);
       return updated;
     });
-    
-    // Auto-save draft to localStorage
-    setTimeout(() => {
-      saveDraftToLocalStorage();
-    }, 100);
   };
 
   const handleCardAdd = (card) => {
     console.log('Adding card:', card.name);
     setHasUnsavedChanges(true);
-    // Auto-save draft to localStorage
-    setTimeout(() => {
-      saveDraftToLocalStorage();
-    }, 100);
-  };
-
-  const saveDraftToLocalStorage = () => {
-    if (selectedDeck) {
-      try {
-        // Minimize card data to prevent localStorage quota issues
-        const minimizedCards = cards.map(card => ({
-          id: card.id,
-          name: card.name,
-          quantity: card.quantity,
-          customCategory: card.customCategory
-        }));
-        
-        const minimizedCommander = commander ? {
-          id: commander.id,
-          name: commander.name,
-          customCategory: commander.customCategory
-        } : null;
-        
-        const draftData = {
-          cards: minimizedCards,
-          commander: minimizedCommander,
-          lastSaved: Date.now()
-        };
-        
-        localStorage.setItem(`deck_draft_${selectedDeck.id}`, JSON.stringify(draftData));
-        console.log('Draft saved to localStorage successfully');
-      } catch (error) {
-        console.warn('Failed to save draft to localStorage:', error);
-        // If localStorage is full, try to clear old drafts
-        try {
-          const keys = Object.keys(localStorage);
-          const draftKeys = keys.filter(key => key.startsWith('deck_draft_'));
-          // Remove oldest drafts if we have more than 5
-          if (draftKeys.length > 5) {
-            draftKeys.sort().slice(0, -5).forEach(key => {
-              localStorage.removeItem(key);
-            });
-            // Try saving again
-            localStorage.setItem(`deck_draft_${selectedDeck.id}`, JSON.stringify(draftData));
-            console.log('Draft saved after cleanup');
-          }
-        } catch (cleanupError) {
-          console.error('Failed to save draft even after cleanup:', cleanupError);
-        }
-      }
-    }
   };
 
   const handleDeleteDeck = async () => {
@@ -388,7 +327,7 @@ const DeckViewer = () => {
                 <svg className="w-6 h-6 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
-                <span>Cards ({getTotalCardCount(selectedDeck.cards, selectedDeck.commander)})</span>
+                                        <span>Cards ({getTotalCardCount(selectedDeck)})</span>
               </h3>
               
               <div className="flex items-center space-x-2">
@@ -827,7 +766,7 @@ const DeckViewer = () => {
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
-                          <span>{getTotalCardCount(selectedDeck.cards, selectedDeck.commander)} cards</span>
+                          <span>{getTotalCardCount(selectedDeck)} cards</span>
                         </span>
                       </div>
                     </div>
@@ -1025,7 +964,7 @@ const DeckViewer = () => {
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
-                          <span>{getTotalCardCount(deck.cards, deck.commander)} cards</span>
+                          <span>{getTotalCardCount(deck)} cards</span>
                         </span>
                         <span className="flex items-center space-x-1">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>

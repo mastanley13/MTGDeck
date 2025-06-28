@@ -11,9 +11,9 @@ const CardCountDemo = () => {
   const { commander, cards, totalCardCount, mainDeckCardCount, deckCompletionInfo } = useDeck();
   
   // Test the utility functions directly
-  const utilityTotalCount = getTotalCardCount(cards, commander);
-  const utilityMainCount = getMainDeckCardCount(cards);
-  const utilityCompletionInfo = getDeckCompletionInfo(cards, commander);
+  const utilityTotalCount = getTotalCardCount({ cards, commander });
+      const utilityMainCount = getMainDeckCardCount({ cards });
+      const utilityCompletionInfo = getDeckCompletionInfo({ cards, commander });
   
   // Test the analytics function
   const analysis = analyzeDeck({ commander, cards });

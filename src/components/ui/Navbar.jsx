@@ -227,19 +227,6 @@ const Navbar = () => {
                   {isToolsDropdownOpen && (
                     <div className="absolute top-full left-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 py-2 z-[100]">
                       <Link
-                        to="/card-search"
-                        onClick={() => setIsToolsDropdownOpen(false)}
-                        className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
-                          isActive('/card-search')
-                            ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400'
-                            : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <span>Card Search</span>
-                        </div>
-                      </Link>
-                      <Link
                         to="/how-to-play"
                         onClick={() => setIsToolsDropdownOpen(false)}
                         className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
@@ -291,20 +278,33 @@ const Navbar = () => {
                           <span>Socials</span>
                         </div>
                       </Link>
+                      <Link
+                        to="/blog"
+                        onClick={() => setIsToolsDropdownOpen(false)}
+                        className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
+                          isActive('/blog')
+                            ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span>Blog</span>
+                        </div>
+                      </Link>
                     </div>
                   )}
                 </div>
 
                 <Link 
-                  to="/blog" 
+                  to="/card-search" 
                   className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap ${
-                    isActive('/blog') 
+                    isActive('/card-search') 
                       ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20' 
                       : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
                   }`}
                 >
-                  <span className="relative z-10">Blog</span>
-                  {!isActive('/blog') && (
+                  <span className="relative z-10">Card Search</span>
+                  {!isActive('/card-search') && (
                     <div className="absolute inset-0 bg-gradient-to-r from-slate-700/0 via-slate-600/50 to-slate-700/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   )}
                 </Link>
@@ -614,19 +614,6 @@ const Navbar = () => {
                   Resources
                 </div>
                 <Link
-                  to="/card-search"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
-                    isActive('/card-search')
-                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <span>Card Search</span>
-                  </div>
-                </Link>
-                <Link
                   to="/how-to-play"
                   onClick={() => setIsMenuOpen(false)}
                   className={`block w-full p-3 rounded-xl transition-all duration-200 ${
@@ -678,13 +665,6 @@ const Navbar = () => {
                     <span>Socials</span>
                   </div>
                 </Link>
-              </div>
-
-              {/* Blog section */}
-              <div className="pt-2">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 px-3">
-                  Content
-                </div>
                 <Link
                   to="/blog"
                   onClick={() => setIsMenuOpen(false)}
@@ -696,6 +676,23 @@ const Navbar = () => {
                 >
                   <div className="flex items-center space-x-3">
                     <span>Blog</span>
+                  </div>
+                </Link>
+              </div>
+
+              {/* Card Search section */}
+              <div className="pt-2">
+                <Link
+                  to="/card-search"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
+                    isActive('/card-search')
+                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <span>Card Search</span>
                   </div>
                 </Link>
               </div>

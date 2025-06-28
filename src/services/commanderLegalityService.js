@@ -121,7 +121,59 @@ const COLOR_IDENTITY_VIOLATIONS = {
   'Boros Reckoner': ['R', 'W'],
   'Dryad Militant': ['G', 'W'],
   'Rakdos Cackler': ['B', 'R'],
-  'Enthusiastic Mechanaut': ['R', 'U']
+  'Enthusiastic Mechanaut': ['R', 'U'],
+  
+  // New additions for April 2025
+  'Thopter Foundry': ['B', 'U', 'W'],
+  'Time Sieve': ['B', 'U'],
+  
+  // Guild charms
+  'Esper Charm': ['W', 'U', 'B'],
+  'Bant Charm': ['G', 'W', 'U'],
+  'Grixis Charm': ['U', 'B', 'R'],
+  'Jund Charm': ['B', 'R', 'G'],
+  'Naya Charm': ['R', 'G', 'W'],
+  'Abzan Charm': ['W', 'B', 'G'],
+  'Jeskai Charm': ['U', 'R', 'W'],
+  'Sultai Charm': ['B', 'G', 'U'],
+  'Mardu Charm': ['R', 'W', 'B'],
+  'Temur Charm': ['G', 'U', 'R'],
+  
+  // Artifacts with off-color activated abilities
+  'Cranial Plating': ['B'], // Has {B}{B}: Attach ability
+  'Scuttlemutt': ['W', 'U', 'B', 'R', 'G'], // Has WUBRG activated abilities
+  'Golem Artisan': ['W', 'U', 'R'], // Has {2}: +1/+1, {2}: Flying, {2}: Trample abilities
+  'Karn Liberated': [], // Actually colorless despite being powerful
+  
+  // Cards that were causing issues with Cid
+  'Thopter Foundry': ['B', 'U', 'W'],
+  'Time Sieve': ['B', 'U'],
+  
+  // Guild Charms (all multicolor)
+  'Esper Charm': ['W', 'U', 'B'],
+  'Bant Charm': ['G', 'W', 'U'],
+  'Grixis Charm': ['U', 'B', 'R'],
+  'Jund Charm': ['B', 'R', 'G'],
+  'Naya Charm': ['R', 'G', 'W'],
+  'Abzan Charm': ['W', 'B', 'G'],
+  'Jeskai Charm': ['U', 'R', 'W'],
+  'Sultai Charm': ['B', 'G', 'U'],
+  'Mardu Charm': ['R', 'W', 'B'],
+  'Temur Charm': ['G', 'U', 'R'],
+  
+  // Common artifacts with off-color abilities
+  'Birthing Pod': ['G'], // Has green activated ability
+  'Mindslaver': [], // Actually colorless
+  'Sensei\'s Divining Top': [], // Actually colorless
+  'Eldrazi Monument': [], // Actually colorless
+  
+  // Equipment with off-color abilities
+  'Sword of Fire and Ice': ['R', 'U'], // Protection and triggered abilities
+  'Sword of Light and Shadow': ['W', 'B'],
+  'Sword of War and Peace': ['R', 'W'],
+  'Sword of Body and Mind': ['G', 'U'],
+  'Sword of Feast and Famine': ['B', 'G'],
+  'Sword of Truth and Justice': ['W', 'U']
 };
 
 // ===== CORE LEGALITY FUNCTIONS =====
@@ -232,14 +284,16 @@ export const validateCard = (card, commander) => {
 
   // 3. Check color identity if commander is provided
   if (commander && commander.color_identity) {
-    const colorCheck = validateColorIdentity(card.name, commander.color_identity);
+    // Use learning-based validation that improves over time
+    const colorCheck = validateColorIdentityWithLearning(card, commander.color_identity);
     if (!colorCheck.isValid) {
       violations.push({
         type: 'color_identity',
         message: colorCheck.reason,
         severity: 'critical',
         cardColorIdentity: colorCheck.cardColorIdentity,
-        commanderColorIdentity: colorCheck.commanderColorIdentity
+        commanderColorIdentity: colorCheck.commanderColorIdentity,
+        validationSource: colorCheck.source || 'static'
       });
     }
   }
@@ -264,6 +318,54 @@ export const validateCard = (card, commander) => {
     violations,
     warnings
   };
+};
+
+/**
+ * Check if a card can have multiple copies in a deck
+ * @param {Object} card - Card object with oracle_text
+ * @returns {boolean} True if card can have multiple copies
+ * 
+ * EXAMPLES OF CARDS THIS CORRECTLY HANDLES:
+ * 
+ * Basic Lands (type_line check):
+ * - Plains, Island, Swamp, Mountain, Forest, Wastes
+ * - Any card with type_line containing "Basic" and "Land"
+ * 
+ * Cards with "A deck can have any number of cards named" (oracle_text check):
+ * - Cid, Timeless Artificer
+ * - Dragon's Approach
+ * - Hare Apparent
+ * - Persistent Petitioners
+ * - Rat Colony
+ * - Relentless Rats
+ * - Shadowborn Apostle
+ * - Slime Against Humanity
+ * - Tempest Hawk
+ * - Templar Knight
+ * 
+ * Cards with limited multiples (also caught by oracle_text check):
+ * - Seven Dwarves ("A deck can have up to seven cards named Seven Dwarves")
+ * - Nazgûl ("A deck can have up to nine cards named Nazgûl")
+ * 
+ * Regular cards (will return false):
+ * - Sol Ring, Lightning Bolt, Counterspell, etc.
+ */
+const canHaveMultipleCopies = (card) => {
+  if (!card) return false;
+  
+  // Basic lands are always allowed multiples
+  if (card.type_line && card.type_line.includes('Basic') && card.type_line.includes('Land')) {
+    return true;
+  }
+  
+  // Check for the specific text that allows multiple copies
+  if (card.oracle_text) {
+    const oracleText = card.oracle_text.toLowerCase();
+    return oracleText.includes('a deck can have any number of cards named') ||
+           oracleText.includes('any number of cards named');
+  }
+  
+  return false;
 };
 
 /**
@@ -333,12 +435,10 @@ export const validateDeck = (cardList, commander) => {
       })));
     }
 
-    // Check singleton rule (except basic lands)
-    const isBasicLand = card.type_line && 
-      card.type_line.includes('Basic') && 
-      card.type_line.includes('Land');
+    // Check singleton rule (except basic lands and cards that can have multiple copies)
+    const canHaveMultiples = canHaveMultipleCopies(card);
     
-    if (!isBasicLand) {
+    if (!canHaveMultiples) {
       const quantity = card.quantity || 1;
       cardCounts[card.name] = (cardCounts[card.name] || 0) + quantity;
       
@@ -487,6 +587,90 @@ export const formatValidationResults = (validationResult) => {
         suggestions: getBannedCardReplacements(v.cardName)
       }))
   };
+};
+
+/**
+ * Cache for learned color identity violations
+ * This gets populated as we encounter new violations
+ */
+const learnedViolations = new Map();
+
+/**
+ * Learn and cache a color identity violation for future reference
+ * @param {string} cardName - Name of the card
+ * @param {Array} colorIdentity - Card's actual color identity
+ */
+const learnColorIdentityViolation = (cardName, colorIdentity) => {
+  if (cardName && Array.isArray(colorIdentity) && colorIdentity.length > 0) {
+    learnedViolations.set(cardName, colorIdentity);
+    console.log(`Learned color identity: ${cardName} = [${colorIdentity.join(', ')}]`);
+  }
+};
+
+/**
+ * Get color identity from learned cache
+ * @param {string} cardName - Name of the card
+ * @returns {Array|null} Color identity array or null if not found
+ */
+const getLearnedColorIdentity = (cardName) => {
+  return learnedViolations.get(cardName) || null;
+};
+
+/**
+ * Enhanced color identity validation with learning capability
+ * @param {string|Object} cardNameOrObject - Card name or card object
+ * @param {Array} commanderColorIdentity - Commander's color identity
+ * @returns {Object} Validation result
+ */
+export const validateColorIdentityWithLearning = (cardNameOrObject, commanderColorIdentity = []) => {
+  const cardName = typeof cardNameOrObject === 'string' ? cardNameOrObject : cardNameOrObject?.name;
+  const cardObject = typeof cardNameOrObject === 'object' ? cardNameOrObject : null;
+
+  if (!cardName || !Array.isArray(commanderColorIdentity)) {
+    return { isValid: false, reason: 'Invalid input parameters' };
+  }
+
+  // 1. Check static known violations first (fastest)
+  const staticResult = validateColorIdentity(cardName, commanderColorIdentity);
+  if (!staticResult.isValid) {
+    return staticResult;
+  }
+
+  // 2. Check learned violations cache
+  const learnedColorIdentity = getLearnedColorIdentity(cardName);
+  if (learnedColorIdentity) {
+    const hasInvalidColors = learnedColorIdentity.some(color => !commanderColorIdentity.includes(color));
+    if (hasInvalidColors) {
+      return {
+        isValid: false,
+        reason: `${cardName} has color identity [${learnedColorIdentity.join(', ')}] which is not allowed in commander identity [${commanderColorIdentity.join(', ')}]`,
+        cardColorIdentity: learnedColorIdentity,
+        commanderColorIdentity,
+        source: 'learned'
+      };
+    }
+  }
+
+  // 3. Check actual card data and learn from it
+  if (cardObject && cardObject.color_identity) {
+    const cardColors = cardObject.color_identity;
+    
+    // Learn this card's color identity for future use
+    learnColorIdentityViolation(cardName, cardColors);
+    
+    const hasInvalidColors = cardColors.some(color => !commanderColorIdentity.includes(color));
+    if (hasInvalidColors) {
+      return {
+        isValid: false,
+        reason: `${cardName} has color identity [${cardColors.join(', ')}] which is not allowed in commander identity [${commanderColorIdentity.join(', ')}]`,
+        cardColorIdentity: cardColors,
+        commanderColorIdentity,
+        source: 'scryfall'
+      };
+    }
+  }
+
+  return { isValid: true, reason: 'Color identity compliant' };
 };
 
 // ===== EXPORT DEFAULT SERVICE OBJECT =====

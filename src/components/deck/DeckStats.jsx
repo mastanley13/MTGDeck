@@ -30,9 +30,9 @@ const DeckStats = () => {
           <p className="text-gray-300 mt-2">
             {bracketAnalysis.bracketDescription}
           </p>
-          <p className="text-gray-400 text-sm mt-3">
+          <div className="text-gray-400 text-sm mt-3">
             Look for the <GameChangerTooltip iconOnly className="inline-block mx-1" /> icon to identify game-changing cards in your deck.
-          </p>
+          </div>
         </div>
       </div>
 

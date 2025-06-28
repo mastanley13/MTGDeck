@@ -5,35 +5,47 @@
 
 /**
  * Get total card count including commander
- * @param {Array} cards - Array of main deck cards
- * @param {Object} commander - Commander card object
+ * @param {Object} deckData - Object containing cards array and commander
  * @returns {number} - Total cards including commander (should be 100 for complete deck)
  */
-export const getTotalCardCount = (cards = [], commander = null) => {
-  // Validate that cards is an array
-  if (!Array.isArray(cards)) {
-    console.warn('getTotalCardCount: cards parameter is not an array:', cards);
-    return commander ? 1 : 0;
+export const getTotalCardCount = (deckData) => {
+  // Handle case where deckData is passed directly as an array (backwards compatibility)
+  if (Array.isArray(deckData)) {
+    return deckData.reduce((total, card) => total + (card.quantity || 1), 0);
   }
-  
-  const mainDeckCount = cards.reduce((total, card) => total + (card.quantity || 1), 0);
-  const commanderCount = commander ? 1 : 0;
-  return mainDeckCount + commanderCount;
+
+  // Handle case where deckData is an object with cards and commander properties
+  if (deckData && typeof deckData === 'object') {
+    const cards = Array.isArray(deckData.cards) ? deckData.cards : [];
+    const mainDeckCount = cards.reduce((total, card) => total + (card.quantity || 1), 0);
+    const commanderCount = deckData.commander ? 1 : 0;
+    return mainDeckCount + commanderCount;
+  }
+
+  // If neither case matches, return 0
+  console.warn('getTotalCardCount: Invalid input format:', deckData);
+  return 0;
 };
 
 /**
  * Get main deck card count (excluding commander)
- * @param {Array} cards - Array of main deck cards
+ * @param {Array|Object} deckData - Array of cards or object containing cards array
  * @returns {number} - Total non-commander cards (should be 99 for complete deck)
  */
-export const getMainDeckCardCount = (cards = []) => {
-  // Validate that cards is an array
-  if (!Array.isArray(cards)) {
-    console.warn('getMainDeckCardCount: cards parameter is not an array:', cards);
-    return 0;
+export const getMainDeckCardCount = (deckData) => {
+  // Handle case where deckData is passed directly as an array (backwards compatibility)
+  if (Array.isArray(deckData)) {
+    return deckData.reduce((total, card) => total + (card.quantity || 1), 0);
   }
-  
-  return cards.reduce((total, card) => total + (card.quantity || 1), 0);
+
+  // Handle case where deckData is an object with cards property
+  if (deckData && typeof deckData === 'object' && Array.isArray(deckData.cards)) {
+    return deckData.cards.reduce((total, card) => total + (card.quantity || 1), 0);
+  }
+
+  // If neither case matches, return 0
+  console.warn('getMainDeckCardCount: Invalid input format:', deckData);
+  return 0;
 };
 
 /**
@@ -55,40 +67,38 @@ export const getAllCards = (cards = [], commander = null) => {
 
 /**
  * Check if deck is complete (100 cards total)
- * @param {Array} cards - Array of main deck cards
- * @param {Object} commander - Commander card object
+ * @param {Object} deckData - Object containing cards array and commander
  * @returns {boolean} - True if deck has exactly 100 cards
  */
-export const isDeckComplete = (cards = [], commander = null) => {
-  return getTotalCardCount(cards, commander) === 100;
+export const isDeckComplete = (deckData) => {
+  return getTotalCardCount(deckData) === 100;
 };
 
 /**
  * Check if main deck is full (99 cards)
- * @param {Array} cards - Array of main deck cards
+ * @param {Object} deckData - Object containing cards array
  * @returns {boolean} - True if main deck has exactly 99 cards
  */
-export const isMainDeckFull = (cards = []) => {
-  return getMainDeckCardCount(cards) >= 99;
+export const isMainDeckFull = (deckData) => {
+  return getMainDeckCardCount(deckData) >= 99;
 };
 
 /**
  * Get deck completion info
- * @param {Array} cards - Array of main deck cards
- * @param {Object} commander - Commander card object
+ * @param {Object} deckData - Object containing cards array and commander
  * @returns {Object} - Object with completion details
  */
-export const getDeckCompletionInfo = (cards = [], commander = null) => {
-  const mainDeckCount = getMainDeckCardCount(cards);
-  const totalCount = getTotalCardCount(cards, commander);
-  const hasCommander = !!commander;
+export const getDeckCompletionInfo = (deckData) => {
+  const mainDeckCount = getMainDeckCardCount(deckData);
+  const totalCount = getTotalCardCount(deckData);
+  const hasCommander = !!deckData.commander;
   
   return {
     mainDeckCount,
     totalCount,
     hasCommander,
-    isComplete: isDeckComplete(cards, commander),
-    isMainDeckFull: isMainDeckFull(cards),
+    isComplete: totalCount === 100,
+    isMainDeckFull: mainDeckCount >= 99,
     remainingSlots: Math.max(0, 99 - mainDeckCount),
     totalRemainingSlots: Math.max(0, 100 - totalCount)
   };

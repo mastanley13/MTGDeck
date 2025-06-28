@@ -34,8 +34,13 @@ Commander Colors: ${commander.colors?.join('') || 'Colorless'}
 SCAN FOR VIOLATIONS:
 1. Color Identity: Cards with mana symbols outside commander colors
 2. Format Legality: Banned cards in Commander format  
-3. Singleton Rule: Duplicates (except basic lands)
+3. Singleton Rule: Duplicates (EXCEPT basic lands AND cards with "A deck can have any number of cards named...")
 4. Basic Functionality: Missing essential card types
+
+IMPORTANT SINGLETON RULE EXCEPTIONS:
+- Basic lands (Plains, Island, Swamp, Mountain, Forest, Wastes) can have multiple copies
+- Cards with oracle text "A deck can have any number of cards named [card name]" can have multiple copies
+- Examples: Cid, Timeless Artificer, Persistent Petitioners, Shadowborn Apostle, etc.
 
 Deck List to Validate (${cardList.length} cards):
 ${JSON.stringify(cardList.map(card => ({ 

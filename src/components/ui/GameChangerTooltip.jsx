@@ -11,8 +11,8 @@ const GameChangerTooltip = ({ className = '', iconOnly = false }) => {
       </div>
       <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-xs text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 shadow-xl border border-gray-700 w-max max-w-xs">
         <div className="text-center">
-          <p className="font-semibold mb-1">Game Changer Card</p>
-          <p className="text-gray-300">Based on EDHREC data, this card has a significant impact on deck performance and win rates.</p>
+          <div className="font-semibold mb-1">Game Changer Card</div>
+          <div className="text-gray-300">Based on EDHREC data, this card has a significant impact on deck performance and win rates.</div>
         </div>
         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900 border-r border-b border-gray-700"></div>
       </div>

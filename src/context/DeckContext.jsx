@@ -155,8 +155,8 @@ const deckReducer = (state, action) => {
     case Actions.ADD_CARD: {
       const card = action.payload;
       
-      // Use standardized counting function
-      const currentMainDeckCount = getMainDeckCardCount(state.cards);
+      // Use standardized counting function with correct data structure
+      const currentMainDeckCount = getMainDeckCardCount({ cards: state.cards });
 
       // If main deck is already at 99 cards, block additions/increments
       if (currentMainDeckCount >= 99) {
@@ -286,7 +286,7 @@ const deckReducer = (state, action) => {
         savedDecks: updatedDecks,
         currentDeckName: newDeck.name, // Ensure currentDeckName reflects the saved name
         deckDescription: newDeck.description,
-        loading: false, // Stop loading after local save
+        loading: false, // Stop loading after GHL save
         error: null, 
       };
     }
@@ -398,39 +398,48 @@ const deckReducer = (state, action) => {
 export const DeckProvider = ({ children }) => {
   const [state, dispatch] = useReducer(deckReducer, initialState);
   
-  // Load saved decks from localStorage on mount
+  // Note: We no longer use localStorage for deck storage since we're using GHL cloud storage
+  // Decks are fetched from GHL when needed via fetchAndSetUserDecks()
+  
+  // Clean up old localStorage data on mount to prevent quota issues
   useEffect(() => {
     try {
-      const savedDecks = localStorage.getItem('mtg_saved_decks');
-      if (savedDecks) {
-        const parsedDecks = JSON.parse(savedDecks);
-        // Validate each deck structure to fix any issues
-        const validatedDecks = parsedDecks.map(deck => validateDeckStructure(deck)).filter(deck => deck !== null);
-        dispatch({ 
-          type: Actions.INIT_SAVED_DECKS, 
-          payload: validatedDecks 
-        });
-      }
+      // Remove old deck storage data
+      localStorage.removeItem('mtg_saved_decks');
+      
+      // Remove old draft data
+      const keys = Object.keys(localStorage);
+      const draftKeys = keys.filter(key => key.startsWith('deck_draft_'));
+      draftKeys.forEach(key => {
+        localStorage.removeItem(key);
+      });
+      
+      console.log('✅ Cleaned up old localStorage data to prevent quota issues');
     } catch (error) {
-      console.error('Error loading saved decks:', error);
+      console.warn('Failed to clean up localStorage:', error);
     }
-  }, []);
+  }, []); // Run once on mount
+  
+  // Calculate total card count including commander
+  const totalCardCount = useMemo(() => {
+    const mainDeckCount = state.cards.reduce((total, card) => total + (card.quantity || 1), 0);
+    const commanderCount = state.commander ? 1 : 0;
+    return mainDeckCount + commanderCount;
+  }, [state.cards, state.commander]);
 
-  // Save to localStorage whenever savedDecks changes (this handles the auto-save)
-  useEffect(() => {
-    if (state.savedDecks && state.savedDecks.length > 0) {
-      try {
-        localStorage.setItem('mtg_saved_decks', JSON.stringify(state.savedDecks));
-      } catch (error) {
-        console.error('Error saving decks to localStorage:', error);
-      }
-    }
-  }, [state.savedDecks]);
+  // Calculate main deck card count (excluding commander)
+  const mainDeckCardCount = useMemo(() => {
+    return state.cards.reduce((total, card) => total + (card.quantity || 1), 0);
+  }, [state.cards]);
+
+  // Get deck completion info
+  const deckCompletionInfo = useMemo(() => {
+    return getDeckCompletionInfo({ cards: state.cards, commander: state.commander });
+  }, [state.cards, state.commander]);
   
   // Derived state computations (memoized)
-  const { cardsByType, totalCardCount, mainDeckCardCount, deckCompletionInfo } = useMemo(() => {
+  const { cardsByType } = useMemo(() => {
     const newCardsByType = {};
-    const completionInfo = getDeckCompletionInfo(state.cards, state.commander);
 
     if (state.cards && Array.isArray(state.cards)) {
       state.cards.forEach(card => {
@@ -446,11 +455,8 @@ export const DeckProvider = ({ children }) => {
     
     return { 
       cardsByType: newCardsByType, 
-      totalCardCount: completionInfo.totalCount,  // Total including commander
-      mainDeckCardCount: completionInfo.mainDeckCount,  // Main deck only
-      deckCompletionInfo: completionInfo
     };
-  }, [state.cards, state.cardCategories, state.commander]);
+  }, [state.cards, state.cardCategories]);
   
   // Action creators
   const setCommander = (commander) => {
@@ -512,19 +518,8 @@ export const DeckProvider = ({ children }) => {
       type: Actions.UPDATE_CARD_CATEGORY,
       payload: { cardId, category }
     });
-    
-    // Auto-save the current deck after updating categories
-    setTimeout(() => {
-      dispatch({
-        type: Actions.SAVE_DECK,
-        payload: {
-          name: state.currentDeckName,
-          description: state.deckDescription
-        }
-      });
-      // Deck auto-saved with categories
-    }, 100);
-  }, [state.currentDeckName, state.deckDescription]);
+    // Note: Categories are now only saved when user explicitly saves deck to GHL
+  }, []);
   
   // New function to save deck to GHL and then locally
   const saveCurrentDeckToGHL = useCallback(async (contactId, commanderNameForGHLInput, localDeckName, deckToSave) => {
@@ -926,17 +921,17 @@ export const DeckProvider = ({ children }) => {
   // Provide value to consumers
   const value = {
     ...state,
-    cardsByType, // Added back
-    totalCardCount, // Total cards including commander (100 for complete deck)
-    mainDeckCardCount, // Main deck cards only (99 for complete deck)
-    deckCompletionInfo, // Detailed completion information
+    totalCardCount,
+    mainDeckCardCount,
+    deckCompletionInfo,
+    cardsByType,
     setCommander,
     addCard,
     removeCard,
     updateCardQuantity,
     clearDeck,
     resetDeckExceptCommander,
-    clearDeckContents: resetDeckExceptCommander, // Now explicitly provided
+    clearDeckContents: resetDeckExceptCommander,
     loadDeck,
     saveDeck, 
     saveCurrentDeckToGHL,
@@ -945,7 +940,7 @@ export const DeckProvider = ({ children }) => {
     setDeckDescription,
     importDeck,
     updateCardCategory,
-    deleteDeckFromGHL, // Expose the new function
+    deleteDeckFromGHL,
   };
   
   return (

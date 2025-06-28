@@ -21,14 +21,14 @@ import PaywallModal from '../components/paywall/PaywallModal.jsx';
 import UsageBanner from '../components/paywall/UsageBanner.jsx';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { validateColorIdentity, validateFormatLegality, isDeckValid, useDeckValidation } from '../utils/deckValidator';
+import { validateColorIdentity, validateFormatLegality, isDeckValid, useDeckValidation, validateDeck } from '../utils/deckValidator';
+import { validateDeckWithAI } from '../services/deckValidationService.js';
 import AlertModal from '../components/ui/AlertModal.jsx';
 import InputModal from '../components/ui/InputModal.jsx';
 import CardDetailModal from '../components/ui/CardDetailModal.jsx';
 import { IconCrown } from '@tabler/icons-react';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 import { getTotalCardCount, getMainDeckCardCount } from '../utils/deckHelpers.js';
-import debounce from 'lodash/debounce';
 
 const DeckBuilderAIPage = () => {
   const navigate = useNavigate();
@@ -99,13 +99,8 @@ const DeckBuilderAIPage = () => {
   // Memoize validation results
   const deckValidation = useDeckValidation(commander, cards);
   
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce((query) => {
-      setSearchQuery(query);
-    }, 300),
-    []
-  );
+  // Search query state (if needed for future search functionality)
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Handler to open the card detail modal
   const handleOpenCardDetailModal = (card) => {
@@ -147,6 +142,61 @@ const DeckBuilderAIPage = () => {
     addCard(card);
   }, [commander, deckValidation, addCard]);
 
+  // Function to perform the actual save flow
+  const performSaveFlow = useCallback(async (deckName) => {
+    if (!commander || !currentUser) return;
+
+    try {
+      const success = await saveCurrentDeckToGHL(
+        currentUser.id,
+        commander.name, // GHL deck name field (required)
+        deckName // Local deck name
+      );
+
+      if (success) {
+        setAlertModalConfig({
+          title: 'Deck Saved Successfully!',
+          message: `Your deck "${deckName}" has been saved to the cloud and is now accessible from any device.`,
+          showCancelButton: false,
+        });
+      } else {
+        setAlertModalConfig({
+          title: 'Save Failed',
+          message: deckContextError || 'An error occurred while saving your deck. Please try again.',
+          showCancelButton: false,
+        });
+      }
+      setIsAlertModalOpen(true);
+    } catch (error) {
+      console.error('Error in performSaveFlow:', error);
+      setAlertModalConfig({
+        title: 'Save Failed',
+        message: 'An unexpected error occurred while saving your deck. Please try again.',
+        showCancelButton: false,
+      });
+      setIsAlertModalOpen(true);
+    }
+  }, [commander, currentUser, saveCurrentDeckToGHL, deckContextError]);
+
+  // Function to launch input modal for deck name
+  const launchInputModal = useCallback((forSave = false) => {
+    setInputModalConfig({
+      title: 'Save Deck to Cloud',
+      message: 'Choose a name for your deck. This will be saved to your cloud account.',
+      inputLabel: 'Deck Name',
+      initialValue: currentDeckName || '',
+      placeholder: 'Enter deck name...',
+      onConfirm: async (deckName) => {
+        if (deckName.trim()) {
+          setIsInputModalOpen(false);
+          await performSaveFlow(deckName.trim());
+        }
+      },
+      confirmText: 'Save Deck',
+    });
+    setIsInputModalOpen(true);
+  }, [currentDeckName, performSaveFlow]);
+
   // Enhanced handleSaveDeck with paywall integration
   const handleSaveDeck = useCallback(async (isFabClick = false) => {
     if (!commander) {
@@ -161,11 +211,18 @@ const DeckBuilderAIPage = () => {
 
     try {
       // Step 1: Validate deck
-      const validation = await validateDeckAsync(commander, cards);
-      if (!validation.isValid) {
+      const validationResults = validateDeck(commander, cards);
+      const hasValidationErrors = validationResults.some(result => !result.valid);
+      
+      if (hasValidationErrors) {
+        const errorMessages = validationResults
+          .filter(result => !result.valid)
+          .map(result => result.message)
+          .join('\n');
+        
         setAlertModalConfig({
           title: 'Validation Error',
-          message: validation.message,
+          message: errorMessages,
           showCancelButton: false,
         });
         setIsAlertModalOpen(true);

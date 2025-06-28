@@ -21,37 +21,21 @@ export const validateCardCount = (commander, cards) => {
     };
   }
   
-  // Check if commander is accidentally included in cards array
-  const commanderInDeck = cards.some(card => card.name === commander.name);
-  if (commanderInDeck) {
-    // If commander is in deck, we expect 100 total cards (99 + commander)
-    if (deckCount < 100) {
-      return {
-        valid: false,
-        message: `Deck contains ${deckCount} cards (including commander). A Commander deck must contain exactly 100 cards total.`,
-      };
-    } else if (deckCount > 100) {
-      return {
-        valid: false,
-        message: `Deck contains ${deckCount} cards (including commander). A Commander deck must contain exactly 100 cards total.`,
-      };
-    }
-    return { valid: true, message: 'Deck has exactly 100 cards including commander.' };
-  } else {
-    // Normal case: commander is separate, expect 99 cards in main deck
-    if (deckCount < 99) {
-      return {
-        valid: false,
-        message: `Deck contains ${deckCount} cards. A Commander deck must contain exactly 99 cards (plus commander = 100 total).`,
-      };
-    } else if (deckCount > 99) {
-      return {
-        valid: false,
-        message: `Deck contains ${deckCount} cards. A Commander deck must contain exactly 99 cards (plus commander = 100 total).`,
-      };
-    }
-    return { valid: true, message: 'Deck has exactly 99 cards plus commander (100 total).' };
+  // In our deck structure, commander should be separate from main deck
+  // So we expect exactly 99 cards in the main deck
+  if (deckCount < 99) {
+    return {
+      valid: false,
+      message: `Deck contains ${deckCount} cards. A Commander deck must contain exactly 99 cards (plus commander = 100 total).`,
+    };
+  } else if (deckCount > 99) {
+    return {
+      valid: false,
+      message: `Deck contains ${deckCount} cards. A Commander deck must contain exactly 99 cards (plus commander = 100 total).`,
+    };
   }
+  
+  return { valid: true, message: 'Deck has exactly 99 cards plus commander (100 total).' };
 };
 
 /**
@@ -98,6 +82,29 @@ export const validateColorIdentity = (commander, cards) => {
 };
 
 /**
+ * Check if a card can have multiple copies in a deck
+ * @param {Object} card - Card object with oracle_text
+ * @returns {boolean} True if card can have multiple copies
+ */
+const canHaveMultipleCopies = (card) => {
+  if (!card) return false;
+  
+  // Basic lands are always allowed multiples
+  if (card.type_line && card.type_line.includes('Basic') && card.type_line.includes('Land')) {
+    return true;
+  }
+  
+  // Check for the specific text that allows multiple copies
+  if (card.oracle_text) {
+    const oracleText = card.oracle_text.toLowerCase();
+    return oracleText.includes('a deck can have any number of cards named') ||
+           oracleText.includes('any number of cards named');
+  }
+  
+  return false;
+};
+
+/**
  * Check if the deck follows the singleton rule (only one copy of each card except basic lands)
  * @param {Array} cards - Array of card objects in the deck
  * @returns {Object} Validation result with status, message, and violating cards
@@ -110,12 +117,10 @@ export const validateSingleton = (cards) => {
     const cardName = card.name;
     const quantity = card.quantity || 1;
     
-    // Basic lands are exempt from the singleton rule
-    const isBasicLand = card.type_line && 
-      card.type_line.includes('Basic') && 
-      card.type_line.includes('Land');
+    // Check if this card can have multiple copies (basic lands and special cards)
+    const canHaveMultiples = canHaveMultipleCopies(card);
     
-    if (!isBasicLand) {
+    if (!canHaveMultiples) {
       if (!cardCounts[cardName]) {
         cardCounts[cardName] = quantity;
       } else {

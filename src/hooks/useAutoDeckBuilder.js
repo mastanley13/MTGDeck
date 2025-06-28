@@ -145,7 +145,33 @@ const validateCardColorIdentity = (cardName, commanderColorIdentity) => {
     'Talisman of Progress': ['W', 'U'],
     'Talisman of Resilience': ['B', 'G'],
     'Talisman of Unity': ['G', 'W'],
-    'Talisman of Conviction': ['R', 'W']
+    'Talisman of Conviction': ['R', 'W'],
+    // Add the cards causing issues with Cid
+    'Thopter Foundry': ['B', 'U', 'W'],
+    'Time Sieve': ['B', 'U'],
+    // Artifacts with off-color activated abilities
+    'Cranial Plating': ['B'], // Has {B}{B}: Attach ability
+    'Scuttlemutt': ['W', 'U', 'B', 'R', 'G'], // Has WUBRG activated abilities
+    'Golem Artisan': ['W', 'U', 'R'], // Has colored activated abilities
+    'Birthing Pod': ['G'], // Has green activated ability
+    // Add other common color identity violators
+    'Esper Charm': ['W', 'U', 'B'],
+    'Bant Charm': ['G', 'W', 'U'],
+    'Grixis Charm': ['U', 'B', 'R'],
+    'Jund Charm': ['B', 'R', 'G'],
+    'Naya Charm': ['R', 'G', 'W'],
+    'Abzan Charm': ['W', 'B', 'G'],
+    'Jeskai Charm': ['U', 'R', 'W'],
+    'Sultai Charm': ['B', 'G', 'U'],
+    'Mardu Charm': ['R', 'W', 'B'],
+    'Temur Charm': ['G', 'U', 'R'],
+    // Equipment with off-color abilities
+    'Sword of Fire and Ice': ['R', 'U'],
+    'Sword of Light and Shadow': ['W', 'B'],
+    'Sword of War and Peace': ['R', 'W'],
+    'Sword of Body and Mind': ['G', 'U'],
+    'Sword of Feast and Famine': ['B', 'G'],
+    'Sword of Truth and Justice': ['W', 'U']
   };
   
   if (knownViolations[cardName]) {
@@ -158,6 +184,64 @@ const validateCardColorIdentity = (cardName, commanderColorIdentity) => {
   }
   
   return true; // Unknown cards pass initial check
+};
+
+// Check for obvious color violations based on card name patterns
+const isObviousColorViolation = (cardName, commanderColorIdentity) => {
+  if (!cardName || !Array.isArray(commanderColorIdentity)) return false;
+  
+  const lowerName = cardName.toLowerCase();
+  
+  // Obvious color indicators in card names
+  const colorIndicators = {
+    'B': ['swamp', 'black', 'dark', 'shadow', 'death', 'doom', 'demonic', 'diabolic', 'corrupt', 'plague', 'zombie', 'skeleton'],
+    'R': ['mountain', 'red', 'fire', 'flame', 'burn', 'lightning', 'shock', 'goblin', 'dragon', 'rage'],
+    'G': ['forest', 'green', 'nature', 'growth', 'wild', 'beast', 'elf', 'druid', 'giant', 'vine'],
+    'U': ['island', 'blue', 'water', 'sea', 'mind', 'thought', 'counter', 'draw', 'wizard', 'merfolk'],
+    'W': ['plains', 'white', 'holy', 'divine', 'angel', 'knight', 'soldier', 'heal', 'protect', 'serra']
+  };
+  
+  // Check if card name contains indicators for colors not in commander identity
+  for (const [color, indicators] of Object.entries(colorIndicators)) {
+    if (!commanderColorIdentity.includes(color)) {
+      for (const indicator of indicators) {
+        if (lowerName.includes(indicator)) {
+          // Additional checks to avoid false positives
+          if (indicator === 'fire' && lowerName.includes('firebreathing')) continue; // Generic ability
+          if (indicator === 'lightning' && lowerName.includes('lightning greaves')) continue; // Artifact
+          return true;
+        }
+      }
+    }
+  }
+  
+  // Check for obvious guild/shard/wedge names that indicate multiple colors
+  const multiColorIndicators = [
+    'azorius', 'dimir', 'rakdos', 'gruul', 'selesnya', // Guilds
+    'orzhov', 'izzet', 'golgari', 'boros', 'simic',
+    'bant', 'esper', 'grixis', 'jund', 'naya', // Shards
+    'abzan', 'jeskai', 'sultai', 'mardu', 'temur' // Wedges
+  ];
+  
+  for (const indicator of multiColorIndicators) {
+    if (lowerName.includes(indicator)) {
+      return true; // These almost always indicate multi-color cards
+    }
+  }
+  
+  // Check for artifacts that commonly have off-color abilities
+  const problematicArtifacts = [
+    'plating', 'sword of', 'talisman', 'charm', 'pod', 'artisan'
+  ];
+  
+  for (const artifact of problematicArtifacts) {
+    if (lowerName.includes(artifact)) {
+      // These artifact types often have color identity issues
+      return true;
+    }
+  }
+  
+  return false;
 };
 
 /**
@@ -174,6 +258,9 @@ export const useAutoDeckBuilder = () => {
   const [currentCards, setCurrentCards] = useState([]);
   const [currentViolations, setCurrentViolations] = useState([]);
   const [appliedFixes, setAppliedFixes] = useState([]);
+  
+  // Track automatically filtered color identity violations
+  const [filteredColorViolations, setFilteredColorViolations] = useState([]);
 
   const { canMakeAIRequest, incrementAIRequests, isPremium } = useSubscription();
   const deckContext = useDeck(); // Use the whole context object
@@ -182,17 +269,13 @@ export const useAutoDeckBuilder = () => {
     addCard, 
     resetDeckExceptCommander,
     cards, // cards from context is a snapshot, ref will hold latest for async operations
-    removeCard
+    removeCard,
+    mainDeckCardCount
   } = deckContext; // Destructure from deckContext if needed, or use deckContext.addCard etc.
 
-  const currentDeckCardsRef = useRef([]);
-
-  useEffect(() => {
-    currentDeckCardsRef.current = deckContext.cards;
-  }, [deckContext.cards]);
-
   const getCurrentNonCommanderCardCount = () => {
-    return currentDeckCardsRef.current.reduce((sum, c) => sum + (c.quantity || 1), 0);
+    // Use the properly computed mainDeckCardCount from DeckContext
+    return mainDeckCardCount || 0;
   };
 
   /**
@@ -240,156 +323,64 @@ export const useAutoDeckBuilder = () => {
    * @returns {Object} - Object containing archetype rules and constraints
    */
   const getArchetypeRules = (deckStyle) => {
-    const baseRules = {
-      prompt: '',
-      maxBudget: Infinity,
-      targetBracket: { min: 1, max: 5 },
-      maxGameChangers: Infinity,
-      cardDistribution: {
-        lands: { min: 32, max: 34 }, // Reduced land counts
-        ramp: { min: 10, max: 12 },
-        cardDraw: { min: 10, max: 12 },
-        removal: { min: 8, max: 10 },
-        boardWipes: { min: 3, max: 5 },
-        protection: { min: 5, max: 8 },
-        strategy: { min: 25, max: 30 }
-      }
-    };
-
-    switch (deckStyle.toLowerCase()) {
+    switch (deckStyle) {
       case 'competitive':
         return {
-          ...baseRules,
-          prompt: `
-            Focus on high-efficiency staples and powerful synergies.
-            Include multiple tutors for consistency.
-            Prioritize fast mana and efficient interaction.
-            Consider including game-winning combos.
-            Optimize the mana base with fetch lands and shock lands.
-          `,
-          targetBracket: { min: 4, max: 5 },
-          cardDistribution: {
-            ...baseRules.cardDistribution,
-            lands: { min: 30, max: 32 }, // Lower land count due to more efficient mana base
-            ramp: { min: 12, max: 15 }, // More ramp for faster gameplay
-            protection: { min: 8, max: 10 } // More protection for key pieces
-          }
+          maxBudget: 5000, // Higher budget for competitive
+          distribution: {
+            lands: { min: 34, max: 38 },
+            ramp: { min: 10, max: 12 },
+            draw: { min: 10, max: 15 },
+            removal: { min: 8, max: 12 },
+            protection: { min: 5, max: 8 },
+            core: { min: 20, max: 25 }
+          },
+          powerLevel: 'high',
+          prioritizeEfficiency: true,
+          includeReservedList: true
         };
 
       case 'casual':
         return {
-          ...baseRules,
-          prompt: `
-            Focus on fun and interactive gameplay.
-            Avoid mass land destruction and extra turns.
-            Limit tutors to maintain variety in gameplay.
-            Include more flavor-focused cards that fit the theme.
-            Use a mix of removal to encourage interaction.
-            Avoid game-changing effects that can create unfun experiences.
-          `,
-          targetBracket: { min: 1, max: 3 },
-          maxGameChangers: 3, // Limit game changers for casual play
-          cardDistribution: {
-            ...baseRules.cardDistribution,
-            lands: { min: 34, max: 36 }, // Slightly higher land count for more consistent casual play
-            strategy: { min: 28, max: 35 } // More room for fun theme cards
-          }
+          maxBudget: 1000, // Moderate budget for casual
+          distribution: {
+            lands: { min: 36, max: 38 },
+            ramp: { min: 8, max: 10 },
+            draw: { min: 8, max: 12 },
+            removal: { min: 6, max: 10 },
+            protection: { min: 4, max: 6 },
+            core: { min: 25, max: 30 }
+          },
+          powerLevel: 'medium',
+          prioritizeEfficiency: false,
+          includeReservedList: false
         };
 
       case 'budget':
         return {
-          ...baseRules,
-          prompt: `
-            Keep the estimated deck cost under $150.
-            Minimize expensive lands; favor basics and budget alternatives.
-            Focus on efficient budget staples and synergistic commons/uncommons.
-            Include budget-friendly removal and interaction options.
-            Look for cost-effective alternatives to expensive staples.
-          `,
-          maxBudget: 150,
-          targetBracket: { min: 1, max: 3 },
-          maxGameChangers: 2, // Limited by budget naturally
-          cardDistribution: {
-            ...baseRules.cardDistribution,
-            lands: { min: 34, max: 36 } // More basic lands
-          }
-        };
-
-      case 'combo':
-        return {
-          ...baseRules,
-          prompt: `
-            Focus on assembling and protecting key combo pieces.
-            Include tutors to find combo pieces consistently.
-            Add redundant combo pieces and backup plans.
-            Include protection spells to defend the combo.
-            Balance combo pieces with interaction and control elements.
-          `,
-          targetBracket: { min: 3, max: 5 },
-          cardDistribution: {
-            ...baseRules.cardDistribution,
-            lands: { min: 31, max: 33 }, // Lower land count to fit combo pieces
-            protection: { min: 8, max: 12 }, // More protection for combo pieces
-            strategy: { min: 28, max: 35 } // More room for combo pieces
-          }
-        };
-
-      case 'aggro':
-        return {
-          ...baseRules,
-          prompt: `
-            Prioritize low-cost creatures and efficient threats.
-            Include combat tricks and ways to push damage.
-            Focus on haste enablers and extra combat effects.
-            Add ways to break through board stalls.
-            Keep the mana curve low and aggressive.
-          `,
-          cardDistribution: {
-            ...baseRules.cardDistribution,
-            lands: { min: 30, max: 32 }, // Lower land count for aggressive curve
-            ramp: { min: 8, max: 10 }, // Less ramp needed
-            strategy: { min: 30, max: 35 } // More creatures and combat tricks
-          }
-        };
-
-      case 'control':
-        return {
-          ...baseRules,
-          prompt: `
-            Focus on counterspells and efficient removal.
-            Include strong card advantage engines.
-            Add board wipes and mass removal.
-            Include recursion and value engines.
-            Focus on maintaining card advantage and board control.
-          `,
-          cardDistribution: {
-            ...baseRules.cardDistribution,
-            lands: { min: 32, max: 34 }, // Standard land count
-            cardDraw: { min: 12, max: 15 }, // More card draw
-            removal: { min: 10, max: 12 }, // More removal
-            boardWipes: { min: 5, max: 7 } // More board wipes
-          }
-        };
-
-      case 'tribal':
-        return {
-          ...baseRules,
-          prompt: `
-            Focus on creatures sharing the commander's creature type.
-            Include tribal support and anthem effects.
-            Add tribal-specific card advantage and interaction.
-            Include ways to protect and buff the tribe.
-            Balance tribal synergies with general utility.
-          `,
-          cardDistribution: {
-            ...baseRules.cardDistribution,
-            lands: { min: 33, max: 35 }, // Standard land count
-            strategy: { min: 30, max: 35 } // More creatures of the chosen type
+          maxBudget: 100, // Low budget
+          distribution: {
+            lands: { min: 36, max: 38 },
+            ramp: { min: 10, max: 12 }, // Increased ramp for budget decks
+            draw: { min: 10, max: 12 }, // Increased draw to help find key pieces
+            removal: { min: 8, max: 10 },
+            protection: { min: 4, max: 6 },
+            core: { min: 25, max: 30 }
+          },
+          powerLevel: 'low',
+          prioritizeEfficiency: false,
+          includeReservedList: false,
+          preferBudgetOptions: true,
+          maxCardPrice: 5, // Maximum price per card
+          budgetPriorities: {
+            lands: 'basic',  // Prefer basic lands
+            ramp: 'artifacts', // Prefer artifact ramp
+            protection: 'targeted' // Prefer targeted protection over expensive global effects
           }
         };
 
       default:
-        return baseRules;
+        return getArchetypeRules('casual'); // Default to casual rules
     }
   };
 
@@ -426,6 +417,9 @@ export const useAutoDeckBuilder = () => {
       }
       
       resetDeckExceptCommander();
+      
+      // Clear previous state
+      setFilteredColorViolations([]);
       
       // STAGE 1: High-Quality Initial Generation with o3
       setBuildingStage('Generating initial deck structure...');
@@ -529,6 +523,7 @@ export const useAutoDeckBuilder = () => {
       setCurrentCards([]);
       setCurrentViolations([]);
       setAppliedFixes([]);
+      // Note: Don't clear filteredColorViolations here so user can see the report
     }
   };
 
@@ -562,9 +557,9 @@ export const useAutoDeckBuilder = () => {
       .map(([category, { min, max }]) => `${category}: ${min}-${max} cards`)
       .join(', ');
 
-    const prompt = `You are an expert Magic: The Gathering deck builder specialized in the Commander format.
+    const prompt = `You are an expert Magic: The Gathering deck builder specialized in Commander format.
 
-Build a complete 99-card Commander deck with the following specifications:
+Build a complete 99-card Commander deck optimized for SPEED and broad synergy:
 
 Commander: ${commander.name}
 Color Identity: ${commander.color_identity?.join('') || 'Colorless'}
@@ -572,28 +567,45 @@ Commander Type: ${commander.type_line}
 Commander Text: ${commander.oracle_text || 'No text available'}
 Deck Style: ${deckStyle}
 
-Requirements:
-- Exactly 99 cards (excluding the commander)
-- All cards must be legal in Commander format
-- All cards must fit within the commander's color identity
-- ${bracketConstraint}
+CRITICAL COLOR IDENTITY RULES:
+- ONLY include cards that match the commander's color identity: ${commander.color_identity?.join(', ') || 'Colorless'}
+- A card's color identity includes ALL mana symbols in its mana cost AND rules text
+- Examples of FORBIDDEN cards for this commander:
+  ${commander.color_identity?.includes('B') ? '' : '- NO Black cards (like Thoughtseize, Doom Blade, Demonic Tutor)'}
+  ${commander.color_identity?.includes('R') ? '' : '- NO Red cards (like Lightning Bolt, Shock, Goblin Guide)'}
+  ${commander.color_identity?.includes('G') ? '' : '- NO Green cards (like Llanowar Elves, Rampant Growth, Giant Growth)'}
+  ${commander.color_identity?.includes('U') ? '' : '- NO Blue cards (like Counterspell, Brainstorm, Ponder)'}
+  ${commander.color_identity?.includes('W') ? '' : '- NO White cards (like Swords to Plowshares, Wrath of God, Serra Angel)'}
+- AVOID multi-colored cards that contain colors outside the commander's identity
+- AVOID artifacts with colored mana symbols in their rules text
+
+SPEED PRIORITY: Generate functional deck quickly. Focus on:
+- Strong synergies with commander abilities
+- Proper mana base foundation
+- Essential staples for the archetype
+- ${distributionRequirements}
+- ${powerLevelConstraint}
 - ${budgetConstraint}
-- Card distribution target: ${distributionRequirements}
+- ${efficiencyNote}
 
-${archetypePrompt}
-
-Additional Guidelines:
+IMPORTANT GUIDELINES:
 - Include staple cards appropriate for the power level
-- Ensure proper mana base with appropriate lands
-- Include ramp, card draw, removal, and protection
-- Focus on synergies with the commander's abilities and strategy
+- Don't worry about perfect validation - we'll fix issues later
+- Focus on deck function over edge case compliance
 - All card names must be spelled exactly as they appear on official Magic cards
+- For double-faced cards, use only the front face name (e.g., "Brightclimb Pathway" not "Brightclimb Pathway // Grimclimb Pathway")
 
-Format your response as a JSON array of objects with these properties:
-- name: The exact card name (be very precise with spelling)
-- category: One of: "Lands", "Ramp", "Card Draw", "Removal", "Board Wipes", "Protection", "Strategy", "Utility", "Finisher"
+FORMAT REQUIREMENTS:
+- Return ONLY a valid JSON array
+- NO comments, explanations, or text outside the JSON
+- NO // characters except in card names where absolutely necessary
+- Use this exact format for each card:
 
-Only include the JSON array in your response, nothing else. Ensure exactly 99 cards are included.`;
+{"name": "Card Name", "category": "Category"}
+
+Categories must be one of: "Lands", "Ramp", "Draw", "Removal", "Protection", "Core"
+
+CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, nothing else.`;
 
     try {
       const API_URL = 'https://api.openai.com/v1/chat/completions';
@@ -659,9 +671,15 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
             return false;
           }
 
-          // Check color identity (basic validation)
+          // Enhanced color identity validation (basic validation)
           if (!validateCardColorIdentity(card.name, commander.color_identity)) {
             console.warn(`Color identity violation: ${card.name}`);
+            return false;
+          }
+
+          // Additional check for obviously wrong color cards based on name patterns
+          if (isObviousColorViolation(card.name, commander.color_identity)) {
+            console.warn(`Obvious color violation detected: ${card.name}`);
             return false;
           }
 
@@ -706,6 +724,39 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
   };
 
   /**
+   * Normalize card names to handle common misspellings and variations
+   * @param {string} cardName - Original card name
+   * @returns {string} Normalized card name
+   */
+  const normalizeCardName = (cardName) => {
+    if (!cardName || typeof cardName !== 'string') return cardName;
+    
+    // Common misspellings and their corrections
+    const corrections = {
+      'Felwar Stone': 'Fellwar Stone',
+      'Comand Tower': 'Command Tower',
+      'Comandeer\'s Sphere': 'Commander\'s Sphere',
+      'Arcain Signet': 'Arcane Signet',
+      'Ethereum Sculptor': 'Etherium Sculptor',
+      'The Ozolith, Shattered Spire': 'The Ozolith', // The actual card name
+      'Sejiri Glacier': 'Sejiri Refuge', // Likely meant Sejiri Refuge
+      'Thriving Heath': 'Thriving Heath', // Already correct
+      'Thriving Isle': 'Thriving Isle', // Already correct
+      'Meandering River': 'Meandering River', // Already correct
+      'Tranquil Cove': 'Tranquil Cove', // Already correct
+      'Azorius Guildgate': 'Azorius Guildgate', // Already correct
+      'Port Town': 'Port Town', // Already correct
+      'Thought Vessel': 'Thought Vessel', // Already correct
+      'Pristine Talisman': 'Pristine Talisman', // Already correct
+      'Opaline Unicorn': 'Opaline Unicorn', // Already correct
+      'Pyramid of the Pantheon': 'Pyramid of the Pantheon', // Already correct
+      'Sky Sovereign Consul Flagship': 'Sky Sovereign, Consul Flagship' // Add comma
+    };
+    
+    return corrections[cardName] || cardName;
+  };
+
+  /**
    * Fetch card data with fallback to individual requests
    * @param {Array} cardList - List of cards to fetch
    * @returns {Map} Map of card names to card data
@@ -713,13 +764,24 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
   const fetchCardDataBatch = async (cardList) => {
     const cardMap = new Map();
     
+    // Normalize card names first
+    const normalizedCardList = cardList.map(card => ({
+      ...card,
+      originalName: card.name,
+      name: normalizeCardName(card.name)
+    }));
+    
+    console.log(`Fetching data for ${normalizedCardList.length} cards...`);
+    
     // First try batch fetching
     try {
-      console.log('Attempting batch fetch for', cardList.length, 'cards...');
+      console.log('Attempting batch fetch for', normalizedCardList.length, 'cards...');
       const batchSize = 75; // Scryfall's limit
       
-      for (let i = 0; i < cardList.length; i += batchSize) {
-        const batch = cardList.slice(i, i + batchSize);
+      for (let i = 0; i < normalizedCardList.length; i += batchSize) {
+        const batch = normalizedCardList.slice(i, i + batchSize);
+        
+        console.log(`Fetching batch ${Math.floor(i / batchSize) + 1} with ${batch.length} cards`);
         
         const response = await fetch('https://api.scryfall.com/cards/collection', {
           method: 'POST',
@@ -732,34 +794,71 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
         if (response.ok) {
           const data = await response.json();
           if (data.data) {
+            console.log(`Batch ${Math.floor(i / batchSize) + 1} returned ${data.data.length} cards`);
             data.data.forEach(card => {
-              cardMap.set(card.name, card);
+              // Map both the original name and normalized name to the card data
+              const originalCard = batch.find(c => c.name === card.name);
+              if (originalCard) {
+                cardMap.set(originalCard.originalName, card);
+                if (originalCard.originalName !== card.name) {
+                  cardMap.set(card.name, card); // Also map the correct name
+                }
+              }
             });
+            
+            // Log any cards that weren't found in this batch
+            const notFoundInBatch = batch.filter(batchCard => 
+              !data.data.some(foundCard => foundCard.name === batchCard.name)
+            );
+            if (notFoundInBatch.length > 0) {
+              console.warn(`Batch ${Math.floor(i / batchSize) + 1} missing cards:`, notFoundInBatch.map(c => c.name));
+            }
           }
-          } else {
+        } else {
+          console.warn(`Batch request ${Math.floor(i / batchSize) + 1} failed: ${response.status}`);
           throw new Error(`Batch request failed: ${response.status}`);
         }
         
         // Small delay between batches
-        if (i + batchSize < cardList.length) {
+        if (i + batchSize < normalizedCardList.length) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
       
-      console.log(`Batch fetch successful: ${cardMap.size} cards`);
-      return cardMap;
+      console.log(`Batch fetch successful: ${cardMap.size} cards found out of ${normalizedCardList.length} requested`);
+      
+      // Log any cards that are still missing
+      const missingCards = normalizedCardList.filter(card => !cardMap.has(card.originalName));
+      if (missingCards.length > 0) {
+        console.warn(`Missing cards after batch fetch:`, missingCards.map(c => `${c.originalName} (normalized: ${c.name})`));
+      }
+      
+      // CRITICAL: Filter out color identity violations using actual Scryfall data
+      console.log('Filtering color identity violations using Scryfall data...');
+      const { validCards, violations } = filterColorIdentityViolations(cardMap, commander.color_identity || []);
+      
+      // Store violations in state for user reporting
+      setFilteredColorViolations(prev => [...prev, ...violations]);
+      
+      if (violations.length > 0) {
+        console.log(`🚫 Automatically filtered out ${violations.length} color identity violations:`);
+        violations.forEach(v => console.log(`   - ${v.cardName}: [${v.cardColorIdentity?.join(', ')}] violates commander identity [${commander.color_identity?.join(', ')}]`));
+      }
+      
+      console.log(`✅ Final valid cards: ${validCards.size} out of ${cardMap.size} fetched`);
+      return validCards;
       
     } catch (error) {
       console.warn('Batch fetch failed, falling back to individual requests:', error.message);
       
-      // Fallback to individual card fetching
-      return await fetchCardsIndividually(cardList);
+      // Fallback to individual card fetching with normalized names
+      return await fetchCardsIndividually(normalizedCardList);
     }
   };
 
   /**
    * Fetch cards individually as fallback
-   * @param {Array} cardList - List of cards to fetch
+   * @param {Array} cardList - List of cards to fetch (may include originalName property)
    * @returns {Map} Map of card names to card data
    */
   const fetchCardsIndividually = async (cardList) => {
@@ -770,19 +869,26 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
     
     for (let i = 0; i < cardList.length; i++) {
       const cardEntry = cardList[i];
+      const searchName = cardEntry.name; // This should be the normalized name
+      const originalName = cardEntry.originalName || cardEntry.name;
       
       try {
-        const result = await searchCardByName(cardEntry.name);
+        const result = await searchCardByName(searchName);
         
         if (result.data && result.data.length > 0) {
           const card = result.data[0];
-          cardMap.set(cardEntry.name, card);
-    } else {
-          console.warn(`No data found for card: ${cardEntry.name}`);
+          // Map using the original name so addCardsFromBatchData can find it
+          cardMap.set(originalName, card);
+          // Also map the normalized name if different
+          if (originalName !== searchName) {
+            cardMap.set(searchName, card);
+          }
+        } else {
+          console.warn(`No data found for card: ${originalName} (searched as: ${searchName})`);
           // Create a minimal card object for basic lands and common cards
-          const basicCard = createFallbackCard(cardEntry.name, cardEntry.category);
+          const basicCard = createFallbackCard(originalName, cardEntry.category);
           if (basicCard) {
-            cardMap.set(cardEntry.name, basicCard);
+            cardMap.set(originalName, basicCard);
           }
         }
         
@@ -792,19 +898,81 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
         }
         
       } catch (error) {
-        console.warn(`Failed to fetch ${cardEntry.name}:`, error.message);
+        console.warn(`Failed to fetch ${originalName} (searched as: ${searchName}):`, error.message);
         // Create a fallback card for essential cards
-        const basicCard = createFallbackCard(cardEntry.name, cardEntry.category);
+        const basicCard = createFallbackCard(originalName, cardEntry.category);
         if (basicCard) {
-          cardMap.set(cardEntry.name, basicCard);
+          cardMap.set(originalName, basicCard);
         }
       }
     }
     
     console.log(`Individual fetch complete: ${cardMap.size} cards`);
-    return cardMap;
+    
+    // Filter color identity violations for individually fetched cards too
+    console.log('Filtering color identity violations from individually fetched cards...');
+    const { validCards, violations } = filterColorIdentityViolations(cardMap, commander.color_identity || []);
+    
+    // Store violations in state for user reporting
+    setFilteredColorViolations(prev => [...prev, ...violations]);
+    
+    if (violations.length > 0) {
+      console.log(`🚫 Filtered out ${violations.length} color identity violations from individual fetch:`);
+      violations.forEach(v => console.log(`   - ${v.cardName}: [${v.cardColorIdentity?.join(', ')}] violates commander identity [${commander.color_identity?.join(', ')}]`));
+    }
+    
+    console.log(`✅ Final valid cards from individual fetch: ${validCards.size} out of ${cardMap.size} fetched`);
+    return validCards;
   };
   
+  /**
+   * Check if a card can have multiple copies in a deck
+   * @param {Object} card - Card object with oracle_text
+   * @returns {boolean} True if card can have multiple copies
+   * 
+   * EXAMPLES OF CARDS THIS CORRECTLY HANDLES:
+   * 
+   * Basic Lands (type_line check):
+   * - Plains, Island, Swamp, Mountain, Forest, Wastes
+   * - Any card with type_line containing "Basic" and "Land"
+   * 
+   * Cards with "A deck can have any number of cards named" (oracle_text check):
+   * - Cid, Timeless Artificer
+   * - Dragon's Approach
+   * - Hare Apparent
+   * - Persistent Petitioners
+   * - Rat Colony
+   * - Relentless Rats
+   * - Shadowborn Apostle
+   * - Slime Against Humanity
+   * - Tempest Hawk
+   * - Templar Knight
+   * 
+   * Cards with limited multiples (also caught by oracle_text check):
+   * - Seven Dwarves ("A deck can have up to seven cards named Seven Dwarves")
+   * - Nazgûl ("A deck can have up to nine cards named Nazgûl")
+   * 
+   * Regular cards (will return false):
+   * - Sol Ring, Lightning Bolt, Counterspell, etc.
+   */
+  const canHaveMultipleCopies = (card) => {
+    if (!card) return false;
+    
+    // Basic lands are always allowed multiples (check this first, even if oracle_text is missing)
+    if (card.type_line && card.type_line.includes('Basic') && card.type_line.includes('Land')) {
+      return true;
+    }
+    
+    // Check for the specific text that allows multiple copies
+    if (card.oracle_text) {
+      const multipleText = card.oracle_text.toLowerCase();
+      return multipleText.includes('a deck can have any number of cards named') ||
+             multipleText.includes('any number of cards named');
+    }
+    
+    return false;
+  };
+
   /**
    * Create a minimal fallback card object for essential cards
    * @param {string} name - Card name
@@ -834,6 +1002,34 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
         colors: [],
         color_identity: [],
         cmc: 2
+      },
+      'Etherium Sculptor': {
+        mana_cost: '{1}{U}',
+        type_line: 'Artifact Creature — Vedalken Artificer',
+        colors: ['U'],
+        color_identity: ['U'],
+        cmc: 2
+      },
+      'Sky Sovereign, Consul Flagship': {
+        mana_cost: '{5}',
+        type_line: 'Legendary Artifact — Vehicle',
+        colors: [],
+        color_identity: [],
+        cmc: 5
+      },
+      'The Ozolith': {
+        mana_cost: '{1}',
+        type_line: 'Legendary Artifact',
+        colors: [],
+        color_identity: [],
+        cmc: 1
+      },
+      'Sejiri Refuge': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['W', 'U'],
+        cmc: 0
       },
       'Plains': { 
         mana_cost: '', 
@@ -869,6 +1065,62 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
         colors: [],
         color_identity: ['G'],
         cmc: 0
+      },
+      'Commander\'s Sphere': {
+        mana_cost: '{3}',
+        type_line: 'Artifact',
+        colors: [],
+        color_identity: [],
+        cmc: 3
+      },
+      'Thought Vessel': {
+        mana_cost: '{2}',
+        type_line: 'Artifact',
+        colors: [],
+        color_identity: [],
+        cmc: 2
+      },
+      'Azorius Guildgate': {
+        mana_cost: '',
+        type_line: 'Land — Gate',
+        colors: [],
+        color_identity: ['W', 'U'],
+        cmc: 0
+      },
+      'Tranquil Cove': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['W', 'U'],
+        cmc: 0
+      },
+      'Meandering River': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['W', 'U'],
+        cmc: 0
+      },
+      'Port Town': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['W', 'U'],
+        cmc: 0
+      },
+      'Thriving Isle': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['U'],
+        cmc: 0
+      },
+      'Thriving Heath': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['W'],
+        cmc: 0
       }
     };
     
@@ -895,92 +1147,133 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
   /**
    * Add cards to deck using pre-fetched data
    * @param {Array} cardList - List of cards to add
-   * @param {Map} cardDataMap - Pre-fetched card data
+   * @param {Map} cardDataMap - Pre-fetched card data (already filtered for color identity)
    * @param {Array} appliedFixes - Applied fixes for user feedback
    */
   const addCardsFromBatchData = async (cardList, cardDataMap, appliedFixes = []) => {
-    resetDeckExceptCommander();
-    
     let addedCount = 0;
-    const targetCount = 99;
-    
-    console.log(`Starting deck assembly with ${cardList.length} cards and ${cardDataMap.size} fetched data entries`);
-    
-    for (const cardEntry of cardList) {
-      if (addedCount >= targetCount) break;
+    const missingCards = [];
+    const colorViolationCards = [];
+    const addedCards = new Set();
+
+    console.log(`Starting to add ${cardList.length} cards to deck`);
+    console.log(`Available card data for ${cardDataMap.size} cards after color identity filtering`);
+
+    // First pass: Add all valid cards
+    for (const card of cardList) {
+      if (addedCount >= 99) break; // Stop if we've reached 99 cards
       
-      const cardData = cardDataMap.get(cardEntry.name);
+      const cardData = cardDataMap.get(card.name);
       if (cardData) {
-        try {
-          // Add metadata from our processing
-          const enhancedCard = {
-            ...cardData,
-            ai_category: cardEntry.category,
-            ai_replacement: appliedFixes.some(fix => fix.replacement === cardEntry.name)
-          };
-          
-          addCard(enhancedCard);
-          addedCount++;
-          
-          if (addedCount % 10 === 0) {
-            console.log(`Added ${addedCount} cards so far...`);
-          }
-        } catch (error) {
-          if (error.message?.includes('quota exceeded')) {
-            addCard(cardData, false); // Skip caching
-            addedCount++;
-          } else {
-            console.warn(`Failed to add ${cardEntry.name}:`, error);
-          }
+        // Skip if we already added this card (singleton rule) unless it can have multiples
+        if (addedCards.has(card.name) && !canHaveMultipleCopies(cardData)) {
+          console.warn(`Skipping duplicate ${card.name} due to singleton rule`);
+          missingCards.push(card);
+          continue;
+        }
+
+        // Add category from original card list if not present
+        const cardToAdd = {
+          ...cardData,
+          category: card.category || cardData.category || 'Other'
+        };
+
+        addCard(cardToAdd);
+        addedCards.add(card.name);
+        addedCount++;
+        
+        if (addedCount % 10 === 0) {
+          console.log(`Added ${addedCount} cards so far...`);
         }
       } else {
-        console.warn(`No data found for card: ${cardEntry.name}`);
+        // Card was either not found or filtered out due to color identity
+        console.warn(`Card not available: ${card.name} (likely filtered due to color identity violation)`);
+        colorViolationCards.push(card);
+        missingCards.push(card);
       }
     }
-    
-    console.log(`Successfully added ${addedCount} cards from generated list`);
-    
-    // Fill remaining slots with basic lands if needed
+
+    console.log(`First pass complete: Added ${addedCount} cards`);
+    console.log(`Missing cards: ${missingCards.length} (${colorViolationCards.length} likely color violations)`);
+
+    // If we don't have enough cards, try to add basic lands and staples
     if (addedCount < 99) {
-      const missingCount = 99 - addedCount;
-      console.log(`Adding ${missingCount} basic lands to complete deck`);
+      const remainingCount = 99 - addedCount;
+      console.log(`Only added ${addedCount} cards, need ${remainingCount} more cards to complete deck`);
       
-      try {
-        const basicLands = await fetchBasicLands(commander.color_identity, missingCount);
+      // First try basic lands
+      const basicLandsNeeded = Math.min(remainingCount, Math.max(0, 36 - getCurrentBasicLandCount()));
+      if (basicLandsNeeded > 0) {
+        console.log(`Adding ${basicLandsNeeded} basic lands...`);
+        const basicLands = await fetchBasicLands(commander.color_identity || [], basicLandsNeeded);
+        
         for (const land of basicLands) {
-          if (getCurrentNonCommanderCardCount() < 99) {
-            try {
-              addCard(land, false); // Skip caching for basic lands
-              addedCount++;
-            } catch (error) {
-              console.error('Error adding basic land:', error);
-            }
+          if (addedCount >= 99) break;
+          
+          if (land) {
+            addCard(land);
+            addedCount++;
           }
         }
-      } catch (error) {
-        console.warn('Failed to fetch basic lands, using fallback generation:', error);
-        const basicLands = generateBasicLands(commander.color_identity, missingCount);
-        for (const land of basicLands) {
-          if (getCurrentNonCommanderCardCount() < 99) {
-            try {
-              addCard(land, false); // Skip caching for basic lands
-              addedCount++;
-            } catch (error) {
-              console.error('Error adding fallback basic land:', error);
-            }
+        
+        console.log(`After adding basic lands: ${addedCount} total cards`);
+      }
+      
+      // Then try colorless staples that should be safe
+      if (addedCount < 99) {
+        const colorlessStaples = [
+          'Sol Ring', 'Command Tower', 'Arcane Signet', 'Commander\'s Sphere', 
+          'Thought Vessel', 'Mind Stone', 'Worn Powerstone', 'Hedron Archive',
+          'Reliquary Tower', 'Rogue\'s Passage'
+        ];
+        
+        console.log(`Adding colorless staples to reach 99 cards...`);
+        for (const stapleName of colorlessStaples) {
+          if (addedCount >= 99) break;
+          if (addedCards.has(stapleName)) continue;
+          
+          const stapleCard = createFallbackCard(stapleName, 'Ramp');
+          if (stapleCard) {
+            addCard(stapleCard);
+            addedCards.add(stapleName);
+            addedCount++;
+            console.log(`Added staple: ${stapleName}`);
           }
         }
       }
     }
-    
+
+    // Final check and logging
     const finalCount = getCurrentNonCommanderCardCount();
-    console.log(`Deck assembly complete: ${finalCount} cards added (target: 99)`);
+    console.log(`Deck building complete: ${finalCount} cards in deck (target: 99)`);
     
     if (finalCount < 99) {
       console.warn(`Warning: Deck only has ${finalCount} cards instead of 99`);
+    } else if (finalCount === 99) {
+      console.log(`✅ Successfully built complete 99-card deck`);
+    }
+    
+    if (colorViolationCards.length > 0) {
+      console.log(`📋 Cards filtered due to color identity violations: ${colorViolationCards.length}`);
+      console.log(`   This is expected and prevents invalid cards from reaching the user.`);
+    }
+    
+    if (missingCards.length > 0) {
+      console.warn(`Cards that could not be added:`, missingCards.map(c => c.name));
     }
   };
-  
+
+  /**
+   * Get current count of basic lands in deck
+   * @returns {number} Number of basic lands currently in deck
+   */
+  const getCurrentBasicLandCount = () => {
+    const basicLandNames = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'];
+    return deckContext.cards.filter(card => 
+      basicLandNames.some(basicName => card.name === basicName)
+    ).reduce((sum, card) => sum + (card.quantity || 1), 0);
+  };
+
   /**
    * Analyze commander's strategy and synergies
    */
@@ -1483,31 +1776,67 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
   const validateAndFixSingletonViolations = (cardList) => {
     const cardCounts = new Map();
     const validatedCards = [];
+    const basicLandNames = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'];
+    
+    // Budget-friendly replacement options
     const duplicateReplacements = [
-      'Arcane Signet', 'Commander\'s Sphere', 'Mind Stone', 'Fellwar Stone',
-      'Worn Powerstone', 'Hedron Archive', 'Thran Dynamo', 'Gilded Lotus',
-      'Swiftfoot Boots', 'Lightning Greaves', 'Wayfarer\'s Bauble',
-      'Evolving Wilds', 'Terramorphic Expanse', 'Myriad Landscape',
-      'Chromatic Lantern', 'Burnished Hart', 'Solemn Simulacrum',
-      'Thought Vessel', 'Pristine Talisman', 'Opaline Unicorn',
-      'Rupture Spire', 'Transguild Promenade', 'Gateway Plaza'
+      // Mana rocks under $1
+      'Mind Stone', 'Star Compass', 'Fellwar Stone',
+      'Guardian Idol', 'Prismatic Lens', 'Ornithopter of Paradise',
+      'Wayfarer\'s Bauble', 'Manakin', 'Millikin',
+      
+      // Budget lands under $1
+      'Evolving Wilds', 'Terramorphic Expanse', 'Path of Ancestry',
+      'Myriad Landscape', 'Unknown Shores', 'Shimmering Grotto',
+      'Gateway Plaza', 'Rupture Spire', 'Transguild Promenade',
+      
+      // Budget utility under $1
+      'Rogue\'s Passage', 'Reliquary Tower', 'Command Tower',
+      'Exotic Orchard', 'Ash Barrens', 'Emergence Zone'
     ];
     let replacementIndex = 0;
+
+    // Track basic land counts separately
+    const basicLandCounts = new Map();
 
     for (const card of cardList) {
       const cardName = card.name;
       
-      // Basic lands are exempt from singleton rule
-      const isBasicLand = card.type_line && 
-        card.type_line.includes('Basic') && 
-        card.type_line.includes('Land');
+      // Check if this card can have multiple copies (like Cid, Timeless Artificer)
+      const canHaveMultiples = canHaveMultipleCopies(card) || basicLandNames.includes(cardName);
       
-      if (isBasicLand) {
-        validatedCards.push(card);
+      if (canHaveMultiples) {
+        // Basic lands and cards with "any number" text can have multiples
+        if (basicLandNames.includes(cardName)) {
+          const currentCount = basicLandCounts.get(cardName) || 0;
+          
+          // Allow up to 10 of each basic land type (reasonable for Commander)
+          if (currentCount < 10) {
+            validatedCards.push(card);
+            basicLandCounts.set(cardName, currentCount + 1);
+          } else {
+            console.warn(`Too many ${cardName} (${currentCount + 1}), replacing with different basic land`);
+            // Find a different basic land that fits the commander's color identity
+            const alternativeBasicLand = findAlternativeBasicLand(cardName, commander.color_identity, basicLandCounts);
+            if (alternativeBasicLand) {
+              const altCard = {
+                ...card,
+                name: alternativeBasicLand,
+                singleton_replacement: true,
+                original_duplicate: cardName
+              };
+              validatedCards.push(altCard);
+              basicLandCounts.set(alternativeBasicLand, (basicLandCounts.get(alternativeBasicLand) || 0) + 1);
+            }
+          }
+        } else {
+          // Cards like Cid, Timeless Artificer can have unlimited copies
+          validatedCards.push(card);
+        }
         continue;
       }
       
-      // Check if we've seen this card before
+      // Check if we've seen this non-basic, non-multiple card before
       if (cardCounts.has(cardName)) {
         console.warn(`Singleton violation detected: ${cardName} appears multiple times, replacing duplicate`);
         
@@ -1524,26 +1853,90 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
         
         if (replacementName) {
           // Create replacement card
-          const replacementCard = createFallbackCard(replacementName, card.category || 'Utility');
-          if (replacementCard) {
+          const replacementCard = {
+            name: replacementName,
+            category: card.category || 'Utility',
+            singleton_replacement: true,
+            original_duplicate: cardName
+          };
+          validatedCards.push(replacementCard);
+          cardCounts.set(replacementName, 1);
+        } else {
+          // If we run out of replacements, add a basic land of the commander's color
+          const basicLandName = getBasicLandForCommander(commander.color_identity);
+          if (basicLandName) {
             validatedCards.push({
-              ...replacementCard,
+              name: basicLandName,
+              category: 'Lands',
               singleton_replacement: true,
               original_duplicate: cardName
             });
-            cardCounts.set(replacementName, 1);
+            basicLandCounts.set(basicLandName, (basicLandCounts.get(basicLandName) || 0) + 1);
+          } else {
+            console.warn(`No more unique replacements available, skipping duplicate ${cardName}`);
           }
-        } else {
-          console.warn(`No more unique replacements available, skipping duplicate ${cardName}`);
         }
       } else {
-        // First occurrence of this card
+        // First occurrence of this non-basic card
         validatedCards.push(card);
         cardCounts.set(cardName, 1);
       }
     }
     
     return validatedCards;
+  };
+
+  /**
+   * Find an alternative basic land when one type has too many copies
+   * @param {string} originalLand - The basic land that has too many copies
+   * @param {Array} colorIdentity - Commander's color identity
+   * @param {Map} basicLandCounts - Current counts of basic lands
+   * @returns {string|null} Alternative basic land name
+   */
+  const findAlternativeBasicLand = (originalLand, colorIdentity, basicLandCounts) => {
+    const landToColor = {
+      'Plains': 'W',
+      'Island': 'U', 
+      'Swamp': 'B',
+      'Mountain': 'R',
+      'Forest': 'G'
+    };
+
+    // Find basic lands that fit the color identity and have fewer copies
+    const availableLands = Object.entries(landToColor)
+      .filter(([landName, color]) => 
+        colorIdentity.includes(color) && 
+        landName !== originalLand &&
+        (basicLandCounts.get(landName) || 0) < 10
+      )
+      .sort((a, b) => (basicLandCounts.get(a[0]) || 0) - (basicLandCounts.get(b[0]) || 0));
+
+    return availableLands.length > 0 ? availableLands[0][0] : null;
+  };
+
+  /**
+   * Get a basic land that fits the commander's color identity
+   * @param {Array} colorIdentity - Commander's color identity
+   * @returns {string|null} Basic land name
+   */
+  const getBasicLandForCommander = (colorIdentity) => {
+    const landToColor = {
+      'Plains': 'W',
+      'Island': 'U',
+      'Swamp': 'B', 
+      'Mountain': 'R',
+      'Forest': 'G'
+    };
+
+    // Find the first basic land that fits the color identity
+    for (const [landName, color] of Object.entries(landToColor)) {
+      if (colorIdentity.includes(color)) {
+        return landName;
+      }
+    }
+
+    // If no colors match (colorless commander), default to Plains
+    return 'Plains';
   };
 
   /**
@@ -1559,16 +1952,26 @@ Only include the JSON array in your response, nothing else. Ensure exactly 99 ca
       throw new Error('OpenAI API key is not configured');
     }
 
-    const { prompt: archetypePrompt, cardDistribution, maxBudget, targetBracket } = archetypeRules;
+    const { distribution, maxBudget, powerLevel, prioritizeEfficiency } = archetypeRules;
     
-    const budgetConstraint = maxBudget !== Infinity ? 
+    const budgetConstraint = maxBudget ? 
       `Keep the total deck cost under $${maxBudget}.` : '';
 
-    const bracketConstraint = `Target power level should be between bracket ${targetBracket.min}-${targetBracket.max} (1=casual, 5=cEDH).`;
+    const powerLevelGuide = {
+      'high': '4-5 (Highly optimized to cEDH)',
+      'medium': '2-3 (Focused to Optimized)',
+      'low': '1-2 (Casual to Focused)'
+    };
 
-    const distributionRequirements = Object.entries(cardDistribution)
+    const powerLevelConstraint = `Target power level should be in bracket ${powerLevelGuide[powerLevel] || powerLevelGuide['medium']}.`;
+
+    const distributionRequirements = Object.entries(distribution)
       .map(([category, { min, max }]) => `${category}: ${min}-${max} cards`)
       .join(', ');
+
+    const efficiencyNote = prioritizeEfficiency ? 
+      'Prioritize efficient, low-cost spells and powerful staples.' : 
+      'Focus on synergy and theme over raw efficiency.';
 
     const prompt = `You are an expert Magic: The Gathering deck builder specialized in Commander format.
 
@@ -1580,15 +1983,26 @@ Commander Type: ${commander.type_line}
 Commander Text: ${commander.oracle_text || 'No text available'}
 Deck Style: ${deckStyle}
 
+CRITICAL COLOR IDENTITY RULES:
+- ONLY include cards that match the commander's color identity: ${commander.color_identity?.join(', ') || 'Colorless'}
+- A card's color identity includes ALL mana symbols in its mana cost AND rules text
+- Examples of FORBIDDEN cards for this commander:
+  ${commander.color_identity?.includes('B') ? '' : '- NO Black cards (like Thoughtseize, Doom Blade, Demonic Tutor)'}
+  ${commander.color_identity?.includes('R') ? '' : '- NO Red cards (like Lightning Bolt, Shock, Goblin Guide)'}
+  ${commander.color_identity?.includes('G') ? '' : '- NO Green cards (like Llanowar Elves, Rampant Growth, Giant Growth)'}
+  ${commander.color_identity?.includes('U') ? '' : '- NO Blue cards (like Counterspell, Brainstorm, Ponder)'}
+  ${commander.color_identity?.includes('W') ? '' : '- NO White cards (like Swords to Plowshares, Wrath of God, Serra Angel)'}
+- AVOID multi-colored cards that contain colors outside the commander's identity
+- AVOID artifacts with colored mana symbols in their rules text
+
 SPEED PRIORITY: Generate functional deck quickly. Focus on:
 - Strong synergies with commander abilities
-- Proper mana base foundation (32-34 lands)
+- Proper mana base foundation
 - Essential staples for the archetype
 - ${distributionRequirements}
-- ${bracketConstraint}
+- ${powerLevelConstraint}
 - ${budgetConstraint}
-
-${archetypePrompt}
+- ${efficiencyNote}
 
 IMPORTANT GUIDELINES:
 - Include staple cards appropriate for the power level
@@ -1605,7 +2019,7 @@ FORMAT REQUIREMENTS:
 
 {"name": "Card Name", "category": "Category"}
 
-Categories must be one of: "Lands", "Ramp", "Card Draw", "Removal", "Board Wipes", "Protection", "Strategy", "Utility", "Finisher"
+Categories must be one of: "Lands", "Ramp", "Draw", "Removal", "Protection", "Core"
 
 CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, nothing else.`;
 
@@ -1677,6 +2091,69 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
     }
   };
 
+  /**
+   * Validate color identity using actual Scryfall card data
+   * @param {Object} cardData - Card data from Scryfall
+   * @param {Array} commanderColorIdentity - Commander's color identity
+   * @returns {Object} Validation result
+   */
+  const validateColorIdentityFromScryfall = (cardData, commanderColorIdentity) => {
+    if (!cardData || !Array.isArray(commanderColorIdentity)) {
+      return { isValid: false, reason: 'Invalid input parameters' };
+    }
+
+    // Use actual Scryfall color_identity field
+    if (cardData.color_identity && Array.isArray(cardData.color_identity)) {
+      const cardColors = cardData.color_identity;
+      const hasInvalidColors = cardColors.some(color => !commanderColorIdentity.includes(color));
+      
+      if (hasInvalidColors) {
+        return {
+          isValid: false,
+          reason: `${cardData.name} has color identity [${cardColors.join(', ')}] which is not allowed in commander identity [${commanderColorIdentity.join(', ')}]`,
+          cardColorIdentity: cardColors,
+          commanderColorIdentity,
+          violatingColors: cardColors.filter(color => !commanderColorIdentity.includes(color))
+        };
+      }
+    }
+
+    return { isValid: true, reason: 'Color identity compliant' };
+  };
+
+  /**
+   * Filter out cards with color identity violations using Scryfall data
+   * @param {Map} cardDataMap - Map of card names to Scryfall data
+   * @param {Array} commanderColorIdentity - Commander's color identity
+   * @returns {Map} Filtered card data map with only valid cards
+   */
+  const filterColorIdentityViolations = (cardDataMap, commanderColorIdentity) => {
+    const validCards = new Map();
+    const violations = [];
+
+    for (const [cardName, cardData] of cardDataMap.entries()) {
+      const validation = validateColorIdentityFromScryfall(cardData, commanderColorIdentity);
+      
+      if (validation.isValid) {
+        validCards.set(cardName, cardData);
+      } else {
+        violations.push({
+          cardName,
+          reason: validation.reason,
+          cardColorIdentity: validation.cardColorIdentity,
+          violatingColors: validation.violatingColors
+        });
+        console.warn(`Filtered out color identity violation: ${validation.reason}`);
+      }
+    }
+
+    if (violations.length > 0) {
+      console.log(`Filtered out ${violations.length} color identity violations:`, violations);
+    }
+
+    return { validCards, violations };
+  };
+
   return {
     buildCompleteDeck,
     isLoading,
@@ -1690,6 +2167,8 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
     buildingStage,
     currentCards,
     currentViolations,
-    appliedFixes
+    appliedFixes,
+    // Track automatically filtered color identity violations
+    filteredColorViolations
   };
 }; 

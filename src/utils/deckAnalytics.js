@@ -190,8 +190,8 @@ export const analyzeDeck = (deck) => {
   
   // Use standardized functions for consistent counting
   const allCards = getAllCards(deck.cards, deck.commander);  // Include commander in analysis
-  const totalCards = getTotalCardCount(deck.cards, deck.commander);  // Total including commander
-  const mainDeckCount = getMainDeckCardCount(deck.cards);  // Main deck only
+  const totalCards = getTotalCardCount(deck);  // Total including commander
+      const mainDeckCount = getMainDeckCardCount(deck);  // Main deck only
   
   return {
     deckName: deck.name,
