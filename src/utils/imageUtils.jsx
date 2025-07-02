@@ -27,9 +27,50 @@ export const IMAGE_CONTEXTS = {
 export const getOptimalImageUrl = (card, context = 'MEDIUM', faceIndex = 0) => {
   if (!card) return null;
 
+  // Debug logging for split cards
+  if (card.name && card.name.includes('//')) {
+    console.log(`🔍 getOptimalImageUrl DEBUG for split card: ${card.name}`, {
+      cardId: card.id,
+      hasImageUris: !!card.image_uris,
+      hasCardFaces: !!card.card_faces,
+      context: context,
+      layout: card.layout,
+      imageUris: card.image_uris,
+      cardFaces: card.card_faces
+    });
+  }
+
   const quality = IMAGE_QUALITIES[IMAGE_CONTEXTS[context]] || IMAGE_QUALITIES.MEDIUM;
   
-  // Try direct image_uris first (single-faced cards)
+  // For split cards, they should have direct image_uris showing both halves
+  // Don't treat them as double-faced cards
+  if (card.layout === 'split' || (card.name && card.name.includes('//'))) {
+    if (card.image_uris) {
+      for (const size of quality) {
+        if (card.image_uris[size]) {
+          console.log(`✅ Found split card image_uris for ${card.name}: ${card.image_uris[size]}`);
+          return card.image_uris[size];
+        }
+      }
+    }
+    
+    // If no direct image_uris for split card, generate fallback
+    if (card.id) {
+      const contextToSize = {
+        'HIGH': 'large',
+        'MEDIUM': 'normal', 
+        'LOW': 'small',
+        'THUMBNAIL': 'small'
+      };
+      
+      const sizeForContext = contextToSize[IMAGE_CONTEXTS[context]] || 'normal';
+      const fallbackUrl = `https://cards.scryfall.io/${sizeForContext}/front/${card.id}.jpg`;
+      console.log(`🔧 Generated split card fallback URL: ${fallbackUrl}`);
+      return fallbackUrl;
+    }
+  }
+  
+  // Try direct image_uris first (single-faced cards, excluding splits handled above)
   if (card.image_uris && !card.card_faces) {
     for (const size of quality) {
       if (card.image_uris[size]) {
@@ -38,7 +79,7 @@ export const getOptimalImageUrl = (card, context = 'MEDIUM', faceIndex = 0) => {
     }
   }
   
-  // Try card faces (double-faced cards)
+  // Try card faces (double-faced cards only)
   if (card.card_faces && card.card_faces[faceIndex]?.image_uris) {
     const faceImageUris = card.card_faces[faceIndex].image_uris;
     for (const size of quality) {
@@ -48,7 +89,7 @@ export const getOptimalImageUrl = (card, context = 'MEDIUM', faceIndex = 0) => {
     }
   }
   
-  // Fallback to first available face
+  // Fallback to first available face (double-faced cards)
   if (card.card_faces) {
     for (const face of card.card_faces) {
       if (face?.image_uris) {
@@ -59,6 +100,25 @@ export const getOptimalImageUrl = (card, context = 'MEDIUM', faceIndex = 0) => {
         }
       }
     }
+  }
+  
+  // Final fallback for any other cards missing image_uris
+  if (card.id) {
+    const contextToSize = {
+      'HIGH': 'large',
+      'MEDIUM': 'normal', 
+      'LOW': 'small',
+      'THUMBNAIL': 'small'
+    };
+    
+    const sizeForContext = contextToSize[IMAGE_CONTEXTS[context]] || 'normal';
+    const fallbackUrl = `https://cards.scryfall.io/${sizeForContext}/front/${card.id}.jpg`;
+    console.log(`🔧 Generated final fallback URL for ${card.name}: ${fallbackUrl}`);
+    return fallbackUrl;
+  }
+  
+  if (card.name && card.name.includes('//')) {
+    console.log(`❌ No image URL found for split card: ${card.name}`);
   }
   
   return null;

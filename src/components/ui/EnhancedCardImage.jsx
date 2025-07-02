@@ -4,6 +4,7 @@
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { getOptimalImageUrl, getResponsiveImageProps, IMAGE_CONTEXTS } from '../../utils/imageUtils.jsx';
+import { getCardImageUris } from '../../utils/scryfallAPI.js';
 
 const EnhancedCardImage = ({ 
   card, 
@@ -54,11 +55,38 @@ const EnhancedCardImage = ({
     };
   }, []);
 
-  // Determine if card has multiple faces
-  const isDoubleFaced = card?.card_faces && card.card_faces.length > 1;
+  // Determine if card has multiple faces (but exclude split cards)
+  const isDoubleFaced = card?.card_faces && card.card_faces.length > 1 && 
+                       card.layout !== 'split' && 
+                       !(card.name && card.name.includes('//'));
   
-  const imageUrl = getOptimalImageUrl(card, context, currentFace);
+  let imageUrl = getOptimalImageUrl(card, context, currentFace);
+  
+  // Fallback to getCardImageUris approach if getOptimalImageUrl fails (especially for split cards)
+  if (!imageUrl && card) {
+    const imageUris = getCardImageUris(card);
+    if (imageUris) {
+      // Use the same priority as other components: normal > large > small > png
+      imageUrl = imageUris.normal || imageUris.large || imageUris.small || imageUris.png;
+      
+      if (card.name && card.name.includes('//')) {
+        console.log(`🔧 EnhancedCardImage fallback to getCardImageUris for ${card.name}: ${imageUrl}`);
+      }
+    }
+  }
+  
   const responsiveProps = getResponsiveImageProps(imageUrl);
+
+  // Debug logging for split cards
+  if (card?.name && card.name.includes('//')) {
+    console.log(`🔍 EnhancedCardImage DEBUG for split card: ${card.name}`, {
+      cardId: card.id,
+      context: context,
+      currentFace: currentFace,
+      imageUrl: imageUrl,
+      cardData: card
+    });
+  }
 
   const handleLoad = useCallback(() => {
     setImageState('loaded');

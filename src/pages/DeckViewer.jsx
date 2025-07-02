@@ -10,10 +10,10 @@ import CardDetailModal from '../components/ui/CardDetailModal.jsx';
 import GameChangerTooltip from '../components/ui/GameChangerTooltip';
 import DeckImporter from '../components/deck/DeckImporter.jsx';
 import AlertModal from '../components/ui/AlertModal.jsx';
-import EditModeToggle from '../components/deck/edit/EditModeToggle.jsx';
 import CardQuantityControls from '../components/deck/edit/CardQuantityControls.jsx';
 import CardSearchPanel from '../components/deck/edit/CardSearchPanel.jsx';
 import UnsavedChangesWarning from '../components/deck/edit/UnsavedChangesWarning.jsx';
+import DeckActionButtons from '../components/ui/DeckActionButtons.jsx';
 
 import { getTotalCardCount, getMainDeckCardCount, validateDeckStructure } from '../utils/deckHelpers.js';
 
@@ -131,20 +131,45 @@ const DeckViewer = () => {
 
   // Edit mode handlers
   const handleToggleEditMode = () => {
+    console.log('DeckViewer: handleToggleEditMode called, current isEditMode:', isEditMode);
+    
     if (isEditMode) {
-      // Exiting edit mode
+      // Exiting edit mode - check for unsaved changes
+      if (hasUnsavedChanges) {
+        console.log('DeckViewer: Exiting edit mode with unsaved changes, asking for confirmation');
+        const confirmed = window.confirm(
+          'You have unsaved changes. Are you sure you want to exit edit mode? Your changes will be lost.'
+        );
+        if (!confirmed) {
+          console.log('DeckViewer: User cancelled exit edit mode');
+          return;
+        }
+        
+        // Reload the deck from saved state to discard changes
+        if (selectedDeck) {
+          console.log('DeckViewer: Reloading deck to discard changes');
+          loadDeck(selectedDeck);
+        }
+      }
+      
+      console.log('DeckViewer: Exiting edit mode');
       setIsEditMode(false);
       setHasUnsavedChanges(false);
       setSelectedCards(new Set());
     } else {
       // Entering edit mode
+      console.log('DeckViewer: Entering edit mode');
       setIsEditMode(true);
     }
   };
 
   const handleSaveChanges = async () => {
-    if (!selectedDeck || !currentUser) return;
+    if (!selectedDeck || !currentUser) {
+      console.warn('DeckViewer: Cannot save - missing selectedDeck or currentUser', { selectedDeck: !!selectedDeck, currentUser: !!currentUser });
+      return;
+    }
     
+    console.log('DeckViewer: handleSaveChanges called');
     setIsSaving(true);
     try {
       console.log('💾 Saving deck changes:', {
@@ -172,6 +197,8 @@ const DeckViewer = () => {
       
       if (success) {
         setHasUnsavedChanges(false);
+        setIsEditMode(false); // Exit edit mode after successful save
+        setSelectedCards(new Set()); // Clear selected cards
         console.log('✅ Deck saved successfully to GHL');
         
         // Refresh the deck list to show updated data
@@ -188,13 +215,16 @@ const DeckViewer = () => {
   };
 
   const handleDiscardChanges = () => {
+    console.log('DeckViewer: handleDiscardChanges called');
     const confirmed = window.confirm('Are you sure you want to discard all unsaved changes?');
     if (confirmed) {
       // Reload the deck from saved state
       if (selectedDeck) {
+        console.log('DeckViewer: Reloading deck from saved state');
         loadDeck(selectedDeck);
       }
       setHasUnsavedChanges(false);
+      setIsEditMode(false); // Exit edit mode after discarding changes
       setSelectedCards(new Set());
     }
   };
@@ -224,13 +254,21 @@ const DeckViewer = () => {
   };
 
   const handleDeleteDeck = async () => {
-    if (!selectedDeck) return;
+    console.log('DeckViewer: handleDeleteDeck called');
+    if (!selectedDeck) {
+      console.warn('DeckViewer: Cannot delete - no selectedDeck');
+      return;
+    }
     if (!window.confirm(`Are you sure you want to delete the deck "${selectedDeck.name}"? This action cannot be undone.`)) return;
+    
+    console.log('DeckViewer: Deleting deck:', selectedDeck.id);
     const result = await deleteDeckFromGHL(selectedDeck.id, currentUser?.id);
     if (result.success) {
+      console.log('DeckViewer: Deck deleted successfully');
       alert('Deck deleted successfully.');
       navigate('/decks');
     } else {
+      console.error('DeckViewer: Failed to delete deck:', result.error);
       alert('Failed to delete deck: ' + (result.error || 'Unknown error'));
     }
   };
@@ -730,6 +768,28 @@ const DeckViewer = () => {
               
               {/* Deck Header */}
               <div className="glassmorphism-card p-8 border-primary-500/20">
+                {/* Top row with title and action buttons */}
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex-1">
+                    <h1 className="text-4xl font-bold text-gradient-primary mb-4">{selectedDeck.name}</h1>
+                  </div>
+                  {/* Action Buttons - Top Right */}
+                  <div className="flex-shrink-0 ml-6">
+                    <DeckActionButtons
+                      deck={selectedDeck}
+                      isEditMode={isEditMode}
+                      hasUnsavedChanges={hasUnsavedChanges}
+                      onToggleEditMode={handleToggleEditMode}
+                      onSave={handleSaveChanges}
+                      onDiscard={handleDiscardChanges}
+                      onDelete={handleDeleteDeck}
+                      isSaving={isSaving}
+                      className="justify-end"
+                    />
+                  </div>
+                </div>
+                
+                {/* Main content area */}
                 <div className="flex flex-col lg:flex-row items-start lg:items-center space-y-6 lg:space-y-0 lg:space-x-8">
                   {selectedDeck.commander && selectedDeck.commander.image_uris && (
                     <img
@@ -739,7 +799,6 @@ const DeckViewer = () => {
                     />
                   )}
                   <div className="flex-1">
-                    <h1 className="text-4xl font-bold text-gradient-primary mb-4">{selectedDeck.name}</h1>
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2 text-lg">
                         <span className="text-slate-400">Commander:</span>
@@ -827,47 +886,7 @@ const DeckViewer = () => {
                 </div>
               </div>
               
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-4">
-                <EditModeToggle
-                  isEditMode={isEditMode}
-                  hasUnsavedChanges={hasUnsavedChanges}
-                  onToggleEditMode={handleToggleEditMode}
-                  onSave={handleSaveChanges}
-                  onDiscard={handleDiscardChanges}
-                  isSaving={isSaving}
-                  disabled={!selectedDeck}
-                />
-                
-                {!isEditMode && (
-                  <>
-                    <Link
-                      to={`/tutor-ai?deck=${selectedDeck.id}`}
-                      state={{ deck: selectedDeck }}
-                      className="btn-modern btn-modern-secondary btn-modern-lg group"
-                    >
-                      <span className="flex items-center space-x-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
-                        <span>AI Tutor</span>
-                      </span>
-                    </Link>
-                    <button
-                      onClick={handleDeleteDeck}
-                      className="btn-modern btn-modern-lg group bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg rounded-xl px-8 py-4 font-bold transition-all hover:scale-105"
-                      type="button"
-                    >
-                      <span className="flex items-center space-x-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        <span>Delete Deck</span>
-                      </span>
-                    </button>
-                  </>
-                )}
-              </div>
+
             </div>
           ) : hasFetchedDecks && !isLoadingSpecificDeck ? (
             /* Deck Not Found - Only show if we're not loading AND we've completed fetching */

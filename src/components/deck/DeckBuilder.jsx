@@ -183,17 +183,46 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
             <div className="flex flex-col md:flex-row gap-4 md:gap-6">
               {/* Left Column: Image - Stacks on top on mobile */}
               <div className="md:w-1/3 flex-shrink-0 self-start mx-auto md:mx-0 max-w-xs md:max-w-none">
-                {commander.image_uris && (commander.image_uris.art_crop || commander.image_uris.normal) ? (
-                  <img
-                    src={commander.image_uris.art_crop || commander.image_uris.normal}
+                {(() => {
+                  // Use art crop for beautiful display like Aragorn example - prioritize art_crop > normal > large 
+                  const imageUrl = commander.image_uris?.art_crop || 
+                                 commander.image_uris?.normal || 
+                                 commander.image_uris?.large || 
+                                 commander.card_faces?.[0]?.image_uris?.art_crop ||
+                                 commander.card_faces?.[0]?.image_uris?.normal ||
+                                 commander.card_faces?.[0]?.image_uris?.large;
+                  
+                  return imageUrl ? (
+                    <img
+                      src={imageUrl}
                     alt={`Commander: ${commander.name}`}
                     className="w-full h-auto object-contain rounded-lg shadow-md border border-gray-700"
-                  />
-                ) : (
-                  <div className="w-full aspect-[63/88] flex items-center justify-center bg-slate-700 rounded-lg p-4">
+                      onError={(e) => {
+                        console.error('Commander image failed to load:', imageUrl);
+                        // Hide the image on error and show fallback
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }}
+                      onLoad={() => {
+                        console.log('Commander image loaded successfully:', imageUrl);
+                      }}
+                    />
+                  ) : null;
+                })()}
+                {/* Fallback display - always present but hidden when image loads */}
+                <div 
+                  className="w-full aspect-[63/88] flex items-center justify-center bg-slate-700 rounded-lg p-4"
+                  style={{ 
+                    display: (commander.image_uris?.art_crop || 
+                             commander.image_uris?.normal || 
+                             commander.image_uris?.large || 
+                             commander.card_faces?.[0]?.image_uris?.art_crop ||
+                             commander.card_faces?.[0]?.image_uris?.normal ||
+                             commander.card_faces?.[0]?.image_uris?.large) ? 'none' : 'flex'
+                  }}
+                >
                     <p className="text-slate-400 text-center">{commander.name}<br/>(Image not available)</p>
                   </div>
-                )}
               </div>
 
               {/* Right Column: Details - Stacks below on mobile */}

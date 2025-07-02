@@ -83,97 +83,48 @@ const COMMANDER_BANNED_CARDS = new Set([
   'Shahrazad'
 ]);
 
-// ===== KNOWN COLOR IDENTITY VIOLATIONS =====
-// Cards that commonly cause color identity issues
+// ===== CRITICAL COLOR IDENTITY VIOLATIONS =====
+// Only the most problematic cards for performance - dynamic system handles the rest
 const COLOR_IDENTITY_VIOLATIONS = {
-  // Triomes (3-color lands)
+  // Triomes (frequently cause issues, mentioned in user feedback)
   'Raugrin Triome': ['R', 'U', 'W'],
   'Savai Triome': ['R', 'W', 'B'], 
   'Zagoth Triome': ['B', 'G', 'U'],
   'Ketria Triome': ['G', 'U', 'R'],
   'Indatha Triome': ['W', 'B', 'G'],
   
-  // Talismans (2-color artifacts)
+  // Most commonly used Talismans (high AI generation frequency)
   'Talisman of Dominance': ['B', 'U'],
   'Talisman of Creativity': ['U', 'R'],
-  'Talisman of Curiosity': ['G', 'U'],
-  'Talisman of Hierarchy': ['W', 'B'],
-  'Talisman of Impulse': ['R', 'G'],
-  'Talisman of Indulgence': ['B', 'R'],
   'Talisman of Progress': ['W', 'U'],
-  'Talisman of Resilience': ['B', 'G'],
-  'Talisman of Unity': ['G', 'W'],
-  'Talisman of Conviction': ['R', 'W'],
+  'Talisman of Indulgence': ['B', 'R'],
+  'Talisman of Impulse': ['R', 'G'],
   
-  // Other commonly problematic cards
-  'Flooded Grove': ['G', 'U'],
-  'Graven Cairns': ['B', 'R'],
-  'Fire-Lit Thicket': ['R', 'G'],
-  'Wooded Bastion': ['G', 'W'],
-  'Fetid Heath': ['W', 'B'],
-  'Cascade Bluffs': ['U', 'R'],
-  'Twilight Mire': ['B', 'G'],
-  'Rugged Prairie': ['R', 'W'],
-  'Mystic Gate': ['W', 'U'],
-  'Sunken Ruins': ['U', 'B'],
-  
-  // Hybrid mana cards that trip people up
-  'Boros Reckoner': ['R', 'W'],
-  'Dryad Militant': ['G', 'W'],
-  'Rakdos Cackler': ['B', 'R'],
+  // Cards specifically mentioned in user feedback
+  'Thopter Foundry': ['B', 'U', 'W'],
+  'Time Sieve': ['B', 'U'],
   'Enthusiastic Mechanaut': ['R', 'U'],
   
-  // New additions for April 2025
-  'Thopter Foundry': ['B', 'U', 'W'],
-  'Time Sieve': ['B', 'U'],
-  
-  // Guild charms
-  'Esper Charm': ['W', 'U', 'B'],
-  'Bant Charm': ['G', 'W', 'U'],
-  'Grixis Charm': ['U', 'B', 'R'],
-  'Jund Charm': ['B', 'R', 'G'],
-  'Naya Charm': ['R', 'G', 'W'],
-  'Abzan Charm': ['W', 'B', 'G'],
-  'Jeskai Charm': ['U', 'R', 'W'],
-  'Sultai Charm': ['B', 'G', 'U'],
-  'Mardu Charm': ['R', 'W', 'B'],
-  'Temur Charm': ['G', 'U', 'R'],
-  
-  // Artifacts with off-color activated abilities
+  // Most deceptive artifacts (commonly added to wrong decks)
   'Cranial Plating': ['B'], // Has {B}{B}: Attach ability
-  'Scuttlemutt': ['W', 'U', 'B', 'R', 'G'], // Has WUBRG activated abilities
-  'Golem Artisan': ['W', 'U', 'R'], // Has {2}: +1/+1, {2}: Flying, {2}: Trample abilities
-  'Karn Liberated': [], // Actually colorless despite being powerful
-  
-  // Cards that were causing issues with Cid
-  'Thopter Foundry': ['B', 'U', 'W'],
-  'Time Sieve': ['B', 'U'],
-  
-  // Guild Charms (all multicolor)
-  'Esper Charm': ['W', 'U', 'B'],
-  'Bant Charm': ['G', 'W', 'U'],
-  'Grixis Charm': ['U', 'B', 'R'],
-  'Jund Charm': ['B', 'R', 'G'],
-  'Naya Charm': ['R', 'G', 'W'],
-  'Abzan Charm': ['W', 'B', 'G'],
-  'Jeskai Charm': ['U', 'R', 'W'],
-  'Sultai Charm': ['B', 'G', 'U'],
-  'Mardu Charm': ['R', 'W', 'B'],
-  'Temur Charm': ['G', 'U', 'R'],
-  
-  // Common artifacts with off-color abilities
   'Birthing Pod': ['G'], // Has green activated ability
-  'Mindslaver': [], // Actually colorless
-  'Sensei\'s Divining Top': [], // Actually colorless
-  'Eldrazi Monument': [], // Actually colorless
+  'Scuttlemutt': ['W', 'U', 'B', 'R', 'G'], // Has WUBRG activated abilities
   
-  // Equipment with off-color abilities
-  'Sword of Fire and Ice': ['R', 'U'], // Protection and triggered abilities
-  'Sword of Light and Shadow': ['W', 'B'],
-  'Sword of War and Peace': ['R', 'W'],
-  'Sword of Body and Mind': ['G', 'U'],
-  'Sword of Feast and Famine': ['B', 'G'],
-  'Sword of Truth and Justice': ['W', 'U']
+  // High-frequency Shard/Wedge charms
+  'Esper Charm': ['W', 'U', 'B'],
+  'Grixis Charm': ['U', 'B', 'R'],
+  'Jeskai Charm': ['U', 'R', 'W'],
+  'Abzan Charm': ['W', 'B', 'G'],
+  
+  // Most commonly problematic dual lands (performance-critical)
+  'Hallowed Fountain': ['W', 'U'],
+  'Watery Grave': ['U', 'B'],
+  'Sacred Foundry': ['R', 'W'],
+  'Breeding Pool': ['G', 'U'],
+  'Command Tower': [], // Actually colorless - common misconception
+  
+  // NOTE: Removed 100+ other cards - dynamic system with learning cache handles them
+  // This list now focuses on ~20 most critical performance/frequency cards
 };
 
 // ===== CORE LEGALITY FUNCTIONS =====
@@ -591,9 +542,77 @@ export const formatValidationResults = (validationResult) => {
 
 /**
  * Cache for learned color identity violations
- * This gets populated as we encounter new violations
+ * This gets populated as we encounter new violations and persists across sessions
  */
 const learnedViolations = new Map();
+
+// LocalStorage key for persisting learned violations
+const LEARNED_VIOLATIONS_KEY = 'mtg_learned_color_violations';
+
+/**
+ * Load learned violations from localStorage on initialization
+ */
+const loadLearnedViolations = () => {
+  try {
+    // Check if we're in a browser environment
+    if (typeof localStorage === 'undefined') {
+      return; // Not in browser environment, skip
+    }
+    
+    const stored = localStorage.getItem(LEARNED_VIOLATIONS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(([cardName, colorIdentity]) => {
+          if (cardName && Array.isArray(colorIdentity)) {
+            learnedViolations.set(cardName, colorIdentity);
+          }
+        });
+        console.log(`🧠 Loaded ${learnedViolations.size} learned color identity violations from cache`);
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load learned violations from localStorage:', error);
+    // Clear corrupted data safely
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(LEARNED_VIOLATIONS_KEY);
+      }
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+  }
+};
+
+/**
+ * Persist learned violations to localStorage  
+ */
+const persistLearnedViolations = () => {
+  try {
+    // Check if we're in a browser environment
+    if (typeof localStorage === 'undefined') {
+      return; // Not in browser environment, skip
+    }
+    
+    const dataToStore = Array.from(learnedViolations.entries());
+    localStorage.setItem(LEARNED_VIOLATIONS_KEY, JSON.stringify(dataToStore));
+    localStorage.setItem(LEARNED_VIOLATIONS_KEY + '_timestamp', new Date().toISOString());
+  } catch (error) {
+    if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+      console.warn('localStorage quota exceeded when saving learned violations, clearing cache');
+      try {
+        // Clear learned violations cache and try again with smaller dataset
+        const reducedData = Array.from(learnedViolations.entries()).slice(-50); // Keep only last 50
+        localStorage.removeItem(LEARNED_VIOLATIONS_KEY);
+        localStorage.setItem(LEARNED_VIOLATIONS_KEY, JSON.stringify(reducedData));
+      } catch (secondError) {
+        console.warn('Failed to persist learned violations even after cleanup');
+      }
+    } else {
+      console.warn('Failed to persist learned violations to localStorage:', error);
+    }
+  }
+};
 
 /**
  * Learn and cache a color identity violation for future reference
@@ -601,9 +620,14 @@ const learnedViolations = new Map();
  * @param {Array} colorIdentity - Card's actual color identity
  */
 const learnColorIdentityViolation = (cardName, colorIdentity) => {
+  initializeLearnedViolations();
   if (cardName && Array.isArray(colorIdentity) && colorIdentity.length > 0) {
+    // Only learn if we don't already know this card
+    if (!learnedViolations.has(cardName)) {
     learnedViolations.set(cardName, colorIdentity);
-    console.log(`Learned color identity: ${cardName} = [${colorIdentity.join(', ')}]`);
+      persistLearnedViolations(); // Re-enabled with safe browser detection
+      console.log(`🧠 Learned color identity: ${cardName} = [${colorIdentity.join(', ')}]`);
+    }
   }
 };
 
@@ -613,7 +637,66 @@ const learnColorIdentityViolation = (cardName, colorIdentity) => {
  * @returns {Array|null} Color identity array or null if not found
  */
 const getLearnedColorIdentity = (cardName) => {
+  initializeLearnedViolations();
   return learnedViolations.get(cardName) || null;
+};
+
+/**
+ * Clear all learned violations (for debugging or reset purposes)
+ */
+const clearLearnedViolations = () => {
+  initializeLearnedViolations();
+  learnedViolations.clear();
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(LEARNED_VIOLATIONS_KEY);
+      localStorage.removeItem(LEARNED_VIOLATIONS_KEY + '_timestamp');
+    }
+  } catch (error) {
+    console.warn('Failed to clear learned violations from localStorage:', error);
+  }
+  console.log('Cleared all learned color identity violations');
+};
+
+/**
+ * Get statistics about the learned violations cache
+ * @returns {Object} Cache statistics
+ */
+const getLearnedViolationsStats = () => {
+  initializeLearnedViolations();
+  let lastUpdated = 'Not available';
+  try {
+    if (typeof localStorage !== 'undefined') {
+      lastUpdated = localStorage.getItem(LEARNED_VIOLATIONS_KEY + '_timestamp') || 'Not available';
+    }
+  } catch (error) {
+    // Ignore errors when reading timestamp
+  }
+  
+  return {
+    totalLearned: learnedViolations.size,
+    cards: Array.from(learnedViolations.keys()),
+    lastUpdated
+  };
+};
+
+// Lazy initialization flag
+let isInitialized = false;
+
+/**
+ * Initialize the learned violations cache safely
+ */
+const initializeLearnedViolations = () => {
+  if (!isInitialized) {
+    try {
+      loadLearnedViolations();
+      isInitialized = true;
+    } catch (error) {
+      console.warn('Failed to initialize learned violations cache:', error);
+      // Continue without cache - system will still work
+      isInitialized = true;
+    }
+  }
 };
 
 /**
@@ -678,6 +761,7 @@ export default {
   // Core validation functions
   isCardBanned,
   validateColorIdentity,
+  validateColorIdentityWithLearning,
   validateFormatLegality,
   validateCard,
   validateDeck,
@@ -688,6 +772,10 @@ export default {
   findBannedCardMatch,
   getBannedCardReplacements,
   formatValidationResults,
+  
+  // Learning cache management
+  clearLearnedViolations,
+  getLearnedViolationsStats,
   
   // Constants for external use
   COMMANDER_BANNED_CARDS: Array.from(COMMANDER_BANNED_CARDS),

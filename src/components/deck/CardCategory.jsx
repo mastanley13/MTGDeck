@@ -40,7 +40,7 @@ const DraggableCard = ({ card, handleQuantityChange, handleRemoveCard, onViewCar
           context="LIST_VIEW"
           aspectRatio="card"
           className="w-full shadow-md group-hover:opacity-80 transition-opacity duration-150"
-          showDoubleFaceToggle={true}
+          showDoubleFaceToggle={false}
           alt={`${card.name} card in deck`}
         />
         

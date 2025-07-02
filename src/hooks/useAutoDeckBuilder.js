@@ -731,6 +731,22 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
   const normalizeCardName = (cardName) => {
     if (!cardName || typeof cardName !== 'string') return cardName;
     
+    // Handle split/fuse cards first (cards with " // " in the name)
+    if (cardName.includes(' // ')) {
+      // For split cards, return the exact name as-is for Scryfall
+      // Scryfall expects the full name with " // " format
+      console.log(`Split card detected: ${cardName} - keeping exact format`);
+      return cardName;
+    }
+    
+    // Handle potential AI-generated split card variations
+    if (cardName.includes(' / ') && !cardName.includes(' // ')) {
+      // Convert single slash to double slash for proper Scryfall search
+      const corrected = cardName.replace(' / ', ' // ');
+      console.log(`Converting split card format: ${cardName} → ${corrected}`);
+      return corrected;
+    }
+    
     // Common misspellings and their corrections
     const corrections = {
       'Felwar Stone': 'Fellwar Stone',
@@ -750,10 +766,87 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
       'Pristine Talisman': 'Pristine Talisman', // Already correct
       'Opaline Unicorn': 'Opaline Unicorn', // Already correct
       'Pyramid of the Pantheon': 'Pyramid of the Pantheon', // Already correct
-      'Sky Sovereign Consul Flagship': 'Sky Sovereign, Consul Flagship' // Add comma
+      'Sky Sovereign Consul Flagship': 'Sky Sovereign, Consul Flagship', // Add comma
+      
+      // Common split card variations (in case AI generates them incorrectly)
+      'Wear/Tear': 'Wear // Tear',
+      'Fire/Ice': 'Fire // Ice',
+      'Life/Death': 'Life // Death',
+      'Order/Chaos': 'Order // Chaos',
+      'Night/Day': 'Night // Day',
+      'Research/Development': 'Research // Development',
+      'Crime/Punishment': 'Crime // Punishment',
+      'Supply/Demand': 'Supply // Demand',
+      'Hide/Seek': 'Hide // Seek',
+      'Hit/Run': 'Hit // Run',
+      'Rise/Fall': 'Rise // Fall',
+      'Bound/Determined': 'Bound // Determined',
+      'Flesh/Blood': 'Flesh // Blood',
+      'Pure/Simple': 'Pure // Simple',
+      'Rough/Tumble': 'Rough // Tumble',
+      'Stand/Deliver': 'Stand // Deliver',
+      'Trial/Error': 'Trial // Error',
+      'Turn/Burn': 'Turn // Burn',
+      'Wear and Tear': 'Wear // Tear', // Common misname
+      'Tooth/Nail': 'Tooth and Nail', // This is actually not a split card
+      
+      // Transform cards (double-faced cards) - AI sometimes adds both sides
+      'Treasure Map // Treasure Cove': 'Treasure Map',
+      'Treasure Cove': 'Treasure Map', // Search for front face
+      'Search for Azcanta // Azcanta, the Sunken Ruin': 'Search for Azcanta',
+      'Azcanta, the Sunken Ruin': 'Search for Azcanta',
+      'Legion\'s Landing // Adanto, the First Fort': 'Legion\'s Landing',
+      'Adanto, the First Fort': 'Legion\'s Landing',
+      'Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun': 'Growing Rites of Itlimoc',
+      'Itlimoc, Cradle of the Sun': 'Growing Rites of Itlimoc',
+      'Thaumatic Compass // Spires of Orazca': 'Thaumatic Compass',
+      'Spires of Orazca': 'Thaumatic Compass',
+      'Azcanta the Sunken Ruin': 'Search for Azcanta', // Without comma
+      'Adanto the First Fort': 'Legion\'s Landing', // Without comma
+      'Itlimoc Cradle of the Sun': 'Growing Rites of Itlimoc', // Without comma
+      
+      // Modal double-faced cards (from Zendikar Rising onwards)
+      'Kazandu Mammoth // Kazandu Valley': 'Kazandu Mammoth',
+      'Kazandu Valley': 'Kazandu Mammoth',
+      'Bala Ged Recovery // Bala Ged Sanctuary': 'Bala Ged Recovery',
+      'Bala Ged Sanctuary': 'Bala Ged Recovery',
+      'Turntimber Symbiosis // Turntimber, Serpentine Wood': 'Turntimber Symbiosis',
+      'Turntimber, Serpentine Wood': 'Turntimber Symbiosis',
+      
+      // Modal Double-Faced Lands (Zendikar Rising) - Map back faces to front faces
+      'Needleverge Pathway': 'Hengate Pathway', // Red/White land
+      'Hengate Pathway // Needleverge Pathway': 'Hengate Pathway',
+      'Murkwater Pathway': 'Riverglide Pathway', // Blue/Black land  
+      'Riverglide Pathway // Murkwater Pathway': 'Riverglide Pathway',
+      'Lavaglide Pathway': 'Brightclimb Pathway', // White/Red land
+      'Brightclimb Pathway // Lavaglide Pathway': 'Brightclimb Pathway',
+      'Grimclimb Pathway': 'Clearwater Pathway', // Blue/Black land alt
+      'Clearwater Pathway // Murkwater Pathway': 'Clearwater Pathway',
+      'Branchloft Pathway': 'Cragcrown Pathway', // Red/Green land
+      'Cragcrown Pathway // Timbercrown Pathway': 'Cragcrown Pathway',
+      'Timbercrown Pathway': 'Cragcrown Pathway',
+      'Boulderloft Pathway': 'Brightclimb Pathway', // White/Red alt
+      'Darkbore Pathway': 'Clearwater Pathway', // Blue/Black alt
+      
+      // Kaldheim Modal Double-Faced Cards
+      'Immersturm Skullcairn': 'Immersturm Raider',
+      'Immersturm Raider // Immersturm Skullcairn': 'Immersturm Raider',
+      'Gnottvold Slumbermound': 'Gnottvold Recluse', 
+      'Gnottvold Recluse // Gnottvold Slumbermound': 'Gnottvold Recluse',
+      
+      // Strixhaven Modal Double-Faced Cards  
+      'Pelakka Caverns': 'Pelakka Predation',
+      'Pelakka Predation // Pelakka Caverns': 'Pelakka Predation',
+      'Tangled Florahedron // Tangled Vale': 'Tangled Florahedron',
+      'Tangled Vale': 'Tangled Florahedron'
     };
     
-    return corrections[cardName] || cardName;
+    const corrected = corrections[cardName] || cardName;
+    if (corrected !== cardName) {
+      console.log(`Card name correction: ${cardName} → ${corrected}`);
+    }
+    
+    return corrected;
   };
 
   /**
@@ -771,6 +864,14 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
       name: normalizeCardName(card.name)
     }));
     
+    // Debug: Log any cards that were normalized
+    const normalizedCards = normalizedCardList.filter(card => card.name !== card.originalName);
+    if (normalizedCards.length > 0) {
+      console.log(`🔄 Normalized ${normalizedCards.length} card names:`, 
+        normalizedCards.map(c => `${c.originalName} → ${c.name}`)
+      );
+    }
+    
     console.log(`Fetching data for ${normalizedCardList.length} cards...`);
     
     // First try batch fetching
@@ -783,12 +884,33 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
         
         console.log(`Fetching batch ${Math.floor(i / batchSize) + 1} with ${batch.length} cards`);
         
+        // Debug: Log what we're sending to Scryfall
+        const requestPayload = {
+          identifiers: batch.map(card => ({ name: card.name }))
+        };
+        
+        // Log split cards and modal cards specifically
+        const splitCardsInBatch = batch.filter(card => card.name.includes(' // '));
+        const modalCardsInBatch = batch.filter(card => 
+          card.originalName !== card.name && !card.name.includes(' // ')
+        );
+        
+        if (splitCardsInBatch.length > 0) {
+          console.log(`🔀 Split cards in batch ${Math.floor(i / batchSize) + 1}:`, 
+            splitCardsInBatch.map(c => c.name)
+          );
+        }
+        
+        if (modalCardsInBatch.length > 0) {
+          console.log(`🔄 Modal cards normalized in batch ${Math.floor(i / batchSize) + 1}:`, 
+            modalCardsInBatch.map(c => `${c.originalName} → ${c.name}`)
+          );
+        }
+
         const response = await fetch('https://api.scryfall.com/cards/collection', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            identifiers: batch.map(card => ({ name: card.name }))
-          })
+          body: JSON.stringify(requestPayload)
         });
 
         if (response.ok) {
@@ -796,12 +918,15 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
           if (data.data) {
             console.log(`Batch ${Math.floor(i / batchSize) + 1} returned ${data.data.length} cards`);
             data.data.forEach(card => {
+              // Normalize card data for double-faced cards
+              const normalizedCard = normalizeCardData(card);
+              
               // Map both the original name and normalized name to the card data
               const originalCard = batch.find(c => c.name === card.name);
               if (originalCard) {
-                cardMap.set(originalCard.originalName, card);
+                cardMap.set(originalCard.originalName, normalizedCard);
                 if (originalCard.originalName !== card.name) {
-                  cardMap.set(card.name, card); // Also map the correct name
+                  cardMap.set(card.name, normalizedCard); // Also map the correct name
                 }
               }
             });
@@ -811,7 +936,17 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
               !data.data.some(foundCard => foundCard.name === batchCard.name)
             );
             if (notFoundInBatch.length > 0) {
-              console.warn(`Batch ${Math.floor(i / batchSize) + 1} missing cards:`, notFoundInBatch.map(c => c.name));
+              console.warn(`Batch ${Math.floor(i / batchSize) + 1} missing cards:`, notFoundInBatch.map(c => `${c.originalName} (searched as: ${c.name})`));
+              
+              // For debugging: Log the exact request that was sent for failed cards
+              notFoundInBatch.forEach(card => {
+                console.warn(`   🔍 Debug: Card "${card.name}" not found in Scryfall batch response`);
+                console.warn(`   📝 Original name: "${card.originalName}"`);
+                console.warn(`   🔄 Normalized name: "${card.name}"`);
+                if (card.name.includes(' // ')) {
+                  console.warn(`   ⚠️  Split card detected - this should work with Scryfall`);
+                }
+              });
             }
           }
         } else {
@@ -831,6 +966,38 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
       const missingCards = normalizedCardList.filter(card => !cardMap.has(card.originalName));
       if (missingCards.length > 0) {
         console.warn(`Missing cards after batch fetch:`, missingCards.map(c => `${c.originalName} (normalized: ${c.name})`));
+        
+        // Try individual searches for cards that failed in batch (likely split/transform cards)
+        console.log(`🔄 Attempting individual searches for ${missingCards.length} cards that failed in batch...`);
+        
+        for (const missingCard of missingCards) {
+          try {
+            // For split cards and transform cards, use direct Scryfall exact search
+            const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(missingCard.name)}`;
+            console.log(`🎯 Trying exact search for: ${missingCard.name}`);
+            
+            const exactResponse = await fetch(exactUrl);
+            if (exactResponse.ok) {
+              const exactCard = await exactResponse.json();
+              const normalizedExactCard = normalizeCardData(exactCard);
+              cardMap.set(missingCard.originalName, normalizedExactCard);
+              if (missingCard.originalName !== missingCard.name) {
+                cardMap.set(missingCard.name, normalizedExactCard);
+              }
+              console.log(`✅ Found ${missingCard.name} via exact search`);
+            } else {
+              console.warn(`❌ Exact search failed for ${missingCard.name}: ${exactResponse.status}`);
+            }
+            
+            // Rate limiting between individual requests
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+          } catch (error) {
+            console.warn(`❌ Individual search error for ${missingCard.name}:`, error.message);
+          }
+        }
+        
+        console.log(`Individual search complete. Final card count: ${cardMap.size}`);
       }
       
       // CRITICAL: Filter out color identity violations using actual Scryfall data
@@ -873,22 +1040,41 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
       const originalName = cardEntry.originalName || cardEntry.name;
       
       try {
-        const result = await searchCardByName(searchName);
+        let result = await searchCardByName(searchName);
+        
+        // If initial search failed and this is a split card, try exact name search
+        if ((!result.data || result.data.length === 0) && searchName.includes(' // ')) {
+          console.log(`🔄 Split card "${searchName}" not found, trying exact name search...`);
+          try {
+            const exactResponse = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(searchName)}`);
+            if (exactResponse.ok) {
+              const exactCard = await exactResponse.json();
+              const normalizedExactCard = normalizeCardData(exactCard);
+              result = { data: [normalizedExactCard] };
+              console.log(`✅ Found "${searchName}" using exact search`);
+            }
+          } catch (exactError) {
+            console.warn(`❌ Exact search also failed for "${searchName}":`, exactError.message);
+          }
+        }
         
         if (result.data && result.data.length > 0) {
           const card = result.data[0];
+          const normalizedCard = normalizeCardData(card);
           // Map using the original name so addCardsFromBatchData can find it
-          cardMap.set(originalName, card);
+          cardMap.set(originalName, normalizedCard);
           // Also map the normalized name if different
           if (originalName !== searchName) {
-            cardMap.set(searchName, card);
+            cardMap.set(searchName, normalizedCard);
           }
+          console.log(`✅ Successfully fetched: ${originalName}`);
         } else {
-          console.warn(`No data found for card: ${originalName} (searched as: ${searchName})`);
+          console.warn(`❌ No data found for card: ${originalName} (searched as: ${searchName})`);
           // Create a minimal card object for basic lands and common cards
           const basicCard = createFallbackCard(originalName, cardEntry.category);
           if (basicCard) {
             cardMap.set(originalName, basicCard);
+            console.log(`🆘 Using fallback data for: ${originalName}`);
           }
         }
         
@@ -925,6 +1111,70 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
     return validCards;
   };
   
+  /**
+   * Normalize card data for double-faced cards to ensure proper image URIs and data
+   * @param {Object} cardData - Raw card data from Scryfall
+   * @returns {Object} Normalized card data with proper image URIs
+   */
+  const normalizeCardData = (cardData) => {
+    if (!cardData) return cardData;
+    
+    // Handle split cards (like "Wear // Tear") - ensure they have image_uris
+    if (cardData.name && cardData.name.includes(' // ') && !cardData.image_uris) {
+      console.log(`🎴 Split card detected: ${cardData.name}, missing image_uris`);
+      // For split cards, try to use layout-specific image handling
+      if (cardData.layout === 'split' && cardData.id) {
+        // Construct image URLs for split cards using Scryfall's image API
+        const baseImageUrl = `https://cards.scryfall.io`;
+        cardData.image_uris = {
+          small: `${baseImageUrl}/small/front/${cardData.id}.jpg`,
+          normal: `${baseImageUrl}/normal/front/${cardData.id}.jpg`,
+          large: `${baseImageUrl}/large/front/${cardData.id}.jpg`,
+          png: `${baseImageUrl}/png/front/${cardData.id}.png`,
+          art_crop: `${baseImageUrl}/art_crop/front/${cardData.id}.jpg`,
+          border_crop: `${baseImageUrl}/border_crop/front/${cardData.id}.jpg`
+        };
+        console.log(`📸 Generated image_uris for split card: ${cardData.name}`);
+      }
+    }
+    
+    // If this is a double-faced card with card_faces but no image_uris on the main object
+    if (cardData.card_faces && cardData.card_faces.length > 0 && !cardData.image_uris) {
+      // Use the first face's image_uris as the main image_uris
+      const firstFace = cardData.card_faces[0];
+      if (firstFace.image_uris) {
+        cardData.image_uris = firstFace.image_uris;
+        console.log(`📸 Added image_uris from first card face for: ${cardData.name}`);
+      }
+    }
+    
+    // For transform cards, ensure we have the front face name as the main name
+    if (cardData.card_faces && cardData.card_faces.length >= 2) {
+      const frontFace = cardData.card_faces[0];
+      if (frontFace.name && frontFace.name !== cardData.name) {
+        console.log(`🔄 Transform card detected: ${cardData.name}, front face: ${frontFace.name}`);
+        // Keep the original name but ensure we have front face data
+        cardData.front_face_name = frontFace.name;
+      }
+    }
+    
+    // Final fallback: if we still don't have image_uris and we have an ID, generate them
+    if (!cardData.image_uris && cardData.id) {
+      const baseImageUrl = `https://cards.scryfall.io`;
+      cardData.image_uris = {
+        small: `${baseImageUrl}/small/front/${cardData.id}.jpg`,
+        normal: `${baseImageUrl}/normal/front/${cardData.id}.jpg`,
+        large: `${baseImageUrl}/large/front/${cardData.id}.jpg`,
+        png: `${baseImageUrl}/png/front/${cardData.id}.png`,
+        art_crop: `${baseImageUrl}/art_crop/front/${cardData.id}.jpg`,
+        border_crop: `${baseImageUrl}/border_crop/front/${cardData.id}.jpg`
+      };
+      console.log(`📸 Generated fallback image_uris for: ${cardData.name}`);
+    }
+    
+    return cardData;
+  };
+
   /**
    * Check if a card can have multiple copies in a deck
    * @param {Object} card - Card object with oracle_text
@@ -1121,6 +1371,142 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
         colors: [],
         color_identity: ['W'],
         cmc: 0
+      },
+      
+      // Common split/fuse cards
+      'Wear // Tear': {
+        mana_cost: '{1}{R} // {W}',
+        type_line: 'Instant // Instant',
+        colors: ['R', 'W'],
+        color_identity: ['R', 'W'],
+        cmc: 2
+      },
+      'Fire // Ice': {
+        mana_cost: '{1}{R} // {1}{U}',
+        type_line: 'Instant // Instant',
+        colors: ['R', 'U'],
+        color_identity: ['R', 'U'],
+        cmc: 2
+      },
+      'Life // Death': {
+        mana_cost: '{G} // {1}{B}',
+        type_line: 'Sorcery // Sorcery',
+        colors: ['G', 'B'],
+        color_identity: ['G', 'B'],
+        cmc: 2
+      },
+      
+      // Common transform cards (double-faced cards)
+      'Treasure Map': {
+        mana_cost: '{2}',
+        type_line: 'Artifact',
+        colors: [],
+        color_identity: [],
+        cmc: 2
+      },
+      'Search for Azcanta': {
+        mana_cost: '{1}{U}',
+        type_line: 'Legendary Enchantment',
+        colors: ['U'],
+        color_identity: ['U'],
+        cmc: 2
+      },
+      'Legion\'s Landing': {
+        mana_cost: '{W}',
+        type_line: 'Legendary Enchantment',
+        colors: ['W'],
+        color_identity: ['W'],
+        cmc: 1
+      },
+      'Growing Rites of Itlimoc': {
+        mana_cost: '{2}{G}',
+        type_line: 'Legendary Enchantment',
+        colors: ['G'],
+        color_identity: ['G'],
+        cmc: 3
+      },
+      'Thaumatic Compass': {
+        mana_cost: '{2}',
+        type_line: 'Artifact',
+        colors: [],
+        color_identity: [],
+        cmc: 2
+      },
+      
+      // Modal double-faced cards
+      'Kazandu Mammoth': {
+        mana_cost: '{1}{G}{G}',
+        type_line: 'Creature — Elephant',
+        colors: ['G'],
+        color_identity: ['G'],
+        cmc: 3
+      },
+      'Bala Ged Recovery': {
+        mana_cost: '{2}{G}',
+        type_line: 'Sorcery',
+        colors: ['G'],
+        color_identity: ['G'],
+        cmc: 3
+      },
+      'Turntimber Symbiosis': {
+        mana_cost: '{4}{G}{G}{G}',
+        type_line: 'Sorcery',
+        colors: ['G'],
+        color_identity: ['G'],
+        cmc: 7
+      },
+      
+      // Modal Double-Faced Lands (Zendikar Rising) - Front faces only
+      'Hengate Pathway': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['R', 'W'],
+        cmc: 0
+      },
+      'Riverglide Pathway': {
+        mana_cost: '',
+        type_line: 'Land', 
+        colors: [],
+        color_identity: ['U', 'B'],
+        cmc: 0
+      },
+      'Brightclimb Pathway': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['W', 'R'], 
+        cmc: 0
+      },
+      'Clearwater Pathway': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['U', 'B'],
+        cmc: 0
+      },
+      'Cragcrown Pathway': {
+        mana_cost: '',
+        type_line: 'Land',
+        colors: [],
+        color_identity: ['R', 'G'],
+        cmc: 0
+      },
+      
+      // Other problematic modal cards
+      'Pelakka Predation': {
+        mana_cost: '{2}{B}',
+        type_line: 'Sorcery',
+        colors: ['B'],
+        color_identity: ['B'],
+        cmc: 3
+      },
+      'Tangled Florahedron': {
+        mana_cost: '{1}{G}',
+        type_line: 'Creature — Elemental',
+        colors: ['G'],
+        color_identity: ['G'],
+        cmc: 2
       }
     };
     
@@ -1186,9 +1572,18 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
           console.log(`Added ${addedCount} cards so far...`);
         }
       } else {
-        // Card was either not found or filtered out due to color identity
-        console.warn(`Card not available: ${card.name} (likely filtered due to color identity violation)`);
-        colorViolationCards.push(card);
+        // Check if card exists in original fetched data but was filtered out
+        const originalCardData = [...cardDataMap.entries()].find(([key, value]) => 
+          key === card.name || key === card.originalName || value.name === card.name
+        );
+        
+        if (originalCardData) {
+          console.warn(`Card filtered out: ${card.name} (color identity violation - has [${originalCardData[1].color_identity?.join(', ')}], commander allows [${commander.color_identity?.join(', ')}])`);
+          colorViolationCards.push(card);
+        } else {
+          console.warn(`Card not found: ${card.name} (not returned by Scryfall API - may be misspelled, not legal in Commander, or from unsupported set)`);
+        }
+        
         missingCards.push(card);
       }
     }
@@ -2050,10 +2445,27 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
       }
 
       const data = await response.json();
+      
+      // Debug: Log the full response structure from o3
+      console.log('🔍 OpenAI o3 API Response Debug:', {
+        status: response.status,
+        statusText: response.statusText,
+        hasChoices: !!data.choices,
+        choicesLength: data.choices?.length,
+        firstChoice: data.choices?.[0],
+        hasMessage: !!data.choices?.[0]?.message,
+        hasContent: !!data.choices?.[0]?.message?.content,
+        usage: data.usage,
+        error: data.error,
+        fullResponseKeys: Object.keys(data),
+        fullData: data
+      });
+
       const responseText = data.choices?.[0]?.message?.content;
 
       if (!responseText) {
-        throw new Error('No response received from OpenAI');
+        console.error('❌ No response content from OpenAI o3. Full response:', data);
+        throw new Error(`No response received from OpenAI o3. API returned: ${JSON.stringify(data, null, 2)}`);
       }
 
       // Parse the JSON response
