@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAutoDeckBuilder } from '../../hooks/useAutoDeckBuilder';
 import { useDeck } from '../../context/DeckContext';
-import { IconCrown, IconRobot } from '@tabler/icons-react';
+import { IconCrown, IconRobot, IconCurrencyDollar } from '@tabler/icons-react';
 import ValidationSummary from '../deck/ValidationSummary';
 
 /**
@@ -10,6 +10,7 @@ import ValidationSummary from '../deck/ValidationSummary';
 const AutoDeckBuilder = () => {
   const { commander, cards, totalCardCount } = useDeck();
   const [deckStyle, setDeckStyle] = useState('competitive');
+  const [customBudget, setCustomBudget] = useState(100); // Default budget for Budget Friendly
   const { 
     buildCompleteDeck, 
     isLoading, 
@@ -34,12 +35,31 @@ const AutoDeckBuilder = () => {
     { id: 'budget', label: 'Budget Friendly' }
   ];
 
+  // Budget preset options
+  const budgetPresets = [
+    { value: 25, label: 'Ultra Budget ($25)' },
+    { value: 50, label: 'Budget ($50)' },
+    { value: 100, label: 'Casual Budget ($100)' },
+    { value: 200, label: 'Optimized Budget ($200)' },
+    { value: 500, label: 'High Budget ($500)' }
+  ];
+
   const handleStyleChange = (e) => {
     setDeckStyle(e.target.value);
   };
 
+  const handleBudgetChange = (e) => {
+    setCustomBudget(Number(e.target.value));
+  };
+
+  const handleBudgetPreset = (budget) => {
+    setCustomBudget(budget);
+  };
+
   const handleBuildDeck = () => {
-    buildCompleteDeck(deckStyle);
+    // Pass custom budget if using budget archetype
+    const buildOptions = deckStyle === 'budget' ? { customBudget } : {};
+    buildCompleteDeck(deckStyle, buildOptions);
   };
 
   const nonCommanderCardCount = commander ? totalCardCount - 1 : 0;
@@ -53,7 +73,7 @@ const AutoDeckBuilder = () => {
       return 'Stage 2: AI validation scan for rule compliance';
     }
     if (buildingStage.includes('Fixing') && buildingStage.includes('validation issues')) {
-      return `Stage 3: Smart replacement of ${currentViolations.length} invalid cards`;
+      return 'Stage 3: Smart replacement of invalid cards';
     }
     if (buildingStage.includes('Final validation check')) {
       return 'Stage 3b: Final validation pass for critical violations';
@@ -164,6 +184,62 @@ const AutoDeckBuilder = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Budget Controls - Only show when Budget Friendly is selected */}
+              {deckStyle === 'budget' && (
+                <div className="mb-6 p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
+                  <label className="block text-sm font-semibold mb-3 text-white flex items-center space-x-2">
+                    <IconCurrencyDollar size={16} className="text-primary-400" />
+                    <span>Deck Budget: ${customBudget}</span>
+                  </label>
+                  
+                  {/* Budget Slider */}
+                  <div className="mb-4">
+                    <input
+                      type="range"
+                      min="25"
+                      max="500"
+                      step="25"
+                      value={customBudget}
+                      onChange={handleBudgetChange}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                      disabled={isLoading}
+                    />
+                    <div className="flex justify-between text-xs text-slate-400 mt-1">
+                      <span>$25</span>
+                      <span>$500</span>
+                    </div>
+                  </div>
+
+                  {/* Budget Presets */}
+                  <div className="flex flex-wrap gap-2">
+                    {budgetPresets.map(preset => (
+                      <button
+                        key={preset.value}
+                        onClick={() => handleBudgetPreset(preset.value)}
+                        disabled={isLoading}
+                        className={`px-3 py-1.5 text-xs rounded-lg transition-all duration-200 ${
+                          customBudget === preset.value
+                            ? 'bg-primary-500 text-white shadow-md'
+                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Budget Description */}
+                  <div className="mt-3 text-xs text-slate-400">
+                    <p>
+                      {customBudget <= 50 && "Ultra-budget build focusing on commons and uncommons with maximum value."}
+                      {customBudget > 50 && customBudget <= 100 && "Budget-friendly deck with some powerful budget staples and efficient cards."}
+                      {customBudget > 100 && customBudget <= 200 && "Optimized budget build including mid-range staples and solid manabase."}
+                      {customBudget > 200 && "High-budget build with premium cards while maintaining cost consciousness."}
+                    </p>
+                  </div>
+                </div>
+              )}
               
               {isLoading && progress > 0 && (
                 <div className="mb-6 p-4 bg-slate-800/30 rounded-xl border border-slate-700/50">
@@ -184,7 +260,11 @@ const AutoDeckBuilder = () => {
                   </div>
                   {buildingStage && (
                     <div className="mt-3 text-xs text-slate-300 text-center font-medium">
-                      {buildingStage.includes('Generating initial deck structure') && 'Advanced AI analyzing your commander and generating synergistic deck structure'}
+                      {buildingStage.includes('Generating initial deck structure') && (
+                        deckStyle === 'budget' 
+                          ? `Advanced AI analyzing your commander and generating budget-conscious deck under $${customBudget}`
+                          : 'Advanced AI analyzing your commander and generating synergistic deck structure'
+                      )}
                       {buildingStage.includes('Scanning for validation issues') && 'Expert AI validation ensuring format compliance and rule adherence'}
                       {buildingStage.includes('Fixing') && buildingStage.includes('validation issues') && 'Intelligent card replacements that maintain deck synergy and strategy'}
                       {buildingStage.includes('Final validation check') && 'Ensuring all critical violations are resolved'}
@@ -207,7 +287,9 @@ const AutoDeckBuilder = () => {
                   </span>
                 ) : (
                   <span className="flex items-center justify-center space-x-3">
-                    <span>Forge My Deck</span>
+                    <span>
+                      {deckStyle === 'budget' ? `Forge My $${customBudget} Deck` : 'Forge My Deck'}
+                    </span>
                     <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -294,6 +376,19 @@ const AutoDeckBuilder = () => {
                       <span className="ml-1">All cards adhere to Commander format rules and your leader's color identity.</span>
                     </div>
                   </div>
+                  {deckStyle === 'budget' && (
+                    <div className="flex items-start space-x-3">
+                      <div className="w-5 h-5 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <div>
+                        <span className="font-medium text-primary-400">Budget Conscious:</span>
+                        <span className="ml-1">Optimized for maximum value within your ${customBudget} budget constraint.</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

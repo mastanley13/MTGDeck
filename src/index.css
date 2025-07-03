@@ -2,3 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 @tailwind base;
+
+/* Budget Slider Styles */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-track {
+  background: #475569; /* slate-600 */
+  height: 8px;
+  border-radius: 4px;
+  border: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* primary gradient */
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  transition: all 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.6);
+  transform: scale(1.1);
+}
+
+.slider::-moz-range-track {
+  background: #475569; /* slate-600 */
+  height: 8px;
+  border-radius: 4px;
+  border: none;
+}
+
+.slider::-moz-range-thumb {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* primary gradient */
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  transition: all 0.2s ease;
+}
+
+.slider::-moz-range-thumb:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.6);
+  transform: scale(1.1);
+}
+
+.slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.slider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+  background: #64748b; /* slate-500 */
+  box-shadow: none;
+}
+
+.slider:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+  background: #64748b; /* slate-500 */
+  box-shadow: none;
+}

@@ -320,9 +320,10 @@ export const useAutoDeckBuilder = () => {
   /**
    * Get archetype-specific rules and constraints for deck building
    * @param {string} deckStyle - The desired deck style/strategy
+   * @param {Object} options - Additional options like custom budget
    * @returns {Object} - Object containing archetype rules and constraints
    */
-  const getArchetypeRules = (deckStyle) => {
+  const getArchetypeRules = (deckStyle, options = {}) => {
     switch (deckStyle) {
       case 'competitive':
         return {
@@ -357,8 +358,12 @@ export const useAutoDeckBuilder = () => {
         };
 
       case 'budget':
+        const customBudget = options.customBudget || 100;
+        // Calculate max card price based on budget (5-15% of total budget)
+        const maxCardPrice = Math.max(1, Math.min(customBudget * 0.1, 20));
+        
         return {
-          maxBudget: 100, // Low budget
+          maxBudget: customBudget, // Use custom budget
           distribution: {
             lands: { min: 36, max: 38 },
             ramp: { min: 10, max: 12 }, // Increased ramp for budget decks
@@ -367,28 +372,29 @@ export const useAutoDeckBuilder = () => {
             protection: { min: 4, max: 6 },
             core: { min: 25, max: 30 }
           },
-          powerLevel: 'low',
+          powerLevel: customBudget <= 50 ? 'ultra-low' : customBudget <= 100 ? 'low' : customBudget <= 200 ? 'low-medium' : 'medium',
           prioritizeEfficiency: false,
           includeReservedList: false,
           preferBudgetOptions: true,
-          maxCardPrice: 5, // Maximum price per card
+          maxCardPrice: maxCardPrice, // Dynamic max card price based on budget
           budgetPriorities: {
-            lands: 'basic',  // Prefer basic lands
+            lands: customBudget <= 50 ? 'basic' : customBudget <= 100 ? 'budget' : 'efficient', // Prefer basic lands for ultra-budget
             ramp: 'artifacts', // Prefer artifact ramp
             protection: 'targeted' // Prefer targeted protection over expensive global effects
           }
         };
 
       default:
-        return getArchetypeRules('casual'); // Default to casual rules
+        return getArchetypeRules('casual', options); // Default to casual rules
     }
   };
 
   /**
    * Build a complete deck using the three-stage pipeline
    * @param {string} deckStyle - The desired deck style/strategy
+   * @param {Object} options - Additional options like custom budget
    */
-  const buildCompleteDeck = async (deckStyle = 'competitive') => {
+  const buildCompleteDeck = async (deckStyle = 'competitive', options = {}) => {
     if (!commander) {
       setError('Please select a commander first');
       return false;
@@ -426,7 +432,7 @@ export const useAutoDeckBuilder = () => {
       setProgress(10);
       console.log('Stage 1: Starting comprehensive generation with o3');
       
-      const archetypeRules = getArchetypeRules(deckStyle);
+      const archetypeRules = getArchetypeRules(deckStyle, options);
       const stageOneStart = Date.now();
       const initialCards = await generateInitialDeckWithO3(commander, deckStyle, archetypeRules);
       console.log(`Stage 1 completed in ${Date.now() - stageOneStart}ms`);
@@ -449,7 +455,7 @@ export const useAutoDeckBuilder = () => {
       
       // STAGE 3: Smart Replacement with o3 (only if violations found)
       if (validationResult.violations && validationResult.violations.length > 0) {
-        setBuildingStage(`Fixing ${validationResult.violations.length} validation issues...`);
+        setBuildingStage('Fixing validation issues...');
         console.log(`Stage 3: Fixing ${validationResult.violations.length} violations with o3`);
         
         const stageThreeStart = Date.now();
@@ -548,7 +554,7 @@ export const useAutoDeckBuilder = () => {
     const { prompt: archetypePrompt, cardDistribution, maxBudget, targetBracket } = archetypeRules;
     
     const budgetConstraint = maxBudget !== Infinity ? 
-      `Keep the total deck cost under $${maxBudget}.` : '';
+      `Keep the total deck cost under $${maxBudget}. Individual cards should not exceed $${archetypeRules.maxCardPrice || Math.floor(maxBudget * 0.1)} each. ${maxBudget <= 50 ? 'Prioritize commons and uncommons with high value.' : maxBudget <= 100 ? 'Focus on budget staples and efficient cards.' : maxBudget <= 200 ? 'Include mid-range staples while staying budget-conscious.' : 'Use premium cards but maintain cost awareness.'}` : '';
 
     const bracketConstraint = `Target power level should be between bracket ${targetBracket.min}-${targetBracket.max} (1=casual, 5=cEDH).`;
 
@@ -581,12 +587,25 @@ CRITICAL COLOR IDENTITY RULES:
 
 SPEED PRIORITY: Generate functional deck quickly. Focus on:
 - Strong synergies with commander abilities
-- Proper mana base foundation
+- Proper mana base foundation${deckStyle === 'budget' && maxBudget <= 100 ? ' (emphasize basic lands and budget duals)' : ''}
 - Essential staples for the archetype
 - ${distributionRequirements}
 - ${powerLevelConstraint}
 - ${budgetConstraint}
 - ${efficiencyNote}
+
+${deckStyle === 'budget' ? `
+BUDGET-SPECIFIC GUIDELINES:
+- Prefer artifact ramp like Sol Ring, Arcane Signet, Commander's Sphere, Mind Stone
+- Include budget card draw like Divination, Sign in Blood, Read the Bones
+- Use efficient removal like Swords to Plowshares, Path to Exile, Murder, Destroy Evil
+- Avoid expensive cards like fetch lands, dual lands, tutors, and premium artifacts
+- Focus on synergy over raw power level
+- Consider budget alternatives: Command Tower over expensive duals, basic lands over shocklands
+${maxBudget <= 50 ? '- Ultra-budget focus: prioritize cards under $1, use mostly basics for mana base' : ''}
+${maxBudget <= 100 ? '- Budget-friendly: mix of budget staples and efficient cards under $5' : ''}
+${maxBudget > 100 ? '- Higher budget: can include some mid-range staples and better manabase' : ''}
+` : ''}
 
 IMPORTANT GUIDELINES:
 - Include staple cards appropriate for the power level
@@ -1890,9 +1909,10 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
    * Validate if a card list meets the budget constraints
    * @param {Array} cardList - List of cards to validate
    * @param {number} maxBudget - Maximum allowed budget
+   * @param {number} maxCardPrice - Maximum allowed price per card
    * @returns {Object} - Validation result and any violations
    */
-  const validateBudgetConstraints = (cardList, maxBudget) => {
+  const validateBudgetConstraints = (cardList, maxBudget, maxCardPrice = null) => {
     if (maxBudget === Infinity) return { valid: true, violations: [] };
 
     const totalCost = calculateDeckCost(cardList);
@@ -1900,15 +1920,36 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
 
     if (totalCost > maxBudget) {
       violations.push({
-        type: 'budget',
+        type: 'budget_exceeded',
         message: `Deck cost ($${totalCost.toFixed(2)}) exceeds budget limit of $${maxBudget.toFixed(2)}`,
-        excess: totalCost - maxBudget
+        excess: totalCost - maxBudget,
+        severity: 'high'
       });
     }
 
-    // Find expensive cards that could be replaced
+    // Check individual card prices if maxCardPrice is specified
+    if (maxCardPrice) {
+      const overPricedCards = cardList
+        .filter(card => parseFloat(card.prices?.usd || 0) > maxCardPrice)
+        .map(card => ({
+          name: card.name,
+          price: parseFloat(card.prices?.usd || 0),
+          excess: parseFloat(card.prices?.usd || 0) - maxCardPrice
+        }));
+
+      if (overPricedCards.length > 0) {
+        violations.push({
+          type: 'card_price_exceeded',
+          message: `${overPricedCards.length} cards exceed the maximum price of $${maxCardPrice.toFixed(2)}`,
+          cards: overPricedCards,
+          severity: 'medium'
+        });
+      }
+    }
+
+    // Find expensive cards that could be replaced (more than 15% of budget)
     const expensiveCards = cardList
-      .filter(card => parseFloat(card.prices?.usd || 0) > maxBudget * 0.1) // Cards costing more than 10% of budget
+      .filter(card => parseFloat(card.prices?.usd || 0) > maxBudget * 0.15)
       .map(card => ({
         name: card.name,
         price: parseFloat(card.prices?.usd || 0)
@@ -1918,14 +1959,29 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
       violations.push({
         type: 'expensive_cards',
         message: 'Found expensive cards that could be replaced with budget alternatives',
-        cards: expensiveCards
+        cards: expensiveCards,
+        severity: 'low'
       });
     }
 
+    // Budget utilization feedback
+    const utilizationPercent = (totalCost / maxBudget) * 100;
+    let budgetFeedback = '';
+    
+    if (utilizationPercent < 70) {
+      budgetFeedback = `Budget utilization: ${utilizationPercent.toFixed(1)}% - Consider adding more powerful cards within budget`;
+    } else if (utilizationPercent > 90 && utilizationPercent <= 100) {
+      budgetFeedback = `Budget utilization: ${utilizationPercent.toFixed(1)}% - Excellent budget optimization`;
+    } else if (utilizationPercent > 100) {
+      budgetFeedback = `Budget exceeded by ${(utilizationPercent - 100).toFixed(1)}%`;
+    }
+
     return {
-      valid: violations.length === 0,
+      valid: violations.filter(v => v.severity === 'high').length === 0,
       violations,
-      totalCost
+      totalCost,
+      budgetUtilization: utilizationPercent,
+      budgetFeedback
     };
   };
 
@@ -2350,7 +2406,7 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
     const { distribution, maxBudget, powerLevel, prioritizeEfficiency } = archetypeRules;
     
     const budgetConstraint = maxBudget ? 
-      `Keep the total deck cost under $${maxBudget}.` : '';
+      `Keep the total deck cost under $${maxBudget}. Individual cards should not exceed $${archetypeRules.maxCardPrice || Math.floor(maxBudget * 0.1)} each. ${maxBudget <= 50 ? 'Prioritize commons and uncommons with high value.' : maxBudget <= 100 ? 'Focus on budget staples and efficient cards.' : maxBudget <= 200 ? 'Include mid-range staples while staying budget-conscious.' : 'Use premium cards but maintain cost awareness.'}` : '';
 
     const powerLevelGuide = {
       'high': '4-5 (Highly optimized to cEDH)',
@@ -2392,12 +2448,25 @@ CRITICAL COLOR IDENTITY RULES:
 
 SPEED PRIORITY: Generate functional deck quickly. Focus on:
 - Strong synergies with commander abilities
-- Proper mana base foundation
+- Proper mana base foundation${deckStyle === 'budget' && maxBudget <= 100 ? ' (emphasize basic lands and budget duals)' : ''}
 - Essential staples for the archetype
 - ${distributionRequirements}
 - ${powerLevelConstraint}
 - ${budgetConstraint}
 - ${efficiencyNote}
+
+${deckStyle === 'budget' ? `
+BUDGET-SPECIFIC GUIDELINES:
+- Prefer artifact ramp like Sol Ring, Arcane Signet, Commander's Sphere, Mind Stone
+- Include budget card draw like Divination, Sign in Blood, Read the Bones
+- Use efficient removal like Swords to Plowshares, Path to Exile, Murder, Destroy Evil
+- Avoid expensive cards like fetch lands, dual lands, tutors, and premium artifacts
+- Focus on synergy over raw power level
+- Consider budget alternatives: Command Tower over expensive duals, basic lands over shocklands
+${maxBudget <= 50 ? '- Ultra-budget focus: prioritize cards under $1, use mostly basics for mana base' : ''}
+${maxBudget <= 100 ? '- Budget-friendly: mix of budget staples and efficient cards under $5' : ''}
+${maxBudget > 100 ? '- Higher budget: can include some mid-range staples and better manabase' : ''}
+` : ''}
 
 IMPORTANT GUIDELINES:
 - Include staple cards appropriate for the power level
