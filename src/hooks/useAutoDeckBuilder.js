@@ -318,6 +318,44 @@ export const useAutoDeckBuilder = () => {
   };
 
   /**
+   * Get archetype-specific prompt guidance for AI generation
+   * @param {Object} archetypeRules - Archetype rules object
+   * @returns {string} - Archetype-specific guidance for AI prompts
+   */
+  const getArchetypePromptGuidance = (archetypeRules) => {
+    const archetype = archetypeRules.deckStyle;
+    
+    const promptGuidance = {
+      budget: `
+BUDGET DECK CONSTRAINTS:
+- Total budget: $${archetypeRules.maxBudget || 100}
+- Max card price: $${archetypeRules.maxCardPrice || 10}
+- Prefer commons/uncommons with high value
+- For lands: Prioritize basic lands, Command Tower, Exotic Orchard
+- MANDATORY: Include exactly 36-38 lands for consistent mana base
+`,
+      competitive: `
+COMPETITIVE DECK OPTIMIZATION:
+- Focus on efficiency and speed
+- Include premium mana base with fetch lands and shock lands
+- Optimize mana curve for early game impact
+- Prioritize tutors, fast mana, and powerful staples
+- MANDATORY: Include exactly 35-38 lands for aggressive strategy
+`,
+      casual: `
+CASUAL DECK GUIDELINES:
+- Focus on fun interactions and theme coherence
+- Include flavorful cards that match commander theme
+- Balance power level for multiplayer games
+- Mix of budget and mid-tier lands for stable gameplay
+- MANDATORY: Include exactly 35-39 lands for stable gameplay
+`
+    };
+    
+    return promptGuidance[archetype] || '';
+  };
+
+  /**
    * Get archetype-specific rules and constraints for deck building
    * @param {string} deckStyle - The desired deck style/strategy
    * @param {Object} options - Additional options like custom budget
@@ -330,7 +368,7 @@ export const useAutoDeckBuilder = () => {
           deckStyle: 'competitive',
           maxBudget: 5000, // Higher budget for competitive
           distribution: {
-            lands: { min: 35, max: 38 },
+            lands: { min: 35, max: 38 }, // Competitive decks run 35-38 lands for aggressive strategy
             ramp: { min: 10, max: 12 },
             draw: { min: 10, max: 15 },
             removal: { min: 8, max: 12 },
@@ -339,7 +377,14 @@ export const useAutoDeckBuilder = () => {
           },
           powerLevel: 'high',
           prioritizeEfficiency: true,
-          includeReservedList: true
+          includeReservedList: true,
+          landPools: {
+            // Include fetch lands, shock lands, premium duals for competitive
+            utility: ['Command Tower', 'Exotic Orchard', 'City of Brass', 'Mana Confluence'],
+            premium: ['Scalding Tarn', 'Polluted Delta', 'Windswept Heath', 'Bloodstained Mire'],
+            shocklands: ['Steam Vents', 'Hallowed Fountain', 'Blood Crypt', 'Stomping Ground'],
+            basics: ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
+          }
         };
 
       case 'casual':
@@ -347,7 +392,7 @@ export const useAutoDeckBuilder = () => {
           deckStyle: 'casual',
           maxBudget: 1000, // Moderate budget for casual
           distribution: {
-            lands: { min: 36, max: 38 },
+            lands: { min: 35, max: 39 }, // Updated to match implementation guide
             ramp: { min: 8, max: 10 },
             draw: { min: 8, max: 12 },
             removal: { min: 6, max: 10 },
@@ -356,7 +401,13 @@ export const useAutoDeckBuilder = () => {
           },
           powerLevel: 'medium',
           prioritizeEfficiency: false,
-          includeReservedList: false
+          includeReservedList: false,
+          landPools: {
+            // Mix of budget and mid-tier lands for casual play
+            utility: ['Command Tower', 'Exotic Orchard', 'Reflecting Pool'],
+            midTier: ['Temple of Enlightenment', 'Selesnya Sanctuary', 'Azorius Chancery'],
+            basics: ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
+          }
         };
 
       case 'budget':
@@ -384,6 +435,12 @@ export const useAutoDeckBuilder = () => {
             lands: customBudget <= 50 ? 'basic' : customBudget <= 100 ? 'budget' : 'efficient', // Prefer basic lands for ultra-budget
             ramp: 'artifacts', // Prefer artifact ramp
             protection: 'targeted' // Prefer targeted protection over expensive global effects
+          },
+          landPools: {
+            // Focus on basic lands and budget utility lands
+            utility: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds'],
+            budget: ['Guildgate', 'Tap Land', 'Bounce Land'],
+            basics: ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
           }
         };
 
@@ -2265,6 +2322,9 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
       'Prioritize efficient, low-cost spells and powerful staples.' : 
       'Focus on synergy and theme over raw efficiency.';
 
+    // Get archetype-specific guidance
+    const archetypeGuidance = getArchetypePromptGuidance(archetypeRules);
+
     const prompt = `You are an expert Magic: The Gathering deck builder specialized in Commander format.
 
 Build a complete 99-card Commander deck optimized for SPEED and broad synergy:
@@ -2289,44 +2349,32 @@ CRITICAL COLOR IDENTITY RULES:
 
 SPEED PRIORITY: Generate functional deck quickly. Focus on:
 - Strong synergies with commander abilities
-- Proper mana base foundation${deckStyle === 'budget' && maxBudget <= 100 ? ' (emphasize basic lands and budget duals)' : ''}
+- Proper mana base foundation
 - Essential staples for the archetype
 - ${distributionRequirements}
 - ${powerLevelConstraint}
 - ${budgetConstraint}
 - ${efficiencyNote}
 
-${deckStyle === 'budget' ? `
-BUDGET-SPECIFIC GUIDELINES:
-- Prefer artifact ramp like Sol Ring, Arcane Signet, Commander's Sphere, Mind Stone
-- Include budget card draw like Divination, Sign in Blood, Read the Bones
-- Use efficient removal like Swords to Plowshares, Path to Exile, Murder, Destroy Evil
-- Avoid expensive cards like fetch lands, dual lands, tutors, and premium artifacts
-- Focus on synergy over raw power level
-- Consider budget alternatives: Command Tower over expensive duals, basic lands over shocklands
-${maxBudget <= 50 ? '- Ultra-budget focus: prioritize cards under $1, use mostly basics for mana base' : ''}
-${maxBudget <= 100 ? '- Budget-friendly: mix of budget staples and efficient cards under $5' : ''}
-${maxBudget > 100 ? '- Higher budget: can include some mid-range staples and better manabase' : ''}
-` : ''}
+${archetypeGuidance}
 
 MANDATORY CARD DISTRIBUTION - MUST BE FOLLOWED EXACTLY:
 ${Object.entries(distribution)
   .map(([category, { min, max }]) => `- ${category.toUpperCase()}: EXACTLY ${min}-${max} cards ${category === 'lands' ? '(CRITICAL: Proper mana base is essential!)' : ''}`)
   .join('\n')}
 
-${deckStyle === 'budget' ? `
-BUDGET MANA BASE REQUIREMENTS (CRITICAL):
+MANA BASE REQUIREMENTS (CRITICAL):
 - Must include ${distribution.lands.min}-${distribution.lands.max} lands total
 - For ${commander.color_identity?.length || 0}-color commander:
   ${commander.color_identity?.length === 0 ? '• Use Wastes for colorless mana' : ''}
   ${commander.color_identity?.length === 1 ? `• Use ${Math.floor(distribution.lands.min * 0.6)} basic lands of your color` : ''}
-  ${commander.color_identity?.length === 2 ? `• Use ${Math.floor(distribution.lands.min * 0.4)} basics + budget duals` : ''}
-  ${commander.color_identity?.length >= 3 ? `• Use ${Math.floor(distribution.lands.min * 0.3)} basics + budget multilands` : ''}
-  • Always include: Command Tower, Exotic Orchard (if multicolor)
-  • Budget options: Terramorphic Expanse, Evolving Wilds, Myriad Landscape
-  • Avoid expensive lands: fetch lands, shock lands, original duals
+  ${commander.color_identity?.length === 2 ? `• Use ${Math.floor(distribution.lands.min * 0.4)} basics + appropriate duals` : ''}
+  ${commander.color_identity?.length >= 3 ? `• Use ${Math.floor(distribution.lands.min * 0.3)} basics + multicolor lands` : ''}
+  • Always include: Command Tower${commander.color_identity?.length > 1 ? ', Exotic Orchard' : ''}
+  ${deckStyle === 'budget' ? '• Budget options: Terramorphic Expanse, Evolving Wilds, Myriad Landscape' : ''}
+  ${deckStyle === 'competitive' ? '• Premium options: Fetch lands, shock lands, original duals as budget allows' : ''}
+  ${deckStyle === 'casual' ? '• Mix options: Temple lands, bounce lands, some budget duals' : ''}
 - Count your lands carefully - aim for ${distribution.lands.min + 1} lands minimum
-` : ''}
 
 DECK CONSTRUCTION CHECKLIST:
 1. ✓ Include exactly ${distribution.lands.min}-${distribution.lands.max} lands (count them!)

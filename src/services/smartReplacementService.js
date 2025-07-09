@@ -18,17 +18,18 @@ const API_URL = 'https://api.openai.com/v1/chat/completions';
  * @returns {Object} Replacement suggestions with reasoning
  */
 export const generateSmartReplacements = async (problematicCards, commander, currentDeck, archetypeRules = null) => {
-  // Handle land count violations first
+  // Handle land count violations first - now supports all archetypes
   const landViolations = problematicCards.filter(card => 
     card.violation_type === 'land_count' ||
     card.card === 'Insufficient Lands' ||
+    card.card === 'Excessive Lands' ||
     card.reason?.includes('land') || 
     card.violation_reason?.includes('land') || 
     card.category?.toLowerCase().includes('land')
   );
   
-  if (landViolations.length > 0 && archetypeRules?.deckStyle === 'budget') {
-    const landReplacements = await generateBudgetLandReplacements(landViolations, commander, currentDeck, archetypeRules);
+  if (landViolations.length > 0 && archetypeRules) {
+    const landReplacements = await generateArchetypeLandReplacements(landViolations, commander, currentDeck, archetypeRules);
     // If we only have land violations, return land replacements immediately
     if (landViolations.length === problematicCards.length) {
       return landReplacements;
@@ -59,23 +60,57 @@ export const generateSmartReplacements = async (problematicCards, commander, cur
     return formatQuickReplacements(quickReplacements, commander);
   }
 
-  // Build enhanced prompt with budget considerations
-  const budgetGuidance = archetypeRules?.deckStyle === 'budget' ? `
+  // Build enhanced prompt with archetype-specific considerations
+  const getArchetypeGuidance = (archetypeRules) => {
+    if (!archetypeRules) return '';
+    
+    const { deckStyle, maxBudget, maxCardPrice } = archetypeRules;
+    
+    switch (deckStyle) {
+      case 'competitive':
+        return `
+  
+COMPETITIVE DECK CONSTRAINTS:
+- Focus on efficiency and speed for cEDH play
+- Prioritize powerful staples and premium cards
+- For lands: Prefer fetch lands, shock lands, original duals, premium utility lands
+- For spells: Include tutors, fast mana, powerful staples
+- Optimize for early game impact and combo potential`;
+
+      case 'casual':
+        return `
+  
+CASUAL DECK CONSTRAINTS:
+- Balance power level for fun multiplayer games
+- Focus on theme coherence and interesting interactions
+- For lands: Mix of budget and mid-tier lands, avoid overly expensive options
+- For spells: Prioritize synergy and flavor over raw power
+- Avoid oppressive or unfun cards`;
+
+      case 'budget':
+        return `
   
 BUDGET DECK CONSTRAINTS:
-- Total budget: $${archetypeRules.maxBudget || 100}
-- Max card price: $${archetypeRules.maxCardPrice || Math.floor((archetypeRules.maxBudget || 100) * 0.1)}
+- Total budget: $${maxBudget || 100}
+- Max card price: $${maxCardPrice || Math.floor((maxBudget || 100) * 0.1)}
 - Prefer commons/uncommons with high value
 - For lands: Prioritize basic lands, Command Tower, Exotic Orchard, guild gates
 - For spells: Focus on efficient, budget-friendly alternatives
-- Avoid expensive staples like fetch lands, tutors, premium artifacts` : '';
+- Avoid expensive staples like fetch lands, tutors, premium artifacts`;
+
+      default:
+        return '';
+    }
+  };
+  
+  const archetypeGuidance = getArchetypeGuidance(archetypeRules);
 
   const prompt = `REPLACEMENT EXPERT TASK: Generate intelligent replacement suggestions for problematic cards.
 
 Commander: ${commander.name}
 Color Identity: [${commander.color_identity?.join(', ') || 'Colorless'}]
 Commander Strategy: ${getCommanderStrategy(commander)}
-${archetypeRules ? `Deck Style: ${archetypeRules.deckStyle || 'Unknown'}` : ''}${budgetGuidance}
+${archetypeRules ? `Deck Style: ${archetypeRules.deckStyle || 'Unknown'}` : ''}${archetypeGuidance}
 
 Current Deck Context (${currentDeck.length} cards):
 ${JSON.stringify(currentDeck.map(card => ({ 
@@ -99,10 +134,19 @@ REPLACEMENT CRITERIA:
 4. Consider mana curve balance
 5. Prioritize cards that enhance commander strategy
 ${archetypeRules?.deckStyle === 'budget' ? `6. Must fit within budget constraints (individual cards under $${archetypeRules.maxCardPrice || Math.floor((archetypeRules.maxBudget || 100) * 0.1)})` : ''}
+${archetypeRules?.deckStyle === 'competitive' ? `6. Prioritize efficiency and power level for cEDH play` : ''}
+${archetypeRules?.deckStyle === 'casual' ? `6. Balance power level for fun multiplayer interactions` : ''}
 
-SPECIAL LAND REPLACEMENT LOGIC:
-- For budget decks: Prefer basic lands, Command Tower, Exotic Orchard, guild gates
-- For insufficient lands: Add appropriate basic lands or budget duals
+ARCHETYPE-SPECIFIC LAND REPLACEMENT LOGIC:
+${archetypeRules?.deckStyle === 'competitive' ? `- For competitive decks: Prefer fetch lands, shock lands, original duals, premium utility lands
+- Minimize basics, maximize efficiency and speed
+- Include fast mana sources and premium fixing` : ''}
+${archetypeRules?.deckStyle === 'casual' ? `- For casual decks: Mix of budget and mid-tier lands for stable gameplay
+- Include Temple lands, bounce lands, some basic lands
+- Avoid overly expensive or oppressive lands` : ''}
+${archetypeRules?.deckStyle === 'budget' ? `- For budget decks: Prefer basic lands, Command Tower, Exotic Orchard, guild gates
+- Avoid expensive lands like fetch lands, shock lands, original duals` : ''}
+- For insufficient lands: Add appropriate lands based on archetype and color identity
 - For excessive lands: Remove utility lands, keep essential mana sources
 - Consider color fixing needs based on commander's color identity
 
@@ -214,9 +258,9 @@ RESPONSE FORMAT (JSON only):
  * @param {Object} archetypeRules - Archetype rules
  * @returns {Object} Land replacement suggestions
  */
-const generateBudgetLandReplacements = async (landViolations, commander, currentDeck, archetypeRules) => {
+const generateArchetypeLandReplacements = async (landViolations, commander, currentDeck, archetypeRules) => {
   const colorIdentity = commander.color_identity || [];
-  const budget = archetypeRules.maxBudget || 100;
+  const archetype = archetypeRules.deckStyle || 'budget';
   const currentLandCount = currentDeck.filter(card => {
     const category = card.category?.toLowerCase() || '';
     const typeLine = card.type_line?.toLowerCase() || '';
@@ -227,6 +271,7 @@ const generateBudgetLandReplacements = async (landViolations, commander, current
   }).length;
   
   const targetLandCount = archetypeRules.distribution?.lands?.min || 36;
+  const maxLandCount = archetypeRules.distribution?.lands?.max || 38;
   const replacements = [];
   
   for (const violation of landViolations) {
@@ -236,33 +281,44 @@ const generateBudgetLandReplacements = async (landViolations, commander, current
                                 violation.reason?.includes('needs') ||
                                 violation.reason?.includes('Insufficient');
     
+    const isExcessiveLands = violation.card === 'Excessive Lands' ||
+                            violation.reason?.includes('at most') ||
+                            violation.reason?.includes('too many') ||
+                            violation.reason?.includes('excessive');
+    
     if (isInsufficientLands) {
       // Calculate how many lands we need to add
       const landsNeeded = targetLandCount - currentLandCount;
       console.log(`Land violation: Need ${landsNeeded} more lands (current: ${currentLandCount}, target: ${targetLandCount})`);
       
       if (landsNeeded > 0) {
-        // Generate the exact number of lands needed
-        const neededLands = getBudgetLandSuggestions(commander, archetypeRules, landsNeeded);
+        // Generate the exact number of lands needed based on archetype
+        const neededLands = getArchetypeLandSuggestions(commander, archetypeRules, landsNeeded);
+        
+        const archetypeDescription = {
+          budget: `budget-friendly lands under $${archetypeRules.maxBudget || 100} budget`,
+          competitive: `premium lands for competitive play`,
+          casual: `balanced lands for casual multiplayer`
+        };
         
         replacements.push({
           original_card: violation.card || 'Insufficient Lands',
           suggested_cards: neededLands.map((landName, index) => ({
             name: landName,
-            reason: `Budget-friendly land ${index + 1}/${landsNeeded} for ${colorIdentity.length > 1 ? 'multicolor' : 'monocolor'} mana base under $${budget} budget`,
-            synergy_score: 8,
+            reason: `${archetype} land ${index + 1}/${landsNeeded} for ${colorIdentity.length > 1 ? 'multicolor' : 'monocolor'} mana base - ${archetypeDescription[archetype]}`,
+            synergy_score: archetype === 'competitive' ? 9 : archetype === 'casual' ? 7 : 8,
             category: 'Lands',
             cmc: 0,
             quantity: 1
           })),
-          replacement_reasoning: `Adding ${landsNeeded} budget-conscious lands to reach proper land count for ${colorIdentity.length}-color deck`,
+          replacement_reasoning: `Adding ${landsNeeded} ${archetype}-appropriate lands to reach proper land count for ${colorIdentity.length}-color deck`,
           replacement_type: 'add_lands',
           lands_to_add: landsNeeded
         });
       }
-    } else {
+    } else if (isExcessiveLands) {
       // Remove excessive lands - suggest removing utility lands first
-      const excessLands = currentLandCount - (archetypeRules.distribution?.lands?.max || 38);
+      const excessLands = currentLandCount - maxLandCount;
       
       replacements.push({
         original_card: violation.card || 'Excessive Lands',
@@ -281,55 +337,44 @@ const generateBudgetLandReplacements = async (landViolations, commander, current
     }
   }
   
-  return {
-    replacements,
-    deck_analysis: {
+  const archetypeAnalysis = {
+    budget: {
       mana_curve_impact: 'Improved mana consistency within budget constraints',
-      strategy_coherence: 'Enhanced mana base supports commander strategy',
+      strategy_coherence: 'Enhanced budget mana base supports commander strategy',
       power_level: 'Optimized for budget deck performance'
     },
-    source: 'budget_land_replacement'
+    competitive: {
+      mana_curve_impact: 'Optimized mana consistency for aggressive strategy',
+      strategy_coherence: 'Premium mana base enables competitive play',
+      power_level: 'High-powered mana base for cEDH performance'
+    },
+    casual: {
+      mana_curve_impact: 'Stable mana consistency for multiplayer games',
+      strategy_coherence: 'Balanced mana base supports fun interactions',
+      power_level: 'Moderate power level appropriate for casual play'
+    }
+  };
+  
+  return {
+    replacements,
+    deck_analysis: archetypeAnalysis[archetype] || archetypeAnalysis.budget,
+    source: `${archetype}_land_replacement`
   };
 };
 
 /**
- * Get budget-friendly land suggestions based on commander and budget
+ * Get archetype-appropriate land suggestions based on commander and deck style
  * @param {Object} commander - Commander card object
  * @param {Object} archetypeRules - Archetype rules
  * @param {number} count - Number of suggestions needed
  * @returns {Array} Array of land names
  */
-const getBudgetLandSuggestions = (commander, archetypeRules, count = 1) => {
+const getArchetypeLandSuggestions = (commander, archetypeRules, count = 1) => {
   const colorIdentity = commander.color_identity || [];
+  const archetype = archetypeRules.deckStyle || 'budget';
   const budget = archetypeRules.maxBudget || 100;
+  const landPools = archetypeRules.landPools || {};
   const suggestions = [];
-  
-  // Define land pools for different budget levels
-  const landPools = {
-    ultraBudget: { // $50 or less
-      0: ['Wastes'], // Colorless
-      1: ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'], // Single color
-      2: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds'], // Two color
-      3: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape'] // Three+ color
-    },
-    budget: { // $51-100
-      0: ['Wastes'],
-      1: ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Terramorphic Expanse', 'Evolving Wilds'],
-      2: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape'],
-      3: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape', 'Ash Barrens']
-    },
-    higherBudget: { // $101+
-      0: ['Wastes'],
-      1: ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape'],
-      2: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape', 'Reflecting Pool'],
-      3: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape', 'Reflecting Pool', 'Unclaimed Territory']
-    }
-  };
-  
-  // Get appropriate land pool
-  const budgetCategory = budget <= 50 ? 'ultraBudget' : budget <= 100 ? 'budget' : 'higherBudget';
-  const colorCount = Math.min(3, colorIdentity.length);
-  const landPool = landPools[budgetCategory][colorCount];
   
   // Get basic lands for this commander
   const basicLands = [];
@@ -345,39 +390,93 @@ const getBudgetLandSuggestions = (commander, archetypeRules, count = 1) => {
     basicLands.push('Wastes');
   }
   
-  // Fill suggestions based on budget strategy
-  for (let i = 0; i < count; i++) {
-    if (budget <= 50) {
-      // Ultra-budget: Mostly basic lands
-      if (i < Math.floor(count * 0.8)) {
-        // 80% basic lands
-        suggestions.push(basicLands[i % basicLands.length]);
-      } else {
-        // 20% utility lands
-        const utilityLands = landPool.filter(land => !basicLands.includes(land));
-        suggestions.push(utilityLands[i % utilityLands.length] || 'Command Tower');
+  // Define archetype-specific land generation strategies
+  switch (archetype) {
+    case 'competitive':
+      // Competitive: Premium lands, minimal basics
+      const competitiveLands = [
+        ...(landPools.utility || ['Command Tower', 'City of Brass', 'Mana Confluence']),
+        ...(landPools.premium || ['Scalding Tarn', 'Polluted Delta', 'Windswept Heath']),
+        ...(landPools.shocklands || ['Steam Vents', 'Hallowed Fountain', 'Blood Crypt']),
+        ...basicLands
+      ];
+      
+      for (let i = 0; i < count; i++) {
+        if (i < Math.floor(count * 0.2)) {
+          // 20% basic lands for consistency
+          suggestions.push(basicLands[i % basicLands.length]);
+        } else {
+          // 80% premium/utility lands
+          const premiumLands = competitiveLands.filter(land => !basicLands.includes(land));
+          suggestions.push(premiumLands[i % premiumLands.length] || 'Command Tower');
+        }
       }
-    } else if (budget <= 100) {
-      // Budget: Mix of basics and utility
-      if (i < Math.floor(count * 0.6)) {
-        // 60% basic lands
-        suggestions.push(basicLands[i % basicLands.length]);
-      } else {
-        // 40% utility lands
-        const utilityLands = landPool.filter(land => !basicLands.includes(land));
-        suggestions.push(utilityLands[i % utilityLands.length] || 'Command Tower');
+      break;
+      
+    case 'casual':
+      // Casual: Mix of budget and mid-tier lands
+      const casualLands = [
+        ...(landPools.utility || ['Command Tower', 'Exotic Orchard', 'Reflecting Pool']),
+        ...(landPools.midTier || ['Temple of Enlightenment', 'Selesnya Sanctuary', 'Azorius Chancery']),
+        ...basicLands
+      ];
+      
+      for (let i = 0; i < count; i++) {
+        if (i < Math.floor(count * 0.5)) {
+          // 50% basic lands for stability
+          suggestions.push(basicLands[i % basicLands.length]);
+        } else {
+          // 50% utility/mid-tier lands
+          const utilityLands = casualLands.filter(land => !basicLands.includes(land));
+          suggestions.push(utilityLands[i % utilityLands.length] || 'Exotic Orchard');
+        }
       }
-    } else {
-      // Higher budget: More utility lands
-      if (i < Math.floor(count * 0.4)) {
-        // 40% basic lands
-        suggestions.push(basicLands[i % basicLands.length]);
-      } else {
-        // 60% utility lands
-        const utilityLands = landPool.filter(land => !basicLands.includes(land));
-        suggestions.push(utilityLands[i % utilityLands.length] || 'Command Tower');
+      break;
+      
+    case 'budget':
+    default:
+      // Budget: Mostly basics with budget utility lands
+      const budgetLands = [
+        ...(landPools.utility || ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse']),
+        ...(landPools.budget || ['Guildgate', 'Evolving Wilds']),
+        ...basicLands
+      ];
+      
+      // Budget strategy depends on budget level
+      for (let i = 0; i < count; i++) {
+        if (budget <= 50) {
+          // Ultra-budget: Mostly basic lands
+          if (i < Math.floor(count * 0.8)) {
+            // 80% basic lands
+            suggestions.push(basicLands[i % basicLands.length]);
+          } else {
+            // 20% utility lands
+            const utilityLands = budgetLands.filter(land => !basicLands.includes(land));
+            suggestions.push(utilityLands[i % utilityLands.length] || 'Command Tower');
+          }
+        } else if (budget <= 100) {
+          // Budget: Mix of basics and utility
+          if (i < Math.floor(count * 0.6)) {
+            // 60% basic lands
+            suggestions.push(basicLands[i % basicLands.length]);
+          } else {
+            // 40% utility lands
+            const utilityLands = budgetLands.filter(land => !basicLands.includes(land));
+            suggestions.push(utilityLands[i % utilityLands.length] || 'Command Tower');
+          }
+        } else {
+          // Higher budget: More utility lands
+          if (i < Math.floor(count * 0.4)) {
+            // 40% basic lands
+            suggestions.push(basicLands[i % basicLands.length]);
+          } else {
+            // 60% utility lands
+            const utilityLands = budgetLands.filter(land => !basicLands.includes(land));
+            suggestions.push(utilityLands[i % utilityLands.length] || 'Command Tower');
+          }
+        }
       }
-    }
+      break;
   }
   
   return suggestions;
@@ -396,7 +495,7 @@ const getBudgetCategoryFallbacks = (category, colorIdentity, archetypeRules) => 
   
   switch (category?.toLowerCase()) {
     case 'lands':
-      return getBudgetLandSuggestions({ color_identity: colorIdentity }, archetypeRules, 5);
+      return getArchetypeLandSuggestions({ color_identity: colorIdentity }, archetypeRules, 5);
     
     case 'ramp':
       fallbacks.push('Sol Ring', 'Arcane Signet', 'Commander\'s Sphere', 'Mind Stone', 'Worn Powerstone');

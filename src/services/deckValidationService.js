@@ -51,20 +51,55 @@ export const validateDeckWithAI = async (cardList, commander, archetypeRules = n
     return formattedResult;
   }
 
-  // Build enhanced prompt that includes land count validation
-  const landCountGuidance = archetypeRules?.deckStyle === 'budget' ? `
-  
+  // Build enhanced prompt that includes archetype-aware land count validation
+  const getArchetypeLandGuidance = (archetypeRules) => {
+    if (!archetypeRules) {
+      return `
+5. Land Count Validation: Ensure adequate land base (typically 36-38 lands)`;
+    }
+    
+    const { deckStyle, distribution, maxBudget, landPools } = archetypeRules;
+    const landRange = `${distribution?.lands?.min || 36}-${distribution?.lands?.max || 38}`;
+    
+    switch (deckStyle) {
+      case 'competitive':
+        return `
+5. Land Count Validation: Ensure optimized land distribution for competitive play
+   - Target land count: ${landRange} lands (aggressive strategy)
+   - Focus on speed and efficiency
+   - Prefer premium mana base options:
+     * Fetch lands, shock lands, original duals
+     * Command Tower, City of Brass, Mana Confluence
+     * Fast lands and pain lands for early game
+   - Avoid slow lands like gates and bounce lands`;
+     
+      case 'casual':
+        return `
+5. Land Count Validation: Ensure stable land distribution for casual multiplayer
+   - Target land count: ${landRange} lands (stable gameplay)
+   - Balance power level for fun interactions
+   - Mix of budget and mid-tier lands:
+     * Command Tower, Exotic Orchard, Reflecting Pool
+     * Temple lands, bounce lands for card advantage
+     * Some basic lands for consistency
+   - Avoid overly expensive or oppressive lands`;
+     
+      case 'budget':
+      default:
+        return `
 5. Land Count Validation: Ensure proper land distribution for budget decks
-   - Target land count: ${archetypeRules?.distribution?.lands?.min || 36}-${archetypeRules?.distribution?.lands?.max || 38} lands
-   - Budget constraint: $${archetypeRules?.maxBudget || 100} total budget
-   - Prefer basic lands and budget-friendly options like:
+   - Target land count: ${landRange} lands
+   - Budget constraint: $${maxBudget || 100} total budget
+   - Prefer basic lands and budget-friendly options:
      * Basic lands (Plains, Island, Swamp, Mountain, Forest)
      * Command Tower, Exotic Orchard, Terramorphic Expanse
      * Evolving Wilds, Myriad Landscape
      * Guild gates and common dual lands
-   - Avoid expensive lands like fetch lands, shock lands, original duals` : `
-   
-5. Land Count Validation: Ensure adequate land base (typically 36-38 lands)`;
+   - Avoid expensive lands like fetch lands, shock lands, original duals`;
+    }
+  };
+  
+  const landCountGuidance = getArchetypeLandGuidance(archetypeRules);
 
   const prompt = `VALIDATION EXPERT TASK: Scan this Commander deck for critical violations.
 
@@ -259,34 +294,69 @@ const getLandCount = (cardList) => {
 };
 
 /**
- * Get a budget-friendly land suggestion based on commander colors
+ * Get archetype-appropriate land suggestion based on commander colors and deck style
  * @param {Object} commander - Commander card object
  * @param {Object} archetypeRules - Archetype rules
  * @returns {string} Suggested land name
  */
 const getBudgetLandSuggestion = (commander, archetypeRules) => {
   const colorIdentity = commander.color_identity || [];
+  const archetype = archetypeRules?.deckStyle || 'budget';
   const budget = archetypeRules?.maxBudget || 100;
   
-  // For ultra-budget decks, prefer basic lands
-  if (budget <= 50) {
-    if (colorIdentity.length === 0) return 'Wastes';
-    if (colorIdentity.length === 1) {
-      const colorToLand = { 'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G': 'Forest' };
-      return colorToLand[colorIdentity[0]] || 'Plains';
-    }
-    return 'Command Tower';
-  }
+  // Get archetype-specific land pools
+  const landPools = archetypeRules?.landPools || {};
   
-  // For moderate budget decks, suggest budget-friendly utility lands
-  if (budget <= 100) {
-    if (colorIdentity.length <= 1) return 'Terramorphic Expanse';
-    if (colorIdentity.length >= 2) return 'Exotic Orchard';
-    return 'Evolving Wilds';
+  switch (archetype) {
+    case 'competitive':
+      // Competitive decks prefer premium lands
+      if (colorIdentity.length === 0) return 'Wastes';
+      if (colorIdentity.length === 1) {
+        const colorToLand = { 'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G': 'Forest' };
+        return colorToLand[colorIdentity[0]] || 'Plains';
+      }
+      // Suggest premium utility lands for multicolor
+      if (landPools.utility?.length > 0) {
+        return landPools.utility[0]; // Command Tower, City of Brass, etc.
+      }
+      return 'Command Tower';
+      
+    case 'casual':
+      // Casual decks prefer mid-tier lands
+      if (colorIdentity.length === 0) return 'Wastes';
+      if (colorIdentity.length === 1) {
+        const colorToLand = { 'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G': 'Forest' };
+        return colorToLand[colorIdentity[0]] || 'Plains';
+      }
+      // Suggest mid-tier utility lands for multicolor
+      if (landPools.utility?.length > 0) {
+        return landPools.utility[0]; // Command Tower, Exotic Orchard, etc.
+      }
+      return 'Exotic Orchard';
+      
+    case 'budget':
+    default:
+      // Budget decks prioritize cost-effective lands
+      // For ultra-budget decks, prefer basic lands
+      if (budget <= 50) {
+        if (colorIdentity.length === 0) return 'Wastes';
+        if (colorIdentity.length === 1) {
+          const colorToLand = { 'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G': 'Forest' };
+          return colorToLand[colorIdentity[0]] || 'Plains';
+        }
+        return 'Command Tower';
+      }
+      
+      // For moderate budget decks, suggest budget-friendly utility lands
+      if (budget <= 100) {
+        if (colorIdentity.length <= 1) return 'Terramorphic Expanse';
+        if (colorIdentity.length >= 2) return 'Exotic Orchard';
+        return 'Evolving Wilds';
+      }
+      
+      // For higher budget decks, suggest efficient budget lands
+      return 'Myriad Landscape';
   }
-  
-  // For higher budget decks, suggest efficient budget lands
-  return 'Myriad Landscape';
 };
 
 /**

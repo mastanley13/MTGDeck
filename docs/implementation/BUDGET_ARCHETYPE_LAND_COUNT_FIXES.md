@@ -256,12 +256,12 @@ const archetypeRules = {
   },
   competitive: {
     distribution: {
-      lands: { min: 32, max: 35 }  // Competitive decks run fewer lands
+      lands: { min: 35, max: 38 }  // Competitive decks now run 35-38 lands
     }
   },
   casual: {
     distribution: {
-      lands: { min: 35, max: 39 }  // Casual decks can vary more
+      lands: { min: 35, max: 39 }  // Casual decks now run 35-39 lands
     }
   }
 };
@@ -355,7 +355,7 @@ COMPETITIVE DECK OPTIMIZATION:
 - Focus on efficiency and speed
 - Include premium mana base with fetch lands
 - Optimize mana curve for early game impact
-- MANDATORY: Include exactly 32-35 lands for aggressive strategy
+- MANDATORY: Include exactly 35-38 lands for aggressive strategy
 `,
     casual: `
 CASUAL DECK GUIDELINES:
@@ -386,7 +386,7 @@ const testCases = [
   {
     name: 'Competitive Deck Land Count',
     archetype: 'competitive',
-    expectedLandCount: { min: 32, max: 35 },
+    expectedLandCount: { min: 35, max: 38 },
     testFunction: validateCompetitiveLandCount
   },
   {
@@ -423,7 +423,7 @@ const validateArchetypeLandCount = (deck, archetype, expectedRange) => {
 - [ ] Test API rate limiting and CORS
 
 ### For Competitive Archetype Implementation
-- [ ] Define competitive land distribution (32-35 lands)
+- [ ] Define competitive land distribution (35-38 lands)
 - [ ] Update validation service with competitive rules
 - [ ] Enhance smart replacement for premium lands
 - [ ] Update AI prompts for competitive optimization
