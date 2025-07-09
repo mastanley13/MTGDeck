@@ -55,7 +55,7 @@ const Legal = () => {
                 <h3 className="text-xl font-semibold text-primary-400 mb-4">3. Purpose of Use</h3>
                 <div className="text-slate-300 space-y-3">
                   <p>Content on AI Deck Tutor is provided <strong>solely for educational, informational, and non‑commercial community purposes</strong>: helping players build, analyse, and enjoy Magic: The Gathering™ decks.</p>
-                  <p>No portion of this site is intended to infringe upon or dilute any intellectual‑property rights. If you are a rights holder and believe your work is used improperly, contact us at <strong>legal@aidecktutor.com</strong> for prompt resolution.</p>
+                  <p>No portion of this site is intended to infringe upon or dilute any intellectual‑property rights. If you are a rights holder and believe your work is used improperly, contact us at <strong>support@aidecktutor.com</strong> for prompt resolution.</p>
                 </div>
               </section>
 
@@ -85,7 +85,7 @@ const Legal = () => {
 
             <div className="mt-12 pt-8 border-t border-slate-700/50 text-center">
               <p className="text-slate-400">
-                By using AI Deck Tutor you agree to these terms. Questions? <strong>legal@aidecktutor.com</strong>
+                By using AI Deck Tutor you agree to these terms. Questions? <strong>support@aidecktutor.com</strong>
               </p>
             </div>
           </div>
