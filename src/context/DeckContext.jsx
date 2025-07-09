@@ -40,12 +40,114 @@ const minimizeCardDataForKeySaving = (card) => {
   };
 };
 
+// Helper function to rehydrate multiple cards in batches with progressive loading
+const rehydrateCardsBatch = async (minimizedCards, progressCallback = null) => {
+  if (!minimizedCards || minimizedCards.length === 0) return [];
+
+  const results = [];
+  const toFetch = [];
+  
+  // First pass: check cache and create immediate fallbacks for missing cards
+  for (let i = 0; i < minimizedCards.length; i++) {
+    const minimizedCard = minimizedCards[i];
+    if (!minimizedCard || !minimizedCard.i) {
+      results.push(null);
+      continue;
+    }
+
+    const cachedCard = getCachedCard(minimizedCard.i);
+    if (cachedCard) {
+      // Use cached data
+      results.push({
+        ...cachedCard,
+        quantity: minimizedCard.q,
+        customCategory: minimizedCard.ct,
+        id: cachedCard.id || minimizedCard.i,
+        name: cachedCard.name || minimizedCard.n,
+        isLoaded: true, // Mark as loaded
+      });
+    } else {
+      // Create fallback card immediately for display
+      const fallbackCard = createFallbackCard(minimizedCard);
+      fallbackCard.isLoaded = false; // Mark as not loaded
+      results.push(fallbackCard);
+      
+      // Mark for fetching to replace fallback later
+      toFetch.push({ index: i, minimizedCard });
+    }
+  }
+
+  // If we have a progress callback, call it with initial results
+  if (progressCallback) {
+    progressCallback([...results.filter(card => card !== null)]);
+  }
+
+  // Second pass: fetch missing cards in parallel and update results progressively
+  if (toFetch.length > 0) {
+    // Process in smaller batches to show progress more frequently
+    const batchSize = 5;
+    const batches = [];
+    for (let i = 0; i < toFetch.length; i += batchSize) {
+      batches.push(toFetch.slice(i, i + batchSize));
+    }
+
+    for (const batch of batches) {
+      const fetchPromises = batch.map(async ({ index, minimizedCard }) => {
+        try {
+          const fullCardData = await getCardById(minimizedCard.i);
+          if (fullCardData) {
+            cacheCard(fullCardData);
+            return {
+              index,
+              card: {
+                ...fullCardData,
+                quantity: minimizedCard.q,
+                customCategory: minimizedCard.ct,
+                id: fullCardData.id || minimizedCard.i,
+                name: fullCardData.name || minimizedCard.n,
+                isLoaded: true, // Mark as loaded
+              }
+            };
+          }
+        } catch (error) {
+          console.error(`Error fetching card ${minimizedCard.i} (${minimizedCard.n}):`, error);
+        }
+        
+        // Keep the fallback card on error (don't replace it)
+        return null;
+      });
+
+      // Wait for this batch to complete
+      const batchResults = await Promise.all(fetchPromises);
+      
+      // Update results with successfully fetched cards IN PLACE
+      let hasUpdates = false;
+      batchResults.forEach((result) => {
+        if (result && result.card) {
+          // Update the card in place instead of replacing the entire array
+          results[result.index] = result.card;
+          hasUpdates = true;
+        }
+      });
+
+      // Call progress callback with updated results only if we have updates
+      if (hasUpdates && progressCallback) {
+        progressCallback([...results.filter(card => card !== null)]);
+      }
+    }
+  }
+
+  return results.filter(card => card !== null);
+};
+
 // Helper function to rehydrate a minimized card to a fuller object
 const rehydrateCard = async (minimizedCard) => {
   if (!minimizedCard || !minimizedCard.i) return null;
 
+  // First try to get from cache
   let fullCardData = getCachedCard(minimizedCard.i);
 
+  // If not in cache, fetch from Scryfall
   if (!fullCardData) {
     try {
       // console.log(`Rehydrating card ${minimizedCard.n} (ID: ${minimizedCard.i}) from Scryfall`);
@@ -54,35 +156,17 @@ const rehydrateCard = async (minimizedCard) => {
         cacheCard(fullCardData); // Cache it for future use
       }
     } catch (error) {
-      console.error(`Error fetching card ${minimizedCard.i} from Scryfall:`, error);
-      // Return a card object with at least the minimized data so the app doesn't break
-      return {
-        id: minimizedCard.i,
-        name: minimizedCard.n,
-        type_line: minimizedCard.t,
-        cmc: minimizedCard.c,
-        quantity: minimizedCard.q,
-        customCategory: minimizedCard.ct, // Preserve category
-        image_uris: { small: '', normal: '', art_crop: '' }, // Placeholder
-        mana_cost: '',
-        color_identity: [],
-        // Add other essential fields with default values if necessary
-      };
+      console.error(`Error fetching card ${minimizedCard.i} (${minimizedCard.n}) from Scryfall:`, error);
+      
+      // Create a fallback card object with the minimized data
+      // This ensures the app continues to function even if Scryfall API is unavailable
+      return createFallbackCard(minimizedCard);
     }
   }
 
-  if (!fullCardData) { // Still no data after fetch attempt
-     return {
-        id: minimizedCard.i,
-        name: minimizedCard.n,
-        type_line: minimizedCard.t,
-        cmc: minimizedCard.c,
-        quantity: minimizedCard.q,
-        customCategory: minimizedCard.ct,
-        image_uris: { small: '', normal: '', art_crop: '' },
-        mana_cost: '',
-        color_identity: [],
-      };
+  // If still no data after fetch attempt, use fallback
+  if (!fullCardData) {
+    return createFallbackCard(minimizedCard);
   }
   
   // Combine fetched data with quantity and category from minimized data
@@ -93,6 +177,48 @@ const rehydrateCard = async (minimizedCard) => {
     // Ensure essential fields like id and name are prioritized from fullCardData if different
     id: fullCardData.id || minimizedCard.i,
     name: fullCardData.name || minimizedCard.n,
+  };
+};
+
+// Helper to create a fallback card when API fetch fails
+const createFallbackCard = (minimizedCard) => {
+  // More robust image URL construction - try multiple approaches
+  const constructImageUrls = (cardId) => {
+    if (!cardId) return {};
+    
+    // Try the standard Scryfall format first
+    const baseUrl = `https://cards.scryfall.io`;
+    
+    // For fallback cards, we'll use a more conservative approach
+    // and rely on the getOptimalImageUrl function to handle missing images gracefully
+    return {
+      small: `${baseUrl}/small/front/${cardId}.jpg`,
+      normal: `${baseUrl}/normal/front/${cardId}.jpg`,
+      large: `${baseUrl}/large/front/${cardId}.jpg`,
+      art_crop: `${baseUrl}/art_crop/front/${cardId}.jpg`,
+      // Add a fallback flag so we know this is constructed
+      _isFallback: true
+    };
+  };
+
+  return {
+    id: minimizedCard.i,
+    name: minimizedCard.n,
+    type_line: minimizedCard.t || 'Unknown Type',
+    cmc: minimizedCard.c || 0,
+    quantity: minimizedCard.q || 1,
+    customCategory: minimizedCard.ct, // Preserve category
+    image_uris: constructImageUrls(minimizedCard.i),
+    mana_cost: '',
+    color_identity: [],
+    oracle_text: 'Loading card data...',
+    // Add other essential fields with default values
+    power: null,
+    toughness: null,
+    loyalty: null,
+    legalities: {},
+    isLoaded: false, // Mark as not loaded
+    _isFallbackCard: true, // Flag to identify fallback cards
   };
 };
 
@@ -138,6 +264,8 @@ const Actions = {
   FETCH_USER_DECKS_START: 'FETCH_USER_DECKS_START',
   FETCH_USER_DECKS_SUCCESS: 'FETCH_USER_DECKS_SUCCESS',
   FETCH_USER_DECKS_ERROR: 'FETCH_USER_DECKS_ERROR',
+  UPDATE_DECK_IN_SAVED_DECKS: 'UPDATE_DECK_IN_SAVED_DECKS',
+  PROGRESSIVE_DECK_UPDATE: 'PROGRESSIVE_DECK_UPDATE',
 };
 
 // Create context
@@ -388,6 +516,41 @@ const deckReducer = (state, action) => {
         loading: false,
         error: action.payload,
       };
+    case Actions.UPDATE_DECK_IN_SAVED_DECKS:
+      return {
+        ...state,
+        savedDecks: state.savedDecks.map(deck => 
+          deck.id === action.payload.id ? action.payload : deck
+        )
+      };
+      
+    case Actions.PROGRESSIVE_DECK_UPDATE: {
+      const { deckId, cards, cardCategories, isLoading, loadedCount, totalCount } = action.payload;
+      return {
+        ...state,
+        savedDecks: state.savedDecks.map(deck => {
+          if (deck.id === deckId) {
+            // Only update if there are meaningful changes
+            const hasNewLoadedCards = loadedCount > (deck.loadedCount || 0);
+            const loadingStateChanged = isLoading !== deck.isLoading;
+            
+            if (!hasNewLoadedCards && !loadingStateChanged) {
+              return deck; // Return same reference to prevent unnecessary re-renders
+            }
+            
+            return {
+              ...deck,
+              cards: cards !== undefined ? cards : deck.cards, // Only update if provided
+              cardCategories: cardCategories !== undefined ? cardCategories : deck.cardCategories,
+              isLoading,
+              loadedCount,
+              totalCount,
+            };
+          }
+          return deck;
+        })
+      };
+    }
       
     default:
       return state;
@@ -821,36 +984,26 @@ export const DeckProvider = ({ children }) => {
             
             const rehydratedCommander = parsedDeckGHLData.cmd ? await rehydrateCard(parsedDeckGHLData.cmd) : null;
             
-            const rehydratedMainboard = parsedDeckGHLData.mb && Array.isArray(parsedDeckGHLData.mb) 
-              ? await Promise.all(parsedDeckGHLData.mb.map(card => rehydrateCard(card))) 
+            // Create initial deck with fallback cards for immediate display
+            const fallbackCards = parsedDeckGHLData.mb && Array.isArray(parsedDeckGHLData.mb) 
+              ? parsedDeckGHLData.mb.map(createFallbackCard).filter(card => card !== null)
               : [];
-
-            const validMainboard = rehydratedMainboard.filter(card => card !== null);
             
-            const cardCategories = {};
-            if (rehydratedCommander && rehydratedCommander.customCategory) {
-                cardCategories[rehydratedCommander.id] = rehydratedCommander.customCategory;
-            }
-            validMainboard.forEach(card => {
-                if (card.customCategory) {
-                    cardCategories[card.id] = card.customCategory;
-                }
-            });
-
-            const deckData = {
+            const initialDeck = {
               id: record.id, 
               name: parsedDeckGHLData.adn || (record.properties && record.properties[GHL_SHORT_DECK_NAME_FIELD_KEY]) || 'Untitled Deck',
               description: parsedDeckGHLData.dsc || '', 
               commander: rehydratedCommander,
-              cards: validMainboard,
-              cardCategories: cardCategories,
+              cards: fallbackCards,
+              cardCategories: {},
               lastUpdated: parsedDeckGHLData.ls || record.updatedAt,
+              isLoading: fallbackCards.length > 0, // Only loading if there are cards to load
+              loadedCount: 0, // Start with 0 loaded cards
+              totalCount: fallbackCards.length, // Total cards to load
             };
 
-            // Validate deck structure to fix common issues like commander double-counting
-            const validatedDeckData = validateDeckStructure(deckData);
-
-            return validatedDeckData;
+            // Return initial deck immediately for display
+            return initialDeck;
           } catch (e) {
             console.error(`Error processing GHL deck record ${record.id}: `, e);
             return null;
@@ -858,7 +1011,64 @@ export const DeckProvider = ({ children }) => {
         }));
         
         const validProcessedDecks = processedDecks.filter(deck => deck !== null);
+        
+        // Dispatch initial decks with fallback cards for immediate display
         dispatch({ type: Actions.FETCH_USER_DECKS_SUCCESS, payload: validProcessedDecks });
+
+        // Now start progressive loading of real card data in the background
+        for (const deck of validProcessedDecks) {
+          if (deck.isLoading) {
+            // Find the original record for this deck
+            const originalRecord = successfullyFetchedDecks.find(r => r.id === deck.id);
+            if (originalRecord) {
+              const deckDataString = originalRecord.properties && originalRecord.properties[GHL_SHORT_DECK_DATA_FIELD_KEY];
+              const parsedDeckGHLData = JSON.parse(deckDataString);
+              
+              // Load real card data progressively
+              if (parsedDeckGHLData.mb && Array.isArray(parsedDeckGHLData.mb)) {
+                // Create a closure to maintain deck reference
+                const deckId = deck.id;
+                let lastLoadedCount = 0;
+                
+                rehydrateCardsBatch(parsedDeckGHLData.mb, (updatedCards) => {
+                  // Count loaded cards first
+                  const loadedCount = updatedCards.filter(card => card.isLoaded).length;
+                  
+                  // Update more frequently for better user experience
+                  const hasNewCards = loadedCount > lastLoadedCount;
+                  
+                  if (!hasNewCards) return;
+                  
+                  lastLoadedCount = loadedCount;
+                  const totalCount = updatedCards.length;
+                  const isStillLoading = loadedCount < totalCount;
+
+                  // Create card categories
+                  const cardCategories = {};
+                  updatedCards.forEach(card => {
+                    if (card.customCategory) {
+                      cardCategories[card.id] = card.customCategory;
+                    }
+                  });
+
+                  // Use the new progressive update action
+                  dispatch({
+                    type: Actions.PROGRESSIVE_DECK_UPDATE,
+                    payload: {
+                      deckId,
+                      cards: updatedCards,
+                      cardCategories,
+                      isLoading: isStillLoading,
+                      loadedCount,
+                      totalCount,
+                    }
+                  });
+                                  });
+              }
+            }
+          }
+        }
+
       } else {
         console.warn("No deck records successfully fetched after getting IDs.");
         dispatch({ type: Actions.FETCH_USER_DECKS_SUCCESS, payload: [] });

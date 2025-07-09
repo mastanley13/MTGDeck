@@ -14,6 +14,7 @@ import CardQuantityControls from '../components/deck/edit/CardQuantityControls.j
 import CardSearchPanel from '../components/deck/edit/CardSearchPanel.jsx';
 import UnsavedChangesWarning from '../components/deck/edit/UnsavedChangesWarning.jsx';
 import DeckActionButtons from '../components/ui/DeckActionButtons.jsx';
+import CardLoadingPlaceholder from '../components/ui/ProgressiveCardLoader.jsx';
 
 import { getTotalCardCount, getMainDeckCardCount, validateDeckStructure } from '../utils/deckHelpers.js';
 
@@ -120,8 +121,14 @@ const DeckViewer = () => {
   }, [deckId, savedDecks]); // Removed loadDeck from dependencies to prevent infinite loop
 
   const handleOpenCardDetailModal = (card) => {
-    setSelectedCardForModal(card);
-    setIsCardDetailModalOpen(true);
+    // Only open modal if card is fully loaded (not a fallback card)
+    if (card && !card._isFallbackCard && card.isLoaded !== false) {
+      setSelectedCardForModal(card);
+      setIsCardDetailModalOpen(true);
+    } else {
+      // Optionally show a brief message that the card is still loading
+      console.log('Card is still loading, modal will not open:', card?.name);
+    }
   };
 
   const handleCloseCardDetailModal = () => {
@@ -388,6 +395,8 @@ const DeckViewer = () => {
               </div>
             </div>
             
+
+
             {/* Commander Section */}
             {selectedDeck.commander && (
               <div className="space-y-4 mb-8">
@@ -546,36 +555,39 @@ const DeckViewer = () => {
                                 onClick={() => handleOpenCardDetailModal(card)}
                                 title={card.name}
                               >
-                                {/* Card Image */}
-                                <div className="relative">
-                                  {imageUris ? (
-                                    <img
-                                      src={imageUris.small}
-                                      alt={card.name}
-                                      className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
-                                    />
-                                  ) : (
-                                    <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
-                                      <span className="text-slate-300 text-center text-xs">{card.name}</span>
-                                    </div>
-                                  )}
+                                                        {/* Card Image */}
+                        <div className="relative">
+                          {imageUris ? (
+                            <img
+                              src={imageUris.small}
+                              alt={card.name}
+                              className="rounded-lg shadow-sm w-full block object-cover aspect-[63/88]"
+                            />
+                          ) : (
+                            <div className="bg-slate-800 rounded-lg shadow-sm w-full aspect-[63/88] flex items-center justify-center p-2">
+                              <span className="text-slate-300 text-center text-xs">{card.name}</span>
+                            </div>
+                          )}
 
-                                  {/* Game Changer Badge */}
-                                  {card.game_changer && (
-                                    <div className="absolute top-2 right-2">
-                                      <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
-                                    </div>
-                                  )}
+                          {/* Loading Placeholder Overlay */}
+                          <CardLoadingPlaceholder card={card} />
 
-                                  {/* Edit Controls Overlay */}
-                                  <CardQuantityControls
-                                    card={card}
-                                    isEditMode={isEditMode}
-                                    onUpdateQuantity={handleCardQuantityUpdate}
-                                    onRemoveCard={handleCardRemove}
-                                    maxQuantity={['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'].includes(card.name) ? 99 : 4}
-                                  />
-                                </div>
+                          {/* Game Changer Badge */}
+                          {card.game_changer && (
+                            <div className="absolute top-2 right-2">
+                              <GameChangerTooltip className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-full shadow-lg z-10" />
+                            </div>
+                          )}
+
+                          {/* Edit Controls Overlay */}
+                          <CardQuantityControls
+                            card={card}
+                            isEditMode={isEditMode}
+                            onUpdateQuantity={handleCardQuantityUpdate}
+                            onRemoveCard={handleCardRemove}
+                            maxQuantity={['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'].includes(card.name) ? 99 : 4}
+                          />
+                        </div>
 
                                 {/* Card Name and Quantity */}
                                 <div className="mt-2 flex justify-between items-center">
@@ -623,6 +635,9 @@ const DeckViewer = () => {
                               <span className="text-slate-300 text-center text-xs">{card.name}</span>
                             </div>
                           )}
+                          
+                          {/* Loading Placeholder Overlay */}
+                          <CardLoadingPlaceholder card={card} />
 
                           {/* Game Changer Badge */}
                           {card.game_changer && (

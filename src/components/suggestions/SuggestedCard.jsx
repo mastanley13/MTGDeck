@@ -23,8 +23,12 @@ const SuggestedCard = ({ suggestion }) => {
   
   // Handle opening card details modal
   const handleOpenCardDetailsModal = () => {
-    if (card) {
+    // Only open modal if card is fully loaded (not a fallback card)
+    if (card && !card._isFallbackCard && card.isLoaded !== false) {
       setSelectedCardForDetails(card);
+    } else {
+      // Optionally show a brief message that the card is still loading
+      console.log('Card is still loading, modal will not open:', card?.name);
     }
   };
 

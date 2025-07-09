@@ -3,6 +3,75 @@ import axios from 'axios';
 // Base URL for Scryfall API
 const SCRYFALL_API_BASE_URL = 'https://api.scryfall.com';
 
+// Polyfill for setImmediate if not available
+const setImmediatePolyfill = typeof setImmediate !== 'undefined' ? setImmediate : (fn) => setTimeout(fn, 0);
+
+// Rate limiting implementation - 100 requests per 2 seconds (50 per second)
+const rateLimiter = {
+  queue: [],
+  processing: false,
+  lastRequestTime: 0,
+  minDelay: 20, // 20ms between requests (50 requests per second)
+  requestsInLastWindow: 0,
+  lastWindowStart: 0,
+  maxRequestsPerWindow: 100, // 100 requests
+  windowDuration: 2000, // 2 seconds
+
+  async process() {
+    if (this.processing || this.queue.length === 0) return;
+    
+    this.processing = true;
+    
+    const now = Date.now();
+    
+    // Reset counter if window has passed
+    if (now - this.lastWindowStart >= this.windowDuration) {
+      this.requestsInLastWindow = 0;
+      this.lastWindowStart = now;
+    }
+    
+    // If we've hit the per-window limit, wait until the next window
+    if (this.requestsInLastWindow >= this.maxRequestsPerWindow) {
+      const waitTime = this.windowDuration - (now - this.lastWindowStart);
+      if (waitTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        this.requestsInLastWindow = 0;
+        this.lastWindowStart = Date.now();
+      }
+    }
+    
+    // Calculate delay needed for minimum spacing
+    const timeElapsed = now - this.lastRequestTime;
+    const delay = Math.max(0, this.minDelay - timeElapsed);
+    
+    // Wait if needed
+    if (delay > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    
+    // Process the next request
+    const nextRequest = this.queue.shift();
+    try {
+      this.lastRequestTime = Date.now();
+      this.requestsInLastWindow++;
+      const result = await nextRequest.fn();
+      nextRequest.resolve(result);
+    } catch (error) {
+      nextRequest.reject(error);
+    } finally {
+      this.processing = false;
+      setImmediatePolyfill(() => this.process());
+    }
+  },
+  
+  enqueue(fn) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ fn, resolve, reject });
+      this.process();
+    });
+  }
+};
+
 /**
  * Search for cards based on query parameters
  * @param {string} query - Search query
@@ -27,13 +96,52 @@ export const searchCards = async (query, options = {}) => {
 };
 
 /**
- * Fetch a specific card by its ID
+ * Fetch a specific card by its ID with rate limiting and retry logic
  * @param {string} id - Card ID
  * @returns {Promise} Promise that resolves to card data
  */
 export const getCardById = async (id) => {
-  const response = await axios.get(`${SCRYFALL_API_BASE_URL}/cards/${id}`);
-  return response.data;
+  // Use rate limiter to prevent API rate limit issues
+  return rateLimiter.enqueue(async () => {
+    try {
+      const response = await axios.get(`${SCRYFALL_API_BASE_URL}/cards/${id}`, {
+        timeout: 10000 // 10 second timeout
+      });
+      return response.data;
+    } catch (error) {
+      // Handle specific error types
+      if (error.code === 'ERR_NETWORK') {
+        console.warn(`Network error fetching card ${id} - retrying once`);
+        
+        // Wait a bit longer and retry once
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        try {
+          const retryResponse = await axios.get(`${SCRYFALL_API_BASE_URL}/cards/${id}`, {
+            timeout: 15000 // Longer timeout for retry
+          });
+          return retryResponse.data;
+        } catch (retryError) {
+          console.error(`Failed to fetch card ${id} after retry:`, retryError.message);
+          throw new Error(`Failed to fetch card data after retry: ${retryError.message}`);
+        }
+      }
+      
+      // Handle rate limiting (429)
+      if (error.response && error.response.status === 429) {
+        console.warn('Rate limited by Scryfall API, waiting and retrying');
+        // Wait longer for rate limit reset
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        const retryResponse = await axios.get(`${SCRYFALL_API_BASE_URL}/cards/${id}`);
+        return retryResponse.data;
+      }
+      
+      // Other errors
+      console.error(`Error fetching card ${id} from Scryfall:`, error.message);
+      throw error;
+    }
+  });
 };
 
 /**
@@ -364,19 +472,35 @@ export const getCardImageUris = (card) => {
 
     // Fallback URL generation for cards with IDs but no image_uris
     if (card.id) {
+      // Use scryfall.io domain for images
+      const imageBaseUrl = 'https://cards.scryfall.io';
+      
+      // Format the ID for URL construction
+      const cardId = card.id;
+      
+      // Create a more robust URL structure
       return {
-        small: `https://cards.scryfall.io/small/front/${card.id}.jpg`,
-        normal: `https://cards.scryfall.io/normal/front/${card.id}.jpg`,
-        large: `https://cards.scryfall.io/large/front/${card.id}.jpg`,
-        png: `https://cards.scryfall.io/png/front/${card.id}.png`,
-        art_crop: `https://cards.scryfall.io/art_crop/front/${card.id}.jpg`,
-        border_crop: `https://cards.scryfall.io/border_crop/front/${card.id}.jpg`
+        small: `${imageBaseUrl}/small/front/${cardId}.jpg`,
+        normal: `${imageBaseUrl}/normal/front/${cardId}.jpg`,
+        large: `${imageBaseUrl}/large/front/${cardId}.jpg`,
+        png: `${imageBaseUrl}/png/front/${cardId}.png`,
+        art_crop: `${imageBaseUrl}/art_crop/front/${cardId}.jpg`,
+        border_crop: `${imageBaseUrl}/border_crop/front/${cardId}.jpg`
       };
     }
 
     return null;
   } catch (error) {
     console.error('getCardImageUris: Error processing card image URIs:', error);
+    
+    // Attempt to provide a minimal fallback if we have an ID
+    if (card && card.id) {
+      return {
+        normal: `https://cards.scryfall.io/normal/front/${card.id}.jpg`,
+        small: `https://cards.scryfall.io/small/front/${card.id}.jpg`
+      };
+    }
+    
     return null;
   }
 };

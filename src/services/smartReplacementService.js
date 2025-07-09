@@ -14,9 +14,27 @@ const API_URL = 'https://api.openai.com/v1/chat/completions';
  * @param {Array} problematicCards - List of cards that need replacement
  * @param {Object} commander - Commander card object
  * @param {Array} currentDeck - Current deck list for context
+ * @param {Object} archetypeRules - Archetype rules for budget constraints
  * @returns {Object} Replacement suggestions with reasoning
  */
-export const generateSmartReplacements = async (problematicCards, commander, currentDeck) => {
+export const generateSmartReplacements = async (problematicCards, commander, currentDeck, archetypeRules = null) => {
+  // Handle land count violations first
+  const landViolations = problematicCards.filter(card => 
+    card.violation_type === 'land_count' ||
+    card.card === 'Insufficient Lands' ||
+    card.reason?.includes('land') || 
+    card.violation_reason?.includes('land') || 
+    card.category?.toLowerCase().includes('land')
+  );
+  
+  if (landViolations.length > 0 && archetypeRules?.deckStyle === 'budget') {
+    const landReplacements = await generateBudgetLandReplacements(landViolations, commander, currentDeck, archetypeRules);
+    // If we only have land violations, return land replacements immediately
+    if (landViolations.length === problematicCards.length) {
+      return landReplacements;
+    }
+  }
+  
   // Use centralized service to get known good replacements for banned cards
   const quickReplacements = [];
   const needsAIHelp = [];
@@ -41,11 +59,23 @@ export const generateSmartReplacements = async (problematicCards, commander, cur
     return formatQuickReplacements(quickReplacements, commander);
   }
 
+  // Build enhanced prompt with budget considerations
+  const budgetGuidance = archetypeRules?.deckStyle === 'budget' ? `
+  
+BUDGET DECK CONSTRAINTS:
+- Total budget: $${archetypeRules.maxBudget || 100}
+- Max card price: $${archetypeRules.maxCardPrice || Math.floor((archetypeRules.maxBudget || 100) * 0.1)}
+- Prefer commons/uncommons with high value
+- For lands: Prioritize basic lands, Command Tower, Exotic Orchard, guild gates
+- For spells: Focus on efficient, budget-friendly alternatives
+- Avoid expensive staples like fetch lands, tutors, premium artifacts` : '';
+
   const prompt = `REPLACEMENT EXPERT TASK: Generate intelligent replacement suggestions for problematic cards.
 
 Commander: ${commander.name}
 Color Identity: [${commander.color_identity?.join(', ') || 'Colorless'}]
 Commander Strategy: ${getCommanderStrategy(commander)}
+${archetypeRules ? `Deck Style: ${archetypeRules.deckStyle || 'Unknown'}` : ''}${budgetGuidance}
 
 Current Deck Context (${currentDeck.length} cards):
 ${JSON.stringify(currentDeck.map(card => ({ 
@@ -68,6 +98,13 @@ REPLACEMENT CRITERIA:
 3. Should maintain similar function/synergy
 4. Consider mana curve balance
 5. Prioritize cards that enhance commander strategy
+${archetypeRules?.deckStyle === 'budget' ? `6. Must fit within budget constraints (individual cards under $${archetypeRules.maxCardPrice || Math.floor((archetypeRules.maxBudget || 100) * 0.1)})` : ''}
+
+SPECIAL LAND REPLACEMENT LOGIC:
+- For budget decks: Prefer basic lands, Command Tower, Exotic Orchard, guild gates
+- For insufficient lands: Add appropriate basic lands or budget duals
+- For excessive lands: Remove utility lands, keep essential mana sources
+- Consider color fixing needs based on commander's color identity
 
 BANNED CARDS TO AVOID:
 - Black Lotus, Mox artifacts, Time Walk, Ancestral Recall
@@ -113,7 +150,7 @@ RESPONSE FORMAT (JSON only):
         messages: [
           { 
             role: 'system', 
-            content: 'You are a Magic: The Gathering deck building expert specializing in Commander format. You have deep knowledge of card synergies, mana curves, and strategic deck construction. Use the April 2025 updated banned list. Return only valid JSON.'
+            content: 'You are a Magic: The Gathering deck building expert specializing in Commander format. You have deep knowledge of card synergies, mana curves, strategic deck construction, and budget-conscious deck building. Use the April 2025 updated banned list. Return only valid JSON.'
           },
           { role: 'user', content: prompt }
         ],
@@ -124,7 +161,7 @@ RESPONSE FORMAT (JSON only):
 
     if (!response.ok) {
       console.warn('AI replacement generation failed, using centralized fallback');
-      return generateFallbackReplacements(problematicCards, commander, currentDeck);
+      return generateFallbackReplacements(problematicCards, commander, currentDeck, archetypeRules);
     }
 
     const data = await response.json();
@@ -132,7 +169,7 @@ RESPONSE FORMAT (JSON only):
     
     if (!content) {
       console.warn('Empty AI replacement response, using fallback');
-      return generateFallbackReplacements(problematicCards, commander, currentDeck);
+      return generateFallbackReplacements(problematicCards, commander, currentDeck, archetypeRules);
     }
 
     try {
@@ -160,13 +197,281 @@ RESPONSE FORMAT (JSON only):
       
     } catch (parseError) {
       console.error('Failed to parse AI replacement response:', parseError);
-      return generateFallbackReplacements(problematicCards, commander, currentDeck);
+      return generateFallbackReplacements(problematicCards, commander, currentDeck, archetypeRules);
     }
     
   } catch (error) {
     console.error('Smart replacement service error:', error);
-    return generateFallbackReplacements(problematicCards, commander, currentDeck);
+    return generateFallbackReplacements(problematicCards, commander, currentDeck, archetypeRules);
   }
+};
+
+/**
+ * Generate budget-friendly land replacements for land count violations
+ * @param {Array} landViolations - Land-related violations
+ * @param {Object} commander - Commander card object
+ * @param {Array} currentDeck - Current deck list
+ * @param {Object} archetypeRules - Archetype rules
+ * @returns {Object} Land replacement suggestions
+ */
+const generateBudgetLandReplacements = async (landViolations, commander, currentDeck, archetypeRules) => {
+  const colorIdentity = commander.color_identity || [];
+  const budget = archetypeRules.maxBudget || 100;
+  const currentLandCount = currentDeck.filter(card => {
+    const category = card.category?.toLowerCase() || '';
+    const typeLine = card.type_line?.toLowerCase() || '';
+    return category === 'lands' || 
+           category === 'land' || 
+           category.includes('land') ||
+           typeLine.includes('land');
+  }).length;
+  
+  const targetLandCount = archetypeRules.distribution?.lands?.min || 36;
+  const replacements = [];
+  
+  for (const violation of landViolations) {
+    const isInsufficientLands = violation.violation_type === 'land_count' ||
+                                violation.card === 'Insufficient Lands' ||
+                                violation.reason?.includes('at least') || 
+                                violation.reason?.includes('needs') ||
+                                violation.reason?.includes('Insufficient');
+    
+    if (isInsufficientLands) {
+      // Calculate how many lands we need to add
+      const landsNeeded = targetLandCount - currentLandCount;
+      console.log(`Land violation: Need ${landsNeeded} more lands (current: ${currentLandCount}, target: ${targetLandCount})`);
+      
+      if (landsNeeded > 0) {
+        // Generate the exact number of lands needed
+        const neededLands = getBudgetLandSuggestions(commander, archetypeRules, landsNeeded);
+        
+        replacements.push({
+          original_card: violation.card || 'Insufficient Lands',
+          suggested_cards: neededLands.map((landName, index) => ({
+            name: landName,
+            reason: `Budget-friendly land ${index + 1}/${landsNeeded} for ${colorIdentity.length > 1 ? 'multicolor' : 'monocolor'} mana base under $${budget} budget`,
+            synergy_score: 8,
+            category: 'Lands',
+            cmc: 0,
+            quantity: 1
+          })),
+          replacement_reasoning: `Adding ${landsNeeded} budget-conscious lands to reach proper land count for ${colorIdentity.length}-color deck`,
+          replacement_type: 'add_lands',
+          lands_to_add: landsNeeded
+        });
+      }
+    } else {
+      // Remove excessive lands - suggest removing utility lands first
+      const excessLands = currentLandCount - (archetypeRules.distribution?.lands?.max || 38);
+      
+      replacements.push({
+        original_card: violation.card || 'Excessive Lands',
+        suggested_cards: [{
+          name: 'Remove utility lands',
+          reason: `Removing ${excessLands} excess lands to maintain spell density while keeping essential mana sources`,
+          synergy_score: 6,
+          category: 'Remove',
+          cmc: 0,
+          quantity: excessLands
+        }],
+        replacement_reasoning: `Reducing land count by ${excessLands} to optimal level for deck consistency`,
+        replacement_type: 'remove_lands',
+        lands_to_remove: excessLands
+      });
+    }
+  }
+  
+  return {
+    replacements,
+    deck_analysis: {
+      mana_curve_impact: 'Improved mana consistency within budget constraints',
+      strategy_coherence: 'Enhanced mana base supports commander strategy',
+      power_level: 'Optimized for budget deck performance'
+    },
+    source: 'budget_land_replacement'
+  };
+};
+
+/**
+ * Get budget-friendly land suggestions based on commander and budget
+ * @param {Object} commander - Commander card object
+ * @param {Object} archetypeRules - Archetype rules
+ * @param {number} count - Number of suggestions needed
+ * @returns {Array} Array of land names
+ */
+const getBudgetLandSuggestions = (commander, archetypeRules, count = 1) => {
+  const colorIdentity = commander.color_identity || [];
+  const budget = archetypeRules.maxBudget || 100;
+  const suggestions = [];
+  
+  // Define land pools for different budget levels
+  const landPools = {
+    ultraBudget: { // $50 or less
+      0: ['Wastes'], // Colorless
+      1: ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest'], // Single color
+      2: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds'], // Two color
+      3: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape'] // Three+ color
+    },
+    budget: { // $51-100
+      0: ['Wastes'],
+      1: ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Terramorphic Expanse', 'Evolving Wilds'],
+      2: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape'],
+      3: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape', 'Ash Barrens']
+    },
+    higherBudget: { // $101+
+      0: ['Wastes'],
+      1: ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape'],
+      2: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape', 'Reflecting Pool'],
+      3: ['Command Tower', 'Exotic Orchard', 'Terramorphic Expanse', 'Evolving Wilds', 'Myriad Landscape', 'Reflecting Pool', 'Unclaimed Territory']
+    }
+  };
+  
+  // Get appropriate land pool
+  const budgetCategory = budget <= 50 ? 'ultraBudget' : budget <= 100 ? 'budget' : 'higherBudget';
+  const colorCount = Math.min(3, colorIdentity.length);
+  const landPool = landPools[budgetCategory][colorCount];
+  
+  // Get basic lands for this commander
+  const basicLands = [];
+  const colorToLand = { 'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G': 'Forest' };
+  colorIdentity.forEach(color => {
+    if (colorToLand[color]) {
+      basicLands.push(colorToLand[color]);
+    }
+  });
+  
+  // If no colors, use Wastes
+  if (basicLands.length === 0) {
+    basicLands.push('Wastes');
+  }
+  
+  // Fill suggestions based on budget strategy
+  for (let i = 0; i < count; i++) {
+    if (budget <= 50) {
+      // Ultra-budget: Mostly basic lands
+      if (i < Math.floor(count * 0.8)) {
+        // 80% basic lands
+        suggestions.push(basicLands[i % basicLands.length]);
+      } else {
+        // 20% utility lands
+        const utilityLands = landPool.filter(land => !basicLands.includes(land));
+        suggestions.push(utilityLands[i % utilityLands.length] || 'Command Tower');
+      }
+    } else if (budget <= 100) {
+      // Budget: Mix of basics and utility
+      if (i < Math.floor(count * 0.6)) {
+        // 60% basic lands
+        suggestions.push(basicLands[i % basicLands.length]);
+      } else {
+        // 40% utility lands
+        const utilityLands = landPool.filter(land => !basicLands.includes(land));
+        suggestions.push(utilityLands[i % utilityLands.length] || 'Command Tower');
+      }
+    } else {
+      // Higher budget: More utility lands
+      if (i < Math.floor(count * 0.4)) {
+        // 40% basic lands
+        suggestions.push(basicLands[i % basicLands.length]);
+      } else {
+        // 60% utility lands
+        const utilityLands = landPool.filter(land => !basicLands.includes(land));
+        suggestions.push(utilityLands[i % utilityLands.length] || 'Command Tower');
+      }
+    }
+  }
+  
+  return suggestions;
+};
+
+/**
+ * Get budget-friendly category fallbacks
+ * @param {string} category - Card category
+ * @param {Array} colorIdentity - Commander color identity
+ * @param {Object} archetypeRules - Archetype rules
+ * @returns {Array} Budget-friendly card names
+ */
+const getBudgetCategoryFallbacks = (category, colorIdentity, archetypeRules) => {
+  const budget = archetypeRules?.maxBudget || 100;
+  const fallbacks = [];
+  
+  switch (category?.toLowerCase()) {
+    case 'lands':
+      return getBudgetLandSuggestions({ color_identity: colorIdentity }, archetypeRules, 5);
+    
+    case 'ramp':
+      fallbacks.push('Sol Ring', 'Arcane Signet', 'Commander\'s Sphere', 'Mind Stone', 'Worn Powerstone');
+      if (colorIdentity.includes('G')) {
+        fallbacks.push('Cultivate', 'Kodama\'s Reach', 'Rampant Growth', 'Explosive Vegetation');
+      }
+      if (budget > 50) {
+        fallbacks.push('Thran Dynamo', 'Gilded Lotus', 'Chromatic Lantern');
+      }
+      break;
+    
+    case 'card draw':
+    case 'draw':
+      if (colorIdentity.includes('U')) {
+        fallbacks.push('Divination', 'Ponder', 'Preordain', 'Brainstorm');
+      }
+      if (colorIdentity.includes('B')) {
+        fallbacks.push('Sign in Blood', 'Read the Bones', 'Night\'s Whisper');
+      }
+      if (colorIdentity.includes('G')) {
+        fallbacks.push('Harmonize', 'Beast Whisperer', 'Elvish Visionary');
+      }
+      fallbacks.push('Phyrexian Arena', 'Rhystic Study', 'Mystic Remora');
+      break;
+    
+    case 'removal':
+      if (colorIdentity.includes('W')) {
+        fallbacks.push('Swords to Plowshares', 'Path to Exile', 'Wrath of God', 'Day of Judgment');
+      }
+      if (colorIdentity.includes('B')) {
+        fallbacks.push('Murder', 'Doom Blade', 'Hero\'s Downfall', 'Toxic Deluge');
+      }
+      if (colorIdentity.includes('R')) {
+        fallbacks.push('Lightning Bolt', 'Shock', 'Blasphemous Act', 'Pyroclasm');
+      }
+      if (colorIdentity.includes('G')) {
+        fallbacks.push('Beast Within', 'Krosan Grip', 'Naturalize');
+      }
+      fallbacks.push('Chaos Warp', 'Generous Gift', 'Cyclonic Rift');
+      break;
+    
+    case 'protection':
+      fallbacks.push('Lightning Greaves', 'Swiftfoot Boots', 'Heroic Intervention', 'Teferi\'s Protection');
+      if (colorIdentity.includes('U')) {
+        fallbacks.push('Counterspell', 'Negate', 'Swan Song');
+      }
+      if (colorIdentity.includes('W')) {
+        fallbacks.push('Ghostly Prison', 'Propaganda', 'Sphere of Safety');
+      }
+      break;
+    
+    case 'utility':
+    case 'core':
+    case 'strategy':
+    default:
+      fallbacks.push('Sol Ring', 'Lightning Greaves', 'Swiftfoot Boots', 'Command Tower');
+      if (colorIdentity.includes('U')) {
+        fallbacks.push('Counterspell', 'Ponder');
+      }
+      if (colorIdentity.includes('W')) {
+        fallbacks.push('Swords to Plowshares', 'Wrath of God');
+      }
+      if (colorIdentity.includes('B')) {
+        fallbacks.push('Sign in Blood', 'Murder');
+      }
+      if (colorIdentity.includes('R')) {
+        fallbacks.push('Lightning Bolt', 'Blasphemous Act');
+      }
+      if (colorIdentity.includes('G')) {
+        fallbacks.push('Cultivate', 'Beast Within');
+      }
+      break;
+  }
+  
+  return fallbacks;
 };
 
 /**
@@ -306,9 +611,10 @@ const combineReplacements = (quickReplacements, aiReplacements, commander) => {
  * @param {Array} problematicCards - Cards needing replacement
  * @param {Object} commander - Commander card object
  * @param {Array} currentDeck - Current deck for context
+ * @param {Object} archetypeRules - Archetype rules
  * @returns {Object} Fallback replacement suggestions
  */
-const generateFallbackReplacements = async (problematicCards, commander, currentDeck) => {
+const generateFallbackReplacements = async (problematicCards, commander, currentDeck, archetypeRules) => {
   const replacements = [];
   const usedSuggestions = new Set(); // Track used suggestions to avoid duplicates
   
@@ -318,8 +624,24 @@ const generateFallbackReplacements = async (problematicCards, commander, current
   for (const card of problematicCards) {
     const suggestions = [];
     
+    // Handle land violations with budget-aware replacements
+    if (card.violation_reason?.includes('land') || card.category?.toLowerCase().includes('land')) {
+      const landSuggestions = getBudgetLandSuggestions(commander, archetypeRules, 3);
+      for (const landName of landSuggestions) {
+        if (!usedSuggestions.has(landName) && !existingCards.has(landName)) {
+          suggestions.push({
+            name: landName,
+            reason: `Budget-friendly land replacement for ${commander.color_identity?.join('') || 'colorless'} deck`,
+            synergy_score: 7,
+            category: 'Lands',
+            cmc: 0
+          });
+          usedSuggestions.add(landName);
+        }
+      }
+    }
     // Try centralized service first
-    if (commanderLegalityService.isCardBanned(card.name)) {
+    else if (commanderLegalityService.isCardBanned(card.name)) {
       const bannedReplacements = commanderLegalityService.getBannedCardReplacements(card.name);
       for (const replacement of bannedReplacements) {
         // Only add if not already used and not in existing deck
@@ -337,8 +659,15 @@ const generateFallbackReplacements = async (problematicCards, commander, current
         }
       }
     } else {
-      // Category-based fallback
-      const categoryReplacements = getCategoryFallbacks(card.category, commander.color_identity);
+      // Category-based fallback with budget considerations
+      let categoryReplacements = getCategoryFallbacks(card.category, commander.color_identity);
+      
+      // For budget decks, prefer cheaper alternatives
+      if (archetypeRules?.deckStyle === 'budget') {
+        const budgetFallbacks = getBudgetCategoryFallbacks(card.category, commander.color_identity || [], archetypeRules);
+        categoryReplacements = [...budgetFallbacks, ...categoryReplacements]; // Add budget options first
+      }
+      
       for (const replacement of categoryReplacements) {
         // Only add if not already used and not in existing deck
         if (!usedSuggestions.has(replacement) && !existingCards.has(replacement)) {
@@ -510,6 +839,89 @@ export const applySmartReplacements = (deck, replacementResult) => {
   });
   
   replacementResult.replacements.forEach(replacement => {
+    // Handle land count violations that require adding lands
+    if (replacement.replacement_type === 'add_lands' && replacement.lands_to_add > 0) {
+      console.log(`Adding ${replacement.lands_to_add} lands to fix land count violation`);
+      
+      // Add each suggested land to the deck
+      replacement.suggested_cards.forEach(suggestion => {
+        const newCard = {
+          name: suggestion.name,
+          category: 'Lands',
+          cmc: 0,
+          type_line: 'Land',
+          color_identity: [],
+          legalities: { commander: 'legal' },
+          land_count_fix: true,
+          replacement_info: {
+            original: replacement.original_card,
+            reason: suggestion.reason,
+            synergy_score: suggestion.synergy_score
+          }
+        };
+        
+        updatedDeck.push(newCard);
+        usedReplacements.add(suggestion.name);
+        originalCardNames.add(suggestion.name);
+        
+        appliedReplacements.push({
+          original: replacement.original_card,
+          replacement: suggestion.name,
+          reason: suggestion.reason,
+          action: 'added_land'
+        });
+      });
+      
+      return; // Skip normal replacement logic for land additions
+    }
+    
+    // Handle land count violations that require removing lands
+    if (replacement.replacement_type === 'remove_lands' && replacement.lands_to_remove > 0) {
+      console.log(`Removing ${replacement.lands_to_remove} excess lands`);
+      
+      // Find lands to remove (prioritize utility lands over basics)
+      const landCards = updatedDeck.filter(card => {
+        const category = card.category?.toLowerCase() || '';
+        const typeLine = card.type_line?.toLowerCase() || '';
+        return category === 'lands' || 
+               category === 'land' || 
+               category.includes('land') ||
+               typeLine.includes('land');
+      });
+      
+      const utilityLands = landCards.filter(card => 
+        !['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'].includes(card.name)
+      );
+      
+      const basicLands = landCards.filter(card => 
+        ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'].includes(card.name)
+      );
+      
+      // Remove utility lands first, then basic lands if needed
+      let removed = 0;
+      const landsToRemove = [...utilityLands, ...basicLands];
+      
+      for (const land of landsToRemove) {
+        if (removed >= replacement.lands_to_remove) break;
+        
+        const index = updatedDeck.findIndex(card => card.name === land.name);
+        if (index !== -1) {
+          updatedDeck.splice(index, 1);
+          removed++;
+          
+          appliedReplacements.push({
+            original: land.name,
+            replacement: null,
+            reason: 'Removed to fix excessive land count',
+            action: 'removed_land'
+          });
+        }
+      }
+      
+      return; // Skip normal replacement logic for land removals
+    }
+    
+    // Normal 1:1 replacement logic
     const cardIndex = updatedDeck.findIndex(card => card.name === replacement.original_card);
     
     if (cardIndex !== -1 && replacement.suggested_cards.length > 0) {
@@ -558,7 +970,8 @@ export const applySmartReplacements = (deck, replacementResult) => {
         appliedReplacements.push({
           original: replacement.original_card,
           replacement: bestReplacement.name,
-          reason: bestReplacement.reason
+          reason: bestReplacement.reason,
+          action: 'replaced'
         });
       } else {
         console.error(`No valid replacement found for ${replacement.original_card}`);
@@ -567,6 +980,8 @@ export const applySmartReplacements = (deck, replacementResult) => {
   });
   
   console.log(`Applied ${appliedReplacements.length} smart replacements with singleton validation`);
+  console.log(`Final deck size: ${updatedDeck.length} cards`);
+  
   return updatedDeck;
 };
 

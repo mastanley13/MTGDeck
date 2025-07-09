@@ -230,7 +230,13 @@ const CardSearchPage = () => {
 
   // --- Card Details Modal Logic ---
   const handleOpenCardDetailsModal = (card) => {
-    setSelectedCardForDetails(card);
+    // Only open modal if card is fully loaded (not a fallback card)
+    if (card && !card._isFallbackCard && card.isLoaded !== false) {
+      setSelectedCardForDetails(card);
+    } else {
+      // Optionally show a brief message that the card is still loading
+      console.log('Card is still loading, modal will not open:', card?.name);
+    }
   };
 
   const handleCloseCardDetailsModal = () => {

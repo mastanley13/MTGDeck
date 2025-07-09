@@ -60,11 +60,53 @@ export const safeLocalStorage = {
 
 const CACHE_PREFIX = 'mtg_card_cache_';
 const CACHE_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
-const MAX_CACHE_SIZE = 50; // Maximum number of cards to cache
+const MAX_CACHE_SIZE = 100; // Increased cache size for better performance
 const SEARCH_CACHE_KEY_PREFIX = 'mtg_search_cache_';
 const SEARCH_CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 const MAX_SEARCH_CACHE_SIZE = 20; // Maximum number of search results to cache
 const MAX_CACHE_KEY_LENGTH = 100; // Maximum length for cache keys
+
+// Cache index for faster lookups
+let cacheIndex = null;
+
+// Build cache index for faster lookups
+const buildCacheIndex = () => {
+  const index = new Map();
+  const keys = getCacheKeys();
+  
+  for (const key of keys) {
+    try {
+      const item = localStorage.getItem(key);
+      if (!item) continue;
+      
+      const data = JSON.parse(item);
+      if (data.card?.id) {
+        index.set(data.card.id, { key, timestamp: data.timestamp });
+      }
+      // Also index by name for backward compatibility
+      if (data.card?.name) {
+        index.set(data.card.name, { key, timestamp: data.timestamp });
+      }
+    } catch (e) {
+      // Remove corrupted entries
+      try {
+        localStorage.removeItem(key);
+      } catch (e2) {
+        // Ignore errors when removing
+      }
+    }
+  }
+  
+  return index;
+};
+
+// Get cache index (build if not exists)
+const getCacheIndex = () => {
+  if (!cacheIndex) {
+    cacheIndex = buildCacheIndex();
+  }
+  return cacheIndex;
+};
 
 // Helper to get all cache keys
 const getCacheKeys = () => {
@@ -141,23 +183,36 @@ const cleanOldCache = () => {
       localStorage.removeItem(key);
     }
   }
+  
+  // Rebuild cache index after cleanup
+  cacheIndex = null;
 };
 
 /**
- * Save a card or array of cards to cache
- * @param {Object|Array} cardData - Card data to cache
+ * Save a card to cache with ID-based indexing
+ * @param {Object} card - Card data to cache
  */
 export const cacheCard = (card) => {
+  if (!card || !card.id) return false;
+  
   try {
     cleanOldCache();
     
-    const cacheKey = CACHE_PREFIX + uuidv4();
+    const cacheKey = `${CACHE_PREFIX}${card.id}`;
     const cacheData = {
       card,
       timestamp: Date.now()
     };
     
     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    
+    // Update cache index
+    const index = getCacheIndex();
+    index.set(card.id, { key: cacheKey, timestamp: cacheData.timestamp });
+    if (card.name) {
+      index.set(card.name, { key: cacheKey, timestamp: cacheData.timestamp });
+    }
+    
     return true;
   } catch (e) {
     console.warn('Failed to cache card:', e);
@@ -166,44 +221,43 @@ export const cacheCard = (card) => {
 };
 
 /**
- * Get a card from cache by ID
+ * Get a card from cache by ID (optimized with indexing)
  * @param {string} cardId - ID of the card to retrieve
  * @returns {Object|null} Card data or null if not in cache or expired
  */
-export const getCachedCard = (cardName) => {
+export const getCachedCard = (cardId) => {
+  if (!cardId) return null;
+  
   try {
-    const keys = getCacheKeys();
-    for (const key of keys) {
+    const index = getCacheIndex();
+    const indexEntry = index.get(cardId);
+    
+    if (!indexEntry) return null;
+    
+    // Check if expired
+    if (Date.now() - indexEntry.timestamp > CACHE_EXPIRY) {
       try {
-        const item = localStorage.getItem(key);
-        if (!item) continue;
-        
-        const data = JSON.parse(item);
-      if (data.card?.name === cardName) {
-          // Check if expired
-          if (Date.now() - (data.timestamp || 0) > CACHE_EXPIRY) {
-            try {
-              localStorage.removeItem(key);
-            } catch (e) {
-              // Ignore errors when removing
-            }
-            continue;
-          }
-        return data.card;
-        }
+        localStorage.removeItem(indexEntry.key);
+        index.delete(cardId);
       } catch (e) {
-        // If this entry is corrupted, remove it
-        try {
-          localStorage.removeItem(key);
-        } catch (e2) {
-          // Ignore errors when removing
-        }
+        // Ignore errors when removing
       }
+      return null;
     }
+    
+    // Get the actual card data
+    const item = localStorage.getItem(indexEntry.key);
+    if (!item) {
+      index.delete(cardId);
+      return null;
+    }
+    
+    const data = JSON.parse(item);
+    return data.card;
   } catch (e) {
     console.warn('Error reading card cache:', e);
+    return null;
   }
-  return null;
 };
 
 /**

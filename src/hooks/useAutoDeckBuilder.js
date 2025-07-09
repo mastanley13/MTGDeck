@@ -327,9 +327,10 @@ export const useAutoDeckBuilder = () => {
     switch (deckStyle) {
       case 'competitive':
         return {
+          deckStyle: 'competitive',
           maxBudget: 5000, // Higher budget for competitive
           distribution: {
-            lands: { min: 34, max: 38 },
+            lands: { min: 35, max: 38 },
             ramp: { min: 10, max: 12 },
             draw: { min: 10, max: 15 },
             removal: { min: 8, max: 12 },
@@ -343,6 +344,7 @@ export const useAutoDeckBuilder = () => {
 
       case 'casual':
         return {
+          deckStyle: 'casual',
           maxBudget: 1000, // Moderate budget for casual
           distribution: {
             lands: { min: 36, max: 38 },
@@ -363,6 +365,7 @@ export const useAutoDeckBuilder = () => {
         const maxCardPrice = Math.max(1, Math.min(customBudget * 0.1, 20));
         
         return {
+          deckStyle: 'budget',
           maxBudget: customBudget, // Use custom budget
           distribution: {
             lands: { min: 36, max: 38 },
@@ -418,6 +421,8 @@ export const useAutoDeckBuilder = () => {
       
       resetDeckExceptCommander();
       
+      const deckBuildingStart = Date.now();
+      
       // Clear previous state
       setFilteredColorViolations([]);
       
@@ -439,7 +444,7 @@ export const useAutoDeckBuilder = () => {
       console.log('Stage 2: Starting validation scan with o3');
       
       const stageTwoStart = Date.now();
-      const validationResult = await validateDeckWithAI(initialCards, commander);
+      const validationResult = await validateDeckWithAI(initialCards, commander, archetypeRules);
       console.log(`Stage 2 completed in ${Date.now() - stageTwoStart}ms`);
       
       setCurrentViolations(validationResult.violations || []);
@@ -465,7 +470,8 @@ export const useAutoDeckBuilder = () => {
         const replacements = await generateSmartReplacements(
           problematicCards, 
           commander, 
-          initialCards
+          initialCards,
+          archetypeRules
         );
         
         const fixedCards = applySmartReplacements(initialCards, replacements);
@@ -498,18 +504,45 @@ export const useAutoDeckBuilder = () => {
       setProgress(90);
       
       // STAGE 4: Fetch Card Data and Build Final Deck
-      setBuildingStage('Fetching card data and building deck...');
-      console.log('Stage 4: Building final deck');
+      setBuildingStage('Fetching card data and building final deck...');
+      console.log('Stage 4: Starting card data fetch and deck building');
       
       const stageFourStart = Date.now();
+      
+      // Debug: Check for undefined card names before processing
+      const invalidCards = finalCardList.filter(card => !card.name || card.name === undefined);
+      if (invalidCards.length > 0) {
+        console.warn(`Found ${invalidCards.length} cards with undefined names, filtering them out:`, invalidCards);
+        finalCardList = finalCardList.filter(card => card.name && card.name !== undefined);
+      }
+      
+      console.log(`Stage 4 input: ${finalCardList.length} cards`);
+      
       const cardDataMap = await fetchCardDataBatch(finalCardList);
-      await addCardsFromBatchData(finalCardList, cardDataMap, appliedFixes);
+      console.log(`Stage 4 fetched data for ${cardDataMap.size} cards`);
+      
+      // Filter out color identity violations automatically
+      const { validCards, violations } = filterColorIdentityViolations(cardDataMap, commander.color_identity);
+      console.log(`Stage 4 after color filtering: ${validCards.size} valid cards, ${violations.length} violations`);
+      
+      if (violations.length > 0) {
+        console.log('Color identity violations filtered out:', violations);
+        setFilteredColorViolations(violations);
+      }
+      
+      // Build final deck with validated cards
+      // Convert the finalCardList to proper format with card data
+      const cardsToAdd = finalCardList.filter(card => validCards.has(card.name));
+      await addCardsFromBatchData(cardsToAdd, validCards, appliedFixes);
       console.log(`Stage 4 completed in ${Date.now() - stageFourStart}ms`);
       
-      setBuildingStage('Deck complete!');
-      setProgress(100);
+      const finalDeckCount = getCurrentNonCommanderCardCount();
+      console.log(`Final deck count: ${finalDeckCount} cards`);
       
-      console.log('Three-stage deck building completed successfully');
+      setProgress(100);
+      setBuildingStage('');
+      
+      console.log(`Total deck building time: ${Date.now() - deckBuildingStart}ms`);
       return true;
       
     } catch (error) {
@@ -863,7 +896,7 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
   };
 
   /**
-   * Fetch card data with fallback to individual requests
+   * Fetch card data using the properly configured Scryfall API utilities
    * @param {Array} cardList - List of cards to fetch
    * @returns {Map} Map of card names to card data
    */
@@ -877,252 +910,59 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
       name: normalizeCardName(card.name)
     }));
     
-    // Debug: Log any cards that were normalized
-    const normalizedCards = normalizedCardList.filter(card => card.name !== card.originalName);
-    if (normalizedCards.length > 0) {
-      console.log(`🔄 Normalized ${normalizedCards.length} card names:`, 
-        normalizedCards.map(c => `${c.originalName} → ${c.name}`)
-      );
-    }
+    console.log(`Fetching data for ${normalizedCardList.length} cards using rate-limited API...`);
     
-    console.log(`Fetching data for ${normalizedCardList.length} cards...`);
-    
-    // First try batch fetching
-    try {
-      console.log('Attempting batch fetch for', normalizedCardList.length, 'cards...');
-      const batchSize = 75; // Scryfall's limit
-      
-      for (let i = 0; i < normalizedCardList.length; i += batchSize) {
-        const batch = normalizedCardList.slice(i, i + batchSize);
-        
-        console.log(`Fetching batch ${Math.floor(i / batchSize) + 1} with ${batch.length} cards`);
-        
-        // Debug: Log what we're sending to Scryfall
-        const requestPayload = {
-          identifiers: batch.map(card => ({ name: card.name }))
-        };
-        
-        // Log split cards and modal cards specifically
-        const splitCardsInBatch = batch.filter(card => card.name.includes(' // '));
-        const modalCardsInBatch = batch.filter(card => 
-          card.originalName !== card.name && !card.name.includes(' // ')
-        );
-        
-        if (splitCardsInBatch.length > 0) {
-          console.log(`🔀 Split cards in batch ${Math.floor(i / batchSize) + 1}:`, 
-            splitCardsInBatch.map(c => c.name)
-          );
-        }
-        
-        if (modalCardsInBatch.length > 0) {
-          console.log(`🔄 Modal cards normalized in batch ${Math.floor(i / batchSize) + 1}:`, 
-            modalCardsInBatch.map(c => `${c.originalName} → ${c.name}`)
-          );
-        }
-
-        const response = await fetch('https://api.scryfall.com/cards/collection', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestPayload)
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.data) {
-            console.log(`Batch ${Math.floor(i / batchSize) + 1} returned ${data.data.length} cards`);
-            data.data.forEach(card => {
-              // Normalize card data for double-faced cards
-              const normalizedCard = normalizeCardData(card);
-              
-              // Map both the original name and normalized name to the card data
-              const originalCard = batch.find(c => c.name === card.name);
-              if (originalCard) {
-                cardMap.set(originalCard.originalName, normalizedCard);
-                if (originalCard.originalName !== card.name) {
-                  cardMap.set(card.name, normalizedCard); // Also map the correct name
-                }
-              }
-            });
-            
-            // Log any cards that weren't found in this batch
-            const notFoundInBatch = batch.filter(batchCard => 
-              !data.data.some(foundCard => foundCard.name === batchCard.name)
-            );
-            if (notFoundInBatch.length > 0) {
-              console.warn(`Batch ${Math.floor(i / batchSize) + 1} missing cards:`, notFoundInBatch.map(c => `${c.originalName} (searched as: ${c.name})`));
-              
-              // For debugging: Log the exact request that was sent for failed cards
-              notFoundInBatch.forEach(card => {
-                console.warn(`   🔍 Debug: Card "${card.name}" not found in Scryfall batch response`);
-                console.warn(`   📝 Original name: "${card.originalName}"`);
-                console.warn(`   🔄 Normalized name: "${card.name}"`);
-                if (card.name.includes(' // ')) {
-                  console.warn(`   ⚠️  Split card detected - this should work with Scryfall`);
-                }
-              });
-            }
-          }
-        } else {
-          console.warn(`Batch request ${Math.floor(i / batchSize) + 1} failed: ${response.status}`);
-          throw new Error(`Batch request failed: ${response.status}`);
-        }
-        
-        // Small delay between batches
-        if (i + batchSize < normalizedCardList.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      }
-      
-      console.log(`Batch fetch successful: ${cardMap.size} cards found out of ${normalizedCardList.length} requested`);
-      
-      // Log any cards that are still missing
-      const missingCards = normalizedCardList.filter(card => !cardMap.has(card.originalName));
-      if (missingCards.length > 0) {
-        console.warn(`Missing cards after batch fetch:`, missingCards.map(c => `${c.originalName} (normalized: ${c.name})`));
-        
-        // Try individual searches for cards that failed in batch (likely split/transform cards)
-        console.log(`🔄 Attempting individual searches for ${missingCards.length} cards that failed in batch...`);
-        
-        for (const missingCard of missingCards) {
-          try {
-            // For split cards and transform cards, use direct Scryfall exact search
-            const exactUrl = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(missingCard.name)}`;
-            console.log(`🎯 Trying exact search for: ${missingCard.name}`);
-            
-            const exactResponse = await fetch(exactUrl);
-            if (exactResponse.ok) {
-              const exactCard = await exactResponse.json();
-              const normalizedExactCard = normalizeCardData(exactCard);
-              cardMap.set(missingCard.originalName, normalizedExactCard);
-              if (missingCard.originalName !== missingCard.name) {
-                cardMap.set(missingCard.name, normalizedExactCard);
-              }
-              console.log(`✅ Found ${missingCard.name} via exact search`);
-            } else {
-              console.warn(`❌ Exact search failed for ${missingCard.name}: ${exactResponse.status}`);
-            }
-            
-            // Rate limiting between individual requests
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-          } catch (error) {
-            console.warn(`❌ Individual search error for ${missingCard.name}:`, error.message);
-          }
-        }
-        
-        console.log(`Individual search complete. Final card count: ${cardMap.size}`);
-      }
-      
-      // CRITICAL: Filter out color identity violations using actual Scryfall data
-      console.log('Filtering color identity violations using Scryfall data...');
-      const { validCards, violations } = filterColorIdentityViolations(cardMap, commander.color_identity || []);
-      
-      // Store violations in state for user reporting
-      setFilteredColorViolations(prev => [...prev, ...violations]);
-      
-      if (violations.length > 0) {
-        console.log(`🚫 Automatically filtered out ${violations.length} color identity violations:`);
-        violations.forEach(v => console.log(`   - ${v.cardName}: [${v.cardColorIdentity?.join(', ')}] violates commander identity [${commander.color_identity?.join(', ')}]`));
-      }
-      
-      console.log(`✅ Final valid cards: ${validCards.size} out of ${cardMap.size} fetched`);
-      return validCards;
-      
-    } catch (error) {
-      console.warn('Batch fetch failed, falling back to individual requests:', error.message);
-      
-      // Fallback to individual card fetching with normalized names
-      return await fetchCardsIndividually(normalizedCardList);
-    }
-  };
-
-  /**
-   * Fetch cards individually as fallback
-   * @param {Array} cardList - List of cards to fetch (may include originalName property)
-   * @returns {Map} Map of card names to card data
-   */
-  const fetchCardsIndividually = async (cardList) => {
-    const cardMap = new Map();
+    // Use the properly configured searchCardByName function with rate limiting
     const { searchCardByName } = await import('../utils/scryfallAPI');
     
-    console.log('Fetching cards individually...');
-    
-    for (let i = 0; i < cardList.length; i++) {
-      const cardEntry = cardList[i];
-      const searchName = cardEntry.name; // This should be the normalized name
-      const originalName = cardEntry.originalName || cardEntry.name;
+    for (let i = 0; i < normalizedCardList.length; i++) {
+      const card = normalizedCardList[i];
       
       try {
-        let result = await searchCardByName(searchName);
-        
-        // If initial search failed and this is a split card, try exact name search
-        if ((!result.data || result.data.length === 0) && searchName.includes(' // ')) {
-          console.log(`🔄 Split card "${searchName}" not found, trying exact name search...`);
-          try {
-            const exactResponse = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(searchName)}`);
-            if (exactResponse.ok) {
-              const exactCard = await exactResponse.json();
-              const normalizedExactCard = normalizeCardData(exactCard);
-              result = { data: [normalizedExactCard] };
-              console.log(`✅ Found "${searchName}" using exact search`);
-            }
-          } catch (exactError) {
-            console.warn(`❌ Exact search also failed for "${searchName}":`, exactError.message);
-          }
+        // Show progress
+        if (i % 10 === 0) {
+          console.log(`Fetching card ${i + 1}/${normalizedCardList.length}: ${card.name}`);
         }
+        
+        const result = await searchCardByName(card.name);
         
         if (result.data && result.data.length > 0) {
-          const card = result.data[0];
-          const normalizedCard = normalizeCardData(card);
-          // Map using the original name so addCardsFromBatchData can find it
-          cardMap.set(originalName, normalizedCard);
-          // Also map the normalized name if different
-          if (originalName !== searchName) {
-            cardMap.set(searchName, normalizedCard);
+          const cardData = result.data[0];
+          const normalizedCard = normalizeCardData(cardData);
+          
+          // Map both original and normalized names
+          cardMap.set(card.originalName, normalizedCard);
+          if (card.originalName !== card.name) {
+            cardMap.set(card.name, normalizedCard);
           }
-          console.log(`✅ Successfully fetched: ${originalName}`);
         } else {
-          console.warn(`❌ No data found for card: ${originalName} (searched as: ${searchName})`);
-          // Create a minimal card object for basic lands and common cards
-          const basicCard = createFallbackCard(originalName, cardEntry.category);
-          if (basicCard) {
-            cardMap.set(originalName, basicCard);
-            console.log(`🆘 Using fallback data for: ${originalName}`);
-          }
-        }
-        
-        // Rate limiting - delay between requests
-        if (i < cardList.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          console.warn(`Card not found: ${card.name} (original: ${card.originalName})`);
         }
         
       } catch (error) {
-        console.warn(`Failed to fetch ${originalName} (searched as: ${searchName}):`, error.message);
-        // Create a fallback card for essential cards
-        const basicCard = createFallbackCard(originalName, cardEntry.category);
-        if (basicCard) {
-          cardMap.set(originalName, basicCard);
-        }
+        console.warn(`Failed to fetch ${card.name}:`, error.message);
       }
     }
     
-    console.log(`Individual fetch complete: ${cardMap.size} cards`);
+    console.log(`Card fetch complete: ${cardMap.size} cards found out of ${normalizedCardList.length} requested`);
     
-    // Filter color identity violations for individually fetched cards too
-    console.log('Filtering color identity violations from individually fetched cards...');
+    // Filter out color identity violations using actual Scryfall data
+    console.log('Filtering color identity violations using Scryfall data...');
     const { validCards, violations } = filterColorIdentityViolations(cardMap, commander.color_identity || []);
     
     // Store violations in state for user reporting
     setFilteredColorViolations(prev => [...prev, ...violations]);
     
     if (violations.length > 0) {
-      console.log(`🚫 Filtered out ${violations.length} color identity violations from individual fetch:`);
+      console.log(`🚫 Automatically filtered out ${violations.length} color identity violations:`);
       violations.forEach(v => console.log(`   - ${v.cardName}: [${v.cardColorIdentity?.join(', ')}] violates commander identity [${commander.color_identity?.join(', ')}]`));
     }
     
-    console.log(`✅ Final valid cards from individual fetch: ${validCards.size} out of ${cardMap.size} fetched`);
+    console.log(`✅ Final valid cards: ${validCards.size} out of ${cardMap.size} fetched`);
     return validCards;
   };
+
+
   
   /**
    * Normalize card data for double-faced cards to ensure proper image URIs and data
@@ -1561,6 +1401,13 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
     // First pass: Add all valid cards
     for (const card of cardList) {
       if (addedCount >= 99) break; // Stop if we've reached 99 cards
+      
+      // Safety check: skip cards with undefined names
+      if (!card.name || card.name === undefined) {
+        console.warn(`Skipping card with undefined name:`, card);
+        missingCards.push(card);
+        continue;
+      }
       
       const cardData = cardDataMap.get(card.name);
       if (cardData) {
@@ -2462,6 +2309,34 @@ ${maxBudget <= 100 ? '- Budget-friendly: mix of budget staples and efficient car
 ${maxBudget > 100 ? '- Higher budget: can include some mid-range staples and better manabase' : ''}
 ` : ''}
 
+MANDATORY CARD DISTRIBUTION - MUST BE FOLLOWED EXACTLY:
+${Object.entries(distribution)
+  .map(([category, { min, max }]) => `- ${category.toUpperCase()}: EXACTLY ${min}-${max} cards ${category === 'lands' ? '(CRITICAL: Proper mana base is essential!)' : ''}`)
+  .join('\n')}
+
+${deckStyle === 'budget' ? `
+BUDGET MANA BASE REQUIREMENTS (CRITICAL):
+- Must include ${distribution.lands.min}-${distribution.lands.max} lands total
+- For ${commander.color_identity?.length || 0}-color commander:
+  ${commander.color_identity?.length === 0 ? '• Use Wastes for colorless mana' : ''}
+  ${commander.color_identity?.length === 1 ? `• Use ${Math.floor(distribution.lands.min * 0.6)} basic lands of your color` : ''}
+  ${commander.color_identity?.length === 2 ? `• Use ${Math.floor(distribution.lands.min * 0.4)} basics + budget duals` : ''}
+  ${commander.color_identity?.length >= 3 ? `• Use ${Math.floor(distribution.lands.min * 0.3)} basics + budget multilands` : ''}
+  • Always include: Command Tower, Exotic Orchard (if multicolor)
+  • Budget options: Terramorphic Expanse, Evolving Wilds, Myriad Landscape
+  • Avoid expensive lands: fetch lands, shock lands, original duals
+- Count your lands carefully - aim for ${distribution.lands.min + 1} lands minimum
+` : ''}
+
+DECK CONSTRUCTION CHECKLIST:
+1. ✓ Include exactly ${distribution.lands.min}-${distribution.lands.max} lands (count them!)
+2. ✓ Include ${distribution.ramp.min}-${distribution.ramp.max} ramp spells
+3. ✓ Include ${distribution.draw.min}-${distribution.draw.max} card draw effects
+4. ✓ Include ${distribution.removal.min}-${distribution.removal.max} removal spells
+5. ✓ Include ${distribution.protection.min}-${distribution.protection.max} protection effects
+6. ✓ Include ${distribution.core.min}-${distribution.core.max} core strategy cards
+7. ✓ Total exactly 99 cards
+
 IMPORTANT GUIDELINES:
 - Include staple cards appropriate for the power level
 - Don't worry about perfect validation - we'll fix issues later
@@ -2479,7 +2354,7 @@ FORMAT REQUIREMENTS:
 
 Categories must be one of: "Lands", "Ramp", "Draw", "Removal", "Protection", "Core"
 
-CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, nothing else.`;
+CRITICAL: Ensure exactly 99 cards are included with proper land distribution. Return only the JSON array, nothing else.`;
 
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -2549,6 +2424,81 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
         }
 
         console.log(`Stage 1 completed: Generated ${cardList.length} cards`);
+        
+        // Post-generation validation: Ensure proper land count
+        const landCount = cardList.filter(card => {
+          const category = card.category?.toLowerCase() || '';
+          return category === 'lands' || 
+                 category === 'land' || 
+                 category.includes('land');
+        }).length;
+        
+        const targetLandCount = distribution.lands.min;
+        
+        console.log(`Land count check: current=${landCount}, target=${targetLandCount}`);
+        
+        if (landCount < targetLandCount) {
+          console.warn(`AI generated only ${landCount} lands, need ${targetLandCount}. Adding basic lands...`);
+          const landsToAdd = targetLandCount - landCount;
+          const basicLandObjects = generateBasicLands(commander.color_identity, landsToAdd);
+          
+          // Process basic land objects with quantity property
+          basicLandObjects.forEach(landObj => {
+            const quantity = landObj.quantity || 1;
+            for (let i = 0; i < quantity; i++) {
+              cardList.push({
+                name: landObj.name,
+                category: 'Lands',
+                ai_generated: false,
+                post_generation_fix: true
+              });
+            }
+          });
+          
+          console.log(`Added ${landsToAdd} basic lands to reach ${targetLandCount} total lands`);
+        } else if (landCount > distribution.lands.max) {
+          console.warn(`AI generated ${landCount} lands, maximum is ${distribution.lands.max}. Removing excess...`);
+          const landsToRemove = landCount - distribution.lands.max;
+          
+          // Remove excess lands (prioritize removing utility lands over basics)
+          const landCards = cardList.filter(card => {
+            const category = card.category?.toLowerCase() || '';
+            return category === 'lands' || 
+                   category === 'land' || 
+                   category.includes('land');
+          });
+          
+          const utilityLands = landCards.filter(card => 
+            !['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'].includes(card.name)
+          );
+          
+          const basicLands = landCards.filter(card => 
+            ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'].includes(card.name)
+          );
+          
+          // Remove utility lands first, then basic lands if needed
+          let removed = 0;
+          for (const land of [...utilityLands, ...basicLands]) {
+            if (removed >= landsToRemove) break;
+            const index = cardList.findIndex(card => card.name === land.name);
+            if (index !== -1) {
+              cardList.splice(index, 1);
+              removed++;
+            }
+          }
+          
+          console.log(`Removed ${removed} excess lands`);
+        }
+        
+        const finalLandCount = cardList.filter(card => {
+          const category = card.category?.toLowerCase() || '';
+          return category === 'lands' || 
+                 category === 'land' || 
+                 category.includes('land');
+        }).length;
+        
+        console.log(`Final land count after post-generation fix: ${finalLandCount}`);
+        
         return cardList;
 
       } catch (parseError) {

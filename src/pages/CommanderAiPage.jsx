@@ -237,8 +237,14 @@ Requirements:
   };
 
   const handleOpenModal = (card) => {
-    setSelectedCardForModal(card);
-    setIsModalOpen(true);
+    // Only open modal if card is fully loaded (not a fallback card)
+    if (card && !card._isFallbackCard && card.isLoaded !== false) {
+      setSelectedCardForModal(card);
+      setIsModalOpen(true);
+    } else {
+      // Optionally show a brief message that the card is still loading
+      console.log('Card is still loading, modal will not open:', card?.name);
+    }
   };
 
   const handleCloseModal = () => {

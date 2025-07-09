@@ -7,13 +7,15 @@ import axios from 'axios'; // Import axios for API calls
 const CardDetailModal = ({ card, onClose }) => {
   if (!card) return null;
 
-
-
   const [allArtworks, setAllArtworks] = useState([]);
   const [currentArtIndex, setCurrentArtIndex] = useState(0);
   const [artLoading, setArtLoading] = useState(false);
   const [currentFace, setCurrentFace] = useState(0);
   const [hasLoadedArtworks, setHasLoadedArtworks] = useState(false);
+
+  // Add image loading states
+  const [mainImageError, setMainImageError] = useState(false);
+  const [attemptedImageUrls, setAttemptedImageUrls] = useState(new Set());
 
   // Add a simple cache to avoid refetching the same card's artworks
   const [artworkCache] = useState(new Map());
@@ -25,7 +27,32 @@ const CardDetailModal = ({ card, onClose }) => {
   const [showAiOverview, setShowAiOverview] = useState(false);
   const [aiOverviewCache] = useState(new Map());
 
-  // Enhanced function to get all card face images
+  // Helper function to get alternative image URLs for fallback cards
+  const getAlternativeImageUrls = (card) => {
+    if (!card || !card.id) return [];
+    
+    const alternatives = [];
+    const cardId = card.id;
+    
+    // If this is a fallback card, try multiple URL patterns
+    if (card._isFallbackCard || card.image_uris?._isFallback) {
+      // Try different Scryfall URL patterns
+      alternatives.push(
+        `https://cards.scryfall.io/normal/front/${cardId}.jpg`,
+        `https://cards.scryfall.io/large/front/${cardId}.jpg`,
+        `https://cards.scryfall.io/small/front/${cardId}.jpg`,
+        // Try alternative patterns for older cards
+        `https://cards.scryfall.io/normal/back/${cardId}.jpg`,
+        // Try without the front/back specifier (some cards use this)
+        `https://cards.scryfall.io/normal/${cardId}.jpg`,
+        `https://cards.scryfall.io/large/${cardId}.jpg`
+      );
+    }
+    
+    return alternatives;
+  };
+
+  // Enhanced function to get all card face images with fallback handling
   const getAllCardFaceImages = (card) => {
     if (!card) return [];
 
@@ -40,7 +67,8 @@ const CardDetailModal = ({ card, onClose }) => {
             name: card.name,
             imageUrl: imageUrl,
             uris: card.image_uris,
-            faceIndex: 0
+            faceIndex: 0,
+            _isFallback: card._isFallbackCard || card.image_uris?._isFallback
           });
         }
       }
@@ -59,7 +87,8 @@ const CardDetailModal = ({ card, onClose }) => {
               type_line: face.type_line,
               power: face.power,
               toughness: face.toughness,
-              loyalty: face.loyalty
+              loyalty: face.loyalty,
+              _isFallback: card._isFallbackCard
             });
           }
         });
@@ -69,6 +98,40 @@ const CardDetailModal = ({ card, onClose }) => {
     } catch (error) {
       console.error('CardDetailModal: Error processing card face images:', error, card);
       return [];
+    }
+  };
+
+  // Handle main image load success
+  const handleMainImageLoad = () => {
+    setMainImageError(false);
+  };
+
+  // Handle main image load error with fallback attempts
+  const handleMainImageError = (failedUrl) => {
+    console.warn(`Failed to load image: ${failedUrl}`);
+    setAttemptedImageUrls(prev => new Set([...prev, failedUrl]));
+    
+    // Get alternative URLs for fallback cards
+    const alternatives = getAlternativeImageUrls(card);
+    const nextUrl = alternatives.find(url => !attemptedImageUrls.has(url));
+    
+    if (nextUrl) {
+      console.log(`Trying alternative image URL: ${nextUrl}`);
+      // Update the current artwork with the new URL
+      setAllArtworks(prev => {
+        if (prev.length > 0) {
+          const updated = [...prev];
+          updated[currentArtIndex] = {
+            ...updated[currentArtIndex],
+            uri: nextUrl
+          };
+          return updated;
+        }
+        return prev;
+      });
+    } else {
+      // No more alternatives, show error state
+      setMainImageError(true);
     }
   };
 
@@ -271,12 +334,13 @@ const CardDetailModal = ({ card, onClose }) => {
 
     // Check if card is a commander or user has premium
     const isCommander = card.type_line?.toLowerCase().includes('legendary') && card.type_line?.toLowerCase().includes('creature');
-    if (!isPremium && !isCommander) {
-      setShowAiOverview(prev => !prev);
-      setAiOverview('');
-      setHasLoadedAiOverview(true);
-      return;
-    }
+    // REMOVE isPremium logic: always allow
+    // if (!isPremium && !isCommander) {
+    //   setShowAiOverview(prev => !prev);
+    //   setAiOverview('');
+    //   setHasLoadedAiOverview(true);
+    //   return;
+    // }
 
     // Toggle visibility state
     setShowAiOverview(prev => !prev);
@@ -352,11 +416,13 @@ Keep response under 150 words total. Be direct and actionable.`
   // Initial setup - just use current card data
   useEffect(() => {
     if (card) {
-      console.log("Initial setup for card:", card.name);
+      console.log("Initial setup for card:", card.name, "isFallback:", card._isFallbackCard);
       
-      // Reset lazy loading state for new card
+      // Reset all states for new card
       setHasLoadedArtworks(false);
       setArtLoading(false);
+      setMainImageError(false);
+      setAttemptedImageUrls(new Set());
       
       // Reset AI overview state for new card
       setHasLoadedAiOverview(false);
@@ -375,12 +441,51 @@ Keep response under 150 words total. Be direct and actionable.`
           setName: card.set_name,
           artist: card.artist,
           collector_number: card.collector_number,
-          cardData: card
+          cardData: card,
+          _isFallback: card._isFallbackCard
         }]);
         setCurrentArtIndex(0);
+      } else if (card._isFallbackCard) {
+        // For fallback cards without image_uris, create a basic artwork entry
+        const fallbackUri = getOptimalImageUrl(card, 'DETAIL_MODAL');
+        if (fallbackUri) {
+          setAllArtworks([{
+            uri: fallbackUri,
+            setName: card.set_name || 'Unknown Set',
+            artist: card.artist || 'Unknown Artist',
+            collector_number: card.collector_number || '?',
+            cardData: card,
+            _isFallback: true
+          }]);
+          setCurrentArtIndex(0);
+        }
       }
     }
   }, [card?.id]); // Only depend on card ID, not other derived state
+
+  // Watch for card data updates (fallback -> real card)
+  useEffect(() => {
+    if (card && !card._isFallbackCard && allArtworks.length > 0 && allArtworks[0]._isFallback) {
+      console.log("Card upgraded from fallback to real data, refreshing image");
+      
+      // Reset image states
+      setMainImageError(false);
+      setAttemptedImageUrls(new Set());
+      
+      // Update artwork with real card data
+      const newImageUrl = getOptimalImageUrl(card, 'DETAIL_MODAL', currentFace);
+      if (newImageUrl) {
+        setAllArtworks([{
+          uri: newImageUrl,
+          setName: card.set_name,
+          artist: card.artist,
+          collector_number: card.collector_number,
+          cardData: card,
+          _isFallback: false
+        }]);
+      }
+    }
+  }, [card?.isLoaded, card?._isFallbackCard, currentFace]);
 
   // Only refetch artworks when face changes for double-faced cards, and only if already loaded
   useEffect(() => {
@@ -492,34 +597,25 @@ Keep response under 150 words total. Be direct and actionable.`
         {/* Card Image Section */} 
         <div className="md:w-[40%] flex-shrink-0 flex flex-col justify-center items-center relative">
           <div className="relative">
-            {mainImageUrl ? (
+            {mainImageUrl && !mainImageError ? (
               <img 
                 src={mainImageUrl} 
                 alt={`Art for ${displayCard.name} - ${currentArtwork.setName || card.set_name}`}
                 className="rounded-md max-w-full max-h-[75vh] md:max-h-[85vh] object-contain shadow-xl border-2 border-gray-600"
+                onLoad={handleMainImageLoad}
+                onError={() => handleMainImageError(mainImageUrl)}
               />
             ) : (
               <div className="w-full aspect-[5/7] bg-gray-700 flex items-center justify-center text-gray-400 rounded-lg border-2 border-gray-600">
-                {artLoading ? (
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-500 border-t-transparent mx-auto mb-2"></div>
-                    <span className="text-xs">Loading Art...</span>
-                  </div>
-                ) : (
-                  'No Image Available'
-                )}
-              </div>
-            )}
-            
-            {/* Loading Overlay for Image */}
-            {artLoading && mainImageUrl && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-md">
-                <div className="text-center text-white">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent mx-auto mb-2"></div>
-                  <span className="text-xs">Loading artwork data...</span>
+                <div className="text-center">
+                  <svg className="w-12 h-12 text-gray-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-xs">Image Unavailable</span>
                 </div>
               </div>
             )}
+
             
             {/* Double-faced card indicator on image */}
             {isDoubleFaced && (
@@ -648,14 +744,7 @@ Keep response under 150 words total. Be direct and actionable.`
                   </svg>
                 </div>
                 <h4 className="text-sm font-semibold text-purple-300">AI Strategic Overview</h4>
-                {!isPremium && (
-                  <span className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-2xs px-2 py-0.5 rounded-full font-semibold">
-                    PREMIUM
-                  </span>
-                )}
-                {aiOverviewLoading && isPremium && (
-                  <div className="animate-spin rounded-full h-3 w-3 border border-purple-400 border-t-transparent"></div>
-                )}
+                {/* REMOVE isPremium and loading spinner logic */}
               </div>
               <svg 
                 className={`w-4 h-4 text-gray-400 transition-transform ${showAiOverview ? 'rotate-180' : ''}`} 
@@ -666,8 +755,8 @@ Keep response under 150 words total. Be direct and actionable.`
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
-            
-            {showAiOverview && isPremium && (
+            {/* Always show AI overview for all users */}
+            {showAiOverview && (
               <div className="mt-3 px-2">
                 {aiOverviewLoading ? (
                   <div className="flex items-center justify-center py-6">
@@ -687,32 +776,6 @@ Keep response under 150 words total. Be direct and actionable.`
                     Click to load AI strategic overview
                   </div>
                 )}
-              </div>
-            )}
-
-            {!isPremium && !isCommander && (
-              <div className="mt-3 px-2">
-                <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border border-yellow-500/30 rounded-lg p-4 text-center">
-                  <div className="mb-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center mx-auto mb-2">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                    </div>
-                    <h5 className="text-sm font-semibold text-yellow-300 mb-1">Premium Feature</h5>
-                    <p className="text-xs text-gray-300 mb-3">
-                      AI Strategic Overview is available for commanders in the free plan. Upgrade to Premium to get AI analysis for all cards!
-                    </p>
-                  </div>
-                  <a
-                    href={getPaymentUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-modern btn-modern-primary btn-modern-xs"
-                  >
-                    Upgrade to Premium
-                  </a>
-                </div>
               </div>
             )}
           </div>

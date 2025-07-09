@@ -176,7 +176,12 @@ const DeckBuilderAI = ({ deckSaveControls, onViewCardDetails }) => {
             <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl opacity-60"></div>
             <div
               onClick={() => {
-                if (commander) setIsCommanderModalOpen(true);
+                // Only open modal if commander is fully loaded (not a fallback card)
+                if (commander && !commander._isFallbackCard && commander.isLoaded !== false) {
+                  setIsCommanderModalOpen(true);
+                } else {
+                  console.log('Commander is still loading, modal will not open:', commander?.name);
+                }
               }}
               className="relative group max-w-4xl mx-auto glassmorphism-card border-primary-500/30 shadow-modern-primary hover:shadow-modern-primary hover:scale-[1.02] transition-all duration-300 ease-in-out p-6 md:p-8 cursor-pointer"
             >

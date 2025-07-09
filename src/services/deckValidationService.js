@@ -13,29 +13,72 @@ const API_URL = 'https://api.openai.com/v1/chat/completions';
  * Validate a deck using AI to scan for violations and suggest replacements
  * @param {Array} cardList - List of cards to validate
  * @param {Object} commander - Commander card object
+ * @param {Object} archetypeRules - Archetype rules including budget constraints
  * @returns {Object} Validation result with violations and replacement suggestions
  */
-export const validateDeckWithAI = async (cardList, commander) => {
+export const validateDeckWithAI = async (cardList, commander, archetypeRules = null) => {
   // First, run our centralized legality check
   const centralizedValidation = commanderLegalityService.validateDeck(cardList, commander);
+  
+  // Always perform land count validation for budget decks
+  let landValidationResult = { violations: [] };
+  if (archetypeRules) {
+    landValidationResult = validateLandCount(cardList, commander, archetypeRules);
+  } else {
+    // Even without archetype rules, check for basic land count requirements
+    const landCount = getLandCount(cardList);
+    if (landCount < 30) {
+      landValidationResult.violations.push({
+        card: 'Insufficient Lands',
+        violation_type: 'land_count',
+        severity: 'critical',
+        reason: `Deck has ${landCount} lands but needs at least 30-36 for proper mana base`,
+        suggested_replacement: 'Add more basic lands',
+        replacement_category: 'Lands'
+      });
+    }
+  }
   
   // If we have critical violations from the centralized service, return those immediately
   if (!centralizedValidation.isValid && centralizedValidation.summary.criticalViolations > 0) {
     console.log('Centralized validation found critical violations, using those results');
-    return formatForAIResponse(centralizedValidation);
+    const formattedResult = formatForAIResponse(centralizedValidation);
+    // Add any land violations to the result
+    if (landValidationResult.violations.length > 0) {
+      formattedResult.violations.push(...landValidationResult.violations);
+      formattedResult.summary.total_violations += landValidationResult.violations.length;
+    }
+    return formattedResult;
   }
+
+  // Build enhanced prompt that includes land count validation
+  const landCountGuidance = archetypeRules?.deckStyle === 'budget' ? `
+  
+5. Land Count Validation: Ensure proper land distribution for budget decks
+   - Target land count: ${archetypeRules?.distribution?.lands?.min || 36}-${archetypeRules?.distribution?.lands?.max || 38} lands
+   - Budget constraint: $${archetypeRules?.maxBudget || 100} total budget
+   - Prefer basic lands and budget-friendly options like:
+     * Basic lands (Plains, Island, Swamp, Mountain, Forest)
+     * Command Tower, Exotic Orchard, Terramorphic Expanse
+     * Evolving Wilds, Myriad Landscape
+     * Guild gates and common dual lands
+   - Avoid expensive lands like fetch lands, shock lands, original duals` : `
+   
+5. Land Count Validation: Ensure adequate land base (typically 36-38 lands)`;
 
   const prompt = `VALIDATION EXPERT TASK: Scan this Commander deck for critical violations.
 
 Commander: ${commander.name}
 Color Identity: [${commander.color_identity?.join(', ') || 'Colorless'}]
 Commander Colors: ${commander.colors?.join('') || 'Colorless'}
+${archetypeRules ? `Deck Style: ${archetypeRules.deckStyle || 'Unknown'}` : ''}
+${archetypeRules?.maxBudget ? `Budget Constraint: $${archetypeRules.maxBudget}` : ''}
 
 SCAN FOR VIOLATIONS:
 1. Color Identity: Cards with mana symbols outside commander colors
 2. Format Legality: Banned cards in Commander format  
 3. Singleton Rule: Duplicates (EXCEPT basic lands AND cards with "A deck can have any number of cards named...")
-4. Basic Functionality: Missing essential card types
+4. Basic Functionality: Missing essential card types${landCountGuidance}
 
 IMPORTANT SINGLETON RULE EXCEPTIONS:
 - Basic lands (Plains, Island, Swamp, Mountain, Forest, Wastes) can have multiple copies
@@ -48,17 +91,20 @@ ${JSON.stringify(cardList.map(card => ({
   category: card.category 
 })).slice(0, 50), null, 2)}${cardList.length > 50 ? '\n... (truncated for brevity)' : ''}
 
+CURRENT LAND COUNT: ${getLandCount(cardList)} lands
+
 KNOWN PROBLEM CARDS (check for these specifically):
 - Recently banned: Mana Crypt, Dockside Extortionist, Jeweled Lotus, Nadu Winged Wisdom
 - Color identity issues: Triomes, Talismans, hybrid lands
 - Recently UNBANNED (April 2025): Gifts Ungiven, Sway of the Stars, Braids Cabal Minion, Coalition Victory, Panoptic Mirror
+${archetypeRules?.maxBudget ? `- Budget violations: Cards over $${archetypeRules.maxCardPrice || Math.floor(archetypeRules.maxBudget * 0.1)}` : ''}
 
 RESPONSE FORMAT (JSON only):
 {
   "violations": [
     {
       "card": "Problematic Card Name",
-      "violation_type": "color_identity|format_legality|singleton|functionality",
+      "violation_type": "color_identity|format_legality|singleton|functionality|land_count|budget_constraint",
       "severity": "critical|moderate|minor",
       "reason": "Specific explanation of the violation",
       "suggested_replacement": "Replacement Card Name",
@@ -80,23 +126,28 @@ RESPONSE FORMAT (JSON only):
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${getOpenAIApiKey()}`
       },
-              body: JSON.stringify({
-          model: 'o3-2025-04-16', // Specialized reasoning model for validation
-          messages: [
-            { 
-              role: 'system', 
-              content: 'You are a Magic: The Gathering rules expert specializing in Commander format validation. You have perfect knowledge of all banned cards, color identity rules, and format restrictions. Return only valid JSON. Use the April 2025 updated banned list.'
-            },
-            { role: 'user', content: prompt }
-          ],
-          max_completion_tokens: 3000
-          // Note: o3 model uses default temperature (1) - no temperature parameter needed
-        })
+      body: JSON.stringify({
+        model: 'o3-2025-04-16', // Specialized reasoning model for validation
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are a Magic: The Gathering rules expert specializing in Commander format validation. You have perfect knowledge of all banned cards, color identity rules, format restrictions, and optimal deck construction including mana bases. Return only valid JSON. Use the April 2025 updated banned list.'
+          },
+          { role: 'user', content: prompt }
+        ],
+        max_completion_tokens: 3000
+        // Note: o3 model uses default temperature (1) - no temperature parameter needed
+      })
     });
 
     if (!response.ok) {
       console.warn('AI validation failed, falling back to centralized validation');
-      return formatForAIResponse(centralizedValidation);
+      const formattedResult = formatForAIResponse(centralizedValidation);
+      if (landValidationResult.violations.length > 0) {
+        formattedResult.violations.push(...landValidationResult.violations);
+        formattedResult.summary.total_violations += landValidationResult.violations.length;
+      }
+      return formattedResult;
     }
 
     const data = await response.json();
@@ -104,7 +155,12 @@ RESPONSE FORMAT (JSON only):
     
     if (!content) {
       console.warn('Empty AI validation response, using centralized validation');
-      return formatForAIResponse(centralizedValidation);
+      const formattedResult = formatForAIResponse(centralizedValidation);
+      if (landValidationResult.violations.length > 0) {
+        formattedResult.violations.push(...landValidationResult.violations);
+        formattedResult.summary.total_violations += landValidationResult.violations.length;
+      }
+      return formattedResult;
     }
 
     try {
@@ -121,21 +177,116 @@ RESPONSE FORMAT (JSON only):
         throw new Error('Invalid validation result structure');
       }
       
-      // Merge AI results with centralized validation to ensure we don't miss anything
-      const mergedResult = mergeValidationResults(aiValidationResult, centralizedValidation);
+      // Merge AI results with centralized validation and land validation
+      const mergedResult = mergeValidationResults(aiValidationResult, centralizedValidation, landValidationResult);
       
       console.log(`AI validation completed with centralized backup: ${mergedResult.summary || 'No summary'}`);
       return mergedResult;
       
     } catch (parseError) {
       console.error('Failed to parse AI validation response:', parseError);
-      return formatForAIResponse(centralizedValidation);
+      const formattedResult = formatForAIResponse(centralizedValidation);
+      if (landValidationResult.violations.length > 0) {
+        formattedResult.violations.push(...landValidationResult.violations);
+        formattedResult.summary.total_violations += landValidationResult.violations.length;
+      }
+      return formattedResult;
     }
     
   } catch (error) {
     console.error('AI validation service error:', error);
-    return formatForAIResponse(centralizedValidation);
+    const formattedResult = formatForAIResponse(centralizedValidation);
+    if (landValidationResult.violations.length > 0) {
+      formattedResult.violations.push(...landValidationResult.violations);
+      formattedResult.summary.total_violations += landValidationResult.violations.length;
+    }
+    return formattedResult;
   }
+};
+
+/**
+ * Validate land count for proper mana base
+ * @param {Array} cardList - List of cards to validate
+ * @param {Object} commander - Commander card object
+ * @param {Object} archetypeRules - Archetype rules including distribution requirements
+ * @returns {Object} Land validation result
+ */
+const validateLandCount = (cardList, commander, archetypeRules) => {
+  const landCount = getLandCount(cardList);
+  const violations = [];
+  
+  if (archetypeRules?.distribution?.lands) {
+    const { min, max } = archetypeRules.distribution.lands;
+    
+    if (landCount < min) {
+      violations.push({
+        card: 'Insufficient Lands',
+        violation_type: 'land_count',
+        severity: 'critical',
+        reason: `Deck has ${landCount} lands but needs at least ${min} for proper mana base`,
+        suggested_replacement: getBudgetLandSuggestion(commander, archetypeRules),
+        replacement_category: 'Lands'
+      });
+    } else if (landCount > max) {
+      violations.push({
+        card: 'Excessive Lands',
+        violation_type: 'land_count',
+        severity: 'moderate',
+        reason: `Deck has ${landCount} lands but should have at most ${max} to maintain spell density`,
+        suggested_replacement: 'Remove excess lands',
+        replacement_category: 'Lands'
+      });
+    }
+  }
+  
+  return { violations };
+};
+
+/**
+ * Get the total land count in a deck
+ * @param {Array} cardList - List of cards
+ * @returns {number} Number of lands
+ */
+const getLandCount = (cardList) => {
+  return cardList.filter(card => {
+    const category = card.category?.toLowerCase() || '';
+    const typeLine = card.type_line?.toLowerCase() || '';
+    return category === 'lands' || 
+           category === 'land' || 
+           category.includes('land') ||
+           typeLine.includes('land');
+  }).length;
+};
+
+/**
+ * Get a budget-friendly land suggestion based on commander colors
+ * @param {Object} commander - Commander card object
+ * @param {Object} archetypeRules - Archetype rules
+ * @returns {string} Suggested land name
+ */
+const getBudgetLandSuggestion = (commander, archetypeRules) => {
+  const colorIdentity = commander.color_identity || [];
+  const budget = archetypeRules?.maxBudget || 100;
+  
+  // For ultra-budget decks, prefer basic lands
+  if (budget <= 50) {
+    if (colorIdentity.length === 0) return 'Wastes';
+    if (colorIdentity.length === 1) {
+      const colorToLand = { 'W': 'Plains', 'U': 'Island', 'B': 'Swamp', 'R': 'Mountain', 'G': 'Forest' };
+      return colorToLand[colorIdentity[0]] || 'Plains';
+    }
+    return 'Command Tower';
+  }
+  
+  // For moderate budget decks, suggest budget-friendly utility lands
+  if (budget <= 100) {
+    if (colorIdentity.length <= 1) return 'Terramorphic Expanse';
+    if (colorIdentity.length >= 2) return 'Exotic Orchard';
+    return 'Evolving Wilds';
+  }
+  
+  // For higher budget decks, suggest efficient budget lands
+  return 'Myriad Landscape';
 };
 
 /**
@@ -165,14 +316,16 @@ const formatForAIResponse = (centralizedResult) => {
 };
 
 /**
- * Merge AI validation results with centralized validation to ensure completeness
+ * Merge AI validation results with centralized validation and land validation
  * @param {Object} aiResult - AI validation result
  * @param {Object} centralizedResult - Centralized validation result
+ * @param {Object} landResult - Land validation result
  * @returns {Object} Merged validation result
  */
-const mergeValidationResults = (aiResult, centralizedResult) => {
+const mergeValidationResults = (aiResult, centralizedResult, landResult) => {
   const aiViolations = aiResult.violations || [];
   const centralizedViolations = centralizedResult.violations || [];
+  const landViolations = landResult.violations || [];
   
   // Create a map of violations by card name to avoid duplicates
   const violationMap = new Map();
@@ -197,6 +350,13 @@ const mergeValidationResults = (aiResult, centralizedResult) => {
     }
   });
   
+  // Add land violations that AI might have missed
+  landViolations.forEach(violation => {
+    if (!violationMap.has(violation.card)) {
+      violationMap.set(violation.card, violation);
+    }
+  });
+  
   const mergedViolations = Array.from(violationMap.values());
   
   return {
@@ -205,9 +365,7 @@ const mergeValidationResults = (aiResult, centralizedResult) => {
       total_violations: mergedViolations.length,
       critical: mergedViolations.filter(v => v.severity === 'critical').length,
       moderate: mergedViolations.filter(v => v.severity === 'moderate').length,
-      deck_assessment: mergedViolations.length === 0 ? 
-        'Deck is Commander format legal' : 
-        `Requires ${mergedViolations.length} fixes for legal play`
+      deck_assessment: aiResult.summary?.deck_assessment || 'Validation completed with enhanced checks'
     }
   };
 };

@@ -99,8 +99,14 @@ const DeckBuilderAIPage = () => {
 
   // Handler to open the card detail modal
   const handleOpenCardDetailModal = (card) => {
-    setSelectedCardForDetailModal(card);
-    setIsCardDetailModalOpen(true);
+    // Only open modal if card is fully loaded (not a fallback card)
+    if (card && !card._isFallbackCard && card.isLoaded !== false) {
+      setSelectedCardForDetailModal(card);
+      setIsCardDetailModalOpen(true);
+    } else {
+      // Optionally show a brief message that the card is still loading
+      console.log('Card is still loading, modal will not open:', card?.name);
+    }
   };
 
   // Handler to close the card detail modal

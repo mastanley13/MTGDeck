@@ -304,8 +304,14 @@ export const validateCard = (card, commander) => {
 const canHaveMultipleCopies = (card) => {
   if (!card) return false;
   
-  // Basic lands are always allowed multiples
+  // Basic lands are always allowed multiples - check by type_line first
   if (card.type_line && card.type_line.includes('Basic') && card.type_line.includes('Land')) {
+    return true;
+  }
+  
+  // Fallback: Check by card name for basic lands (in case type_line is missing)
+  const basicLandNames = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest', 'Wastes'];
+  if (basicLandNames.includes(card.name)) {
     return true;
   }
   

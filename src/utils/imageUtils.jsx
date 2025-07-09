@@ -1,7 +1,7 @@
 /**
  * Centralized image utility functions for consistent card image handling
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const IMAGE_QUALITIES = {
   HIGH: ['png', 'large', 'normal', 'small'],
@@ -112,9 +112,19 @@ export const getOptimalImageUrl = (card, context = 'MEDIUM', faceIndex = 0) => {
     };
     
     const sizeForContext = contextToSize[IMAGE_CONTEXTS[context]] || 'normal';
-    const fallbackUrl = `https://cards.scryfall.io/${sizeForContext}/front/${card.id}.jpg`;
-    console.log(`🔧 Generated final fallback URL for ${card.name}: ${fallbackUrl}`);
-    return fallbackUrl;
+    
+    // For fallback cards, be more conservative with URL construction
+    if (card._isFallbackCard || card.image_uris?._isFallback) {
+      // Try the most common pattern first
+      const fallbackUrl = `https://cards.scryfall.io/${sizeForContext}/front/${card.id}.jpg`;
+      console.log(`🔧 Generated fallback URL for ${card.name}: ${fallbackUrl}`);
+      return fallbackUrl;
+    } else {
+      // For regular cards, use the standard pattern
+      const fallbackUrl = `https://cards.scryfall.io/${sizeForContext}/front/${card.id}.jpg`;
+      console.log(`🔧 Generated final fallback URL for ${card.name}: ${fallbackUrl}`);
+      return fallbackUrl;
+    }
   }
   
   if (card.name && card.name.includes('//')) {
@@ -221,10 +231,20 @@ export const LazyCardImage = ({
 }) => {
   const [imageState, setImageState] = useState('loading');
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 2;
+  const [currentImageUrl, setCurrentImageUrl] = useState(null);
+  const maxRetries = card?._isFallbackCard ? 1 : 2; // Fewer retries for fallback cards
   
   const imageUrl = getOptimalImageUrl(card, context, faceIndex);
   const responsiveProps = getResponsiveImageProps(imageUrl);
+  
+  // Update image URL when card changes
+  useEffect(() => {
+    if (imageUrl !== currentImageUrl) {
+      setCurrentImageUrl(imageUrl);
+      setImageState('loading');
+      setRetryCount(0);
+    }
+  }, [imageUrl, currentImageUrl]);
   
   const handleLoad = () => {
     setImageState('loaded');
@@ -232,7 +252,9 @@ export const LazyCardImage = ({
   };
   
   const handleError = () => {
-    if (retryCount < maxRetries) {
+    console.warn(`Image load failed for ${card?.name}: ${currentImageUrl}`);
+    
+    if (retryCount < maxRetries && !card?._isFallbackCard) {
       setRetryCount(prev => prev + 1);
       setImageState('retrying');
       setTimeout(() => setImageState('loading'), 1000);
@@ -242,22 +264,48 @@ export const LazyCardImage = ({
     }
   };
   
-  if (!imageUrl) {
+  if (!currentImageUrl) {
     return (
       <div className={`bg-gray-700 flex items-center justify-center text-gray-400 text-sm ${className}`}>
-        No Image Available
+        {card?._isFallbackCard ? (
+          <div className="text-center">
+            <div className="text-xs">Loading...</div>
+            <div className="text-2xs text-gray-500 mt-1">Card data loading</div>
+          </div>
+        ) : (
+          'No Image Available'
+        )}
+      </div>
+    );
+  }
+  
+  if (imageState === 'error') {
+    return (
+      <div className={`bg-gray-700 flex items-center justify-center text-gray-400 text-sm ${className}`}>
+        {card?._isFallbackCard ? (
+          <div className="text-center">
+            <div className="text-xs">Image Unavailable</div>
+            <div className="text-2xs text-gray-500 mt-1">Waiting for card data</div>
+          </div>
+        ) : (
+          'Image Unavailable'
+        )}
       </div>
     );
   }
   
   return (
     <img
-      src={imageUrl}
+      src={currentImageUrl}
       alt={alt || `${card.name} card image`}
       className={className}
       onLoad={handleLoad}
       onError={handleError}
       loading="lazy"
+      style={{ 
+        opacity: imageState === 'loading' || imageState === 'retrying' ? 0.7 : 1,
+        transition: 'opacity 0.3s ease'
+      }}
       {...responsiveProps}
       {...props}
     />
