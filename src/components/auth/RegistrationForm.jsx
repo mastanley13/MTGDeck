@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
-import { setInitialSubscriptionStatus } from '../../utils/ghlSubscriptionAPI';
 import { useAuth } from '../../context/AuthContext';
 
 const RegistrationForm = () => {
@@ -127,13 +126,12 @@ const RegistrationForm = () => {
         
         if (result.contact && result.contact.id) {
           try {
-            await setInitialSubscriptionStatus(result.contact.id, false);
             // Add Reflio signup tracking
             if (typeof Reflio !== 'undefined') {
               await Reflio.signup(userData.email);
             }
           } catch (error) {
-            console.error('Failed to set initial subscription status or track Reflio signup:', error);
+            console.error('Failed to track Reflio signup:', error);
           }
         }
         

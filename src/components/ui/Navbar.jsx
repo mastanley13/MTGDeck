@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useSubscription } from '../../context/SubscriptionContext';
-import { getPaymentUrl, initiatePremiumCheckout } from '../../utils/stripeIntegration';
 
 // Placeholder - replace with the same ID used in UserProfilePage.jsx
 const PROFILE_PIC_CUSTOM_FIELD_ID = "hPIWnTEsvK1pVbATGLS5";
@@ -15,7 +13,6 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, isAuthenticated, logout, loadingAuth } = useAuth();
-  const { isPremium } = useSubscription();
   
   const profileDropdownRef = useRef(null);
   const aiDropdownRef = useRef(null);
@@ -205,7 +202,7 @@ const Navbar = () => {
                   <button
                     onClick={() => setIsToolsDropdownOpen(!isToolsDropdownOpen)}
                     className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 relative overflow-hidden group whitespace-nowrap flex items-center ${
-                      (isActive('/card-search') || isActive('/how-to-play') || isActive('/affiliate') || isActive('/contact') || isActive('/socials'))
+                      (isActive('/card-search') || isActive('/how-to-play') || isActive('/contact') || isActive('/socials'))
                         ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 shadow-lg shadow-primary-500/10 border border-primary-500/20'
                         : 'text-slate-300 hover:text-white hover:bg-slate-700/60 border border-transparent hover:border-slate-600/50'
                     }`}
@@ -239,19 +236,7 @@ const Navbar = () => {
                           <span>How to Play</span>
                         </div>
                       </Link>
-                      <Link
-                        to="/affiliate"
-                        onClick={() => setIsToolsDropdownOpen(false)}
-                        className={`block w-full text-left px-4 py-3 text-sm transition-all duration-200 rounded-lg mx-2 ${
-                          isActive('/affiliate')
-                            ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400'
-                            : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <span>Become an Affiliate</span>
-                        </div>
-                      </Link>
+
                       <Link
                         to="/contact"
                         onClick={() => setIsToolsDropdownOpen(false)}
@@ -402,15 +387,7 @@ const Navbar = () => {
                             <span>View Profile</span>
                           </div>
                         </Link>
-                        <Link
-                          to="/subscription"
-                          onClick={() => setIsProfileDropdownOpen(false)}
-                          className="block w-full text-left px-4 py-3 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 transition-all duration-200 rounded-lg mx-2"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <span>Subscription</span>
-                          </div>
-                        </Link>
+
                         <div className="border-t border-slate-700/50 mt-2 pt-2">
                           <button 
                             onClick={handleLogout}
@@ -505,31 +482,7 @@ const Navbar = () => {
               </div>
             )}
 
-            {/* My Plan for mobile - modern style with site colors */}
-            <Link
-              to="/subscription"
-              onClick={() => setIsMenuOpen(false)}
-              className={`flex items-center justify-between w-full p-4 rounded-xl transition-all duration-300 ${
-                isPremium 
-                  ? 'bg-gradient-to-r from-primary-600/20 to-blue-600/20 border border-primary-500/30 shadow-lg shadow-primary-500/10' 
-                  : 'bg-gradient-to-r from-slate-700/40 to-slate-600/40 border border-slate-600/50 shadow-lg shadow-slate-900/20'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${isPremium ? 'bg-primary-400 shadow-lg shadow-primary-400/50' : 'bg-slate-400 shadow-lg shadow-slate-400/50'}`}></div>
-                <span className={`font-semibold ${isPremium ? 'text-primary-300' : 'text-slate-200'}`}>
-                  {isPremium ? 'Premium Plan' : 'Free Plan - Upgrade to access premium features'}
-                </span>
-                {isPremium && (
-                  <svg className="w-4 h-4 text-primary-300" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                  </svg>
-                )}
-              </div>
-              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+
             
             {/* Navigation links with site colors */}
             <div className="space-y-2">
@@ -626,19 +579,7 @@ const Navbar = () => {
                     <span>How to Play</span>
                   </div>
                 </Link>
-                <Link
-                  to="/affiliate"
-                  onClick={() => setIsMenuOpen(false)}
-                  className={`block w-full p-3 rounded-xl transition-all duration-200 ${
-                    isActive('/affiliate')
-                      ? 'bg-gradient-to-r from-primary-500/20 to-blue-500/20 text-primary-400 border border-primary-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <span>Become an Affiliate</span>
-                  </div>
-                </Link>
+
                 <Link
                   to="/contact"
                   onClick={() => setIsMenuOpen(false)}
@@ -743,45 +684,7 @@ const Navbar = () => {
         </div>
       )}
 
-      {/* Subscription Banner */}
-      <div className="bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/40 relative z-[40]">
-        <Link 
-          to="/subscription"
-          className={`block w-full transition-all duration-300 ${
-            isPremium 
-              ? 'bg-gradient-to-r from-primary-500/10 via-blue-500/10 to-primary-500/10 hover:from-primary-500/15 hover:via-blue-500/15 hover:to-primary-500/15' 
-              : 'bg-gradient-to-r from-slate-800/80 via-slate-700/80 to-slate-800/80 hover:from-slate-700/80 hover:via-slate-600/80 hover:to-slate-700/80'
-          }`}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="py-1.5 flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className={`w-2 h-2 rounded-full animate-pulse ${
-                  isPremium ? 'bg-primary-400' : 'bg-slate-400'
-                }`} />
-                <span className={`text-sm font-medium ${
-                  isPremium ? 'text-primary-300' : 'text-slate-300'
-                }`}>
-                  {isPremium ? 'Premium Plan' : 'Free Plan - Upgrade to access premium features'}
-                </span>
-              </div>
-              <div className={`flex items-center space-x-2 text-sm font-medium ${
-                isPremium ? 'text-primary-400 hover:text-primary-300' : 'text-slate-400 hover:text-slate-300'
-              }`}>
-                <span>{isPremium ? 'Manage Subscription' : 'Upgrade Now'}</span>
-                <svg 
-                  className="w-4 h-4" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </Link>
-      </div>
+
     </header>
   );
 };

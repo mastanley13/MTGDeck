@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDeck } from '../context/DeckContext';
 import { getOpenAIApiKey } from '../utils/openaiAPI';
-import { useSubscription } from '../context/SubscriptionContext';
+
 import { validateColorIdentity } from '../utils/deckValidator';
 import { validateDeckWithAI } from '../services/deckValidationService.js';
 import { generateSmartReplacements, applySmartReplacements } from '../services/smartReplacementService.js';
@@ -262,7 +262,7 @@ export const useAutoDeckBuilder = () => {
   // Track automatically filtered color identity violations
   const [filteredColorViolations, setFilteredColorViolations] = useState([]);
 
-  const { canMakeAIRequest, incrementAIRequests, isPremium } = useSubscription();
+
   const deckContext = useDeck(); // Use the whole context object
   const { 
     commander, 
@@ -407,20 +407,14 @@ export const useAutoDeckBuilder = () => {
       return false;
     }
 
-    if (!isPremium && !canMakeAIRequest) {
-      setPaywallBlocked(true);
-      setError('AI request limit reached. Upgrade to Premium for unlimited deck building.');
-      return false;
-    }
+
 
     try {
       setIsLoading(true);
       setError(null);
       setPaywallBlocked(false);
       
-      if (!isPremium) {
-        incrementAIRequests();
-      }
+
       
       resetDeckExceptCommander();
       
@@ -2642,8 +2636,7 @@ CRITICAL: Ensure exactly 99 cards are included. Return only the JSON array, noth
     progress,
     paywallBlocked,
     clearPaywallBlocked,
-    canMakeAIRequest,
-    isPremium,
+
     // Progressive UI state
     buildingStage,
     currentCards,

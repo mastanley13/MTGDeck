@@ -12,18 +12,16 @@ import UserProfilePage from './pages/UserProfilePage.jsx';
 import CommanderAiPage from './pages/CommanderAiPage.jsx';
 import TutorAiPage from './pages/TutorAiPage.jsx';
 import CardSearchPage from './pages/CardSearchPage.jsx';
-import SubscriptionPage from './pages/SubscriptionPage.jsx';
 import HowToPlayPage from './pages/HowToPlayPage.jsx';
 import BlogPage from './pages/BlogPage.jsx';
-import AffiliatePage from './pages/AffiliatePage.jsx';
 import BlogPostPage from './pages/BlogPostPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import SocialsPage from './pages/SocialsPage.jsx';
-import PaymentSuccessPage from './pages/PaymentSuccessPage.jsx';
+import Legal from './pages/Legal.tsx';
 import CardDebugger from './components/debug/CardDebugger.jsx';
 import { DeckProvider } from './context/DeckContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
-import { SubscriptionProvider } from './context/SubscriptionContext.jsx';
+
 import Navbar from './components/ui/Navbar.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 
@@ -42,7 +40,6 @@ function App() {
       onScriptLoadSuccess={() => console.log('Google OAuth Script Loaded Successfully')}
     >
       <AuthProvider>
-        <SubscriptionProvider>
           <DeckProvider>
             <Router>
             <div className="app min-h-screen bg-slate-900 flex flex-col">
@@ -53,15 +50,13 @@ function App() {
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
                   <Route path="/card-search" element={<CardSearchPage />} />
-                  <Route path="/subscription" element={<SubscriptionPage />} />
-                  <Route path="/payment-success" element={<PaymentSuccessPage />} />
                   <Route path="/how-to-play" element={<HowToPlayPage />} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogPostPage />} />
                   <Route path="/debug" element={<CardDebugger />} />
-                  <Route path="/affiliate" element={<AffiliatePage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/socials" element={<SocialsPage />} />
+                  <Route path="/legal" element={<Legal />} />
 
                   <Route path="/commander-ai" element={<CommanderAiPage />} />
                   <Route path="/tutor-ai" element={<TutorAiPage />} />
@@ -103,6 +98,7 @@ function App() {
                         <a href="/card-search" className="text-slate-300 hover:text-primary-400 transition-colors">Card Search</a>
                         <a href="/how-to-play" className="text-slate-300 hover:text-primary-400 transition-colors">How to Play</a>
                         <a href="/contact" className="text-slate-300 hover:text-primary-400 transition-colors">Contact</a>
+                        <a href="/legal" className="text-slate-300 hover:text-primary-400 transition-colors">Legal</a>
                       </div>
                       
                       {/* Social Links */}
@@ -146,6 +142,10 @@ function App() {
                     <p className="text-slate-600 text-xs mt-2">
                       Powered by StrategixAI & Scryfall
                     </p>
+                    {/* Legal Disclaimer */}
+                    <p className="text-xs text-center text-slate-600 mt-4 leading-relaxed">
+                      Magic: The Gathering® and all related logos are trademarks of Wizards of the Coast LLC, a subsidiary of Hasbro, Inc. <strong>AI Deck Tutor</strong> is unofficial Fan Content permitted under Wizards' Fan Content Policy. Not approved, endorsed, or sponsored by Wizards. Portions of the materials used are property of Wizards of the Coast LLC. © 1993‑2025 Wizards of the Coast LLC.
+                    </p>
                   </div>
                 </div>
               </footer>
@@ -164,7 +164,6 @@ function App() {
             </div>
           </Router>
         </DeckProvider>
-      </SubscriptionProvider>
     </AuthProvider>
     </GoogleOAuthProvider>
   );

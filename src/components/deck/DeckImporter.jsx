@@ -5,7 +5,7 @@ import ImportProgressDisplay from '../ui/ImportProgressDisplay';
 import ImportResultsDisplay from '../ui/ImportResultsDisplay';
 import { useDeck } from '../../context/DeckContext';
 import { useAuth } from '../../context/AuthContext';
-import { useSubscription } from '../../context/SubscriptionContext';
+
 
 const DeckImporter = ({ onImportComplete, onClose }) => {
   const [importMethod, setImportMethod] = useState('file');
@@ -21,7 +21,7 @@ const DeckImporter = ({ onImportComplete, onClose }) => {
   // Context hooks
   const { importDeck, saveCurrentDeckToGHL } = useDeck();
   const { currentUser, isAuthenticated } = useAuth();
-  const { canSaveMoreDecks, isPremium } = useSubscription();
+
   
   const processImport = async (content, fileName = 'Imported Deck') => {
     setIsProcessing(true);
@@ -89,11 +89,7 @@ const DeckImporter = ({ onImportComplete, onClose }) => {
   const handleConfirmImport = async () => {
     if (!importResult) return;
     
-    // Check paywall limits for new decks
-    if (!isPremium && !canSaveMoreDecks) {
-      setErrors(['You have reached the maximum number of saved decks on the free plan. Upgrade to Premium for unlimited deck saves.']);
-      return;
-    }
+
     
     // Determine final deck name
     let finalDeckName = importResult.name || 'Imported Deck';

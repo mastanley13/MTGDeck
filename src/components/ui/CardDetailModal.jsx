@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { parseManaSymbols } from '../../utils/manaSymbols';
 import { getOptimalImageUrl, IMAGE_CONTEXTS } from '../../utils/imageUtils.jsx';
-import { useSubscription } from '../../context/SubscriptionContext';
+
 import axios from 'axios'; // Import axios for API calls
 
 const CardDetailModal = ({ card, onClose }) => {
   if (!card) return null;
 
-  const { isPremium } = useSubscription();
+
 
   const [allArtworks, setAllArtworks] = useState([]);
   const [currentArtIndex, setCurrentArtIndex] = useState(0);

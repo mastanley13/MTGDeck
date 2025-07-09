@@ -16,9 +16,7 @@ import DeckImporter from '../components/deck/DeckImporter.jsx';
 import useCardSearch from '../hooks/useCardSearch';
 import { useDeck } from '../context/DeckContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useSubscription } from '../context/SubscriptionContext.jsx';
-import PaywallModal from '../components/paywall/PaywallModal.jsx';
-import UsageBanner from '../components/paywall/UsageBanner.jsx';
+
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { validateColorIdentity, validateFormatLegality, isDeckValid, useDeckValidation, validateDeck } from '../utils/deckValidator';
@@ -63,17 +61,7 @@ const DeckBuilderAIPage = () => {
   const [isCardDetailModalOpen, setIsCardDetailModalOpen] = useState(false);
   const [selectedCardForDetailModal, setSelectedCardForDetailModal] = useState(null);
 
-  // State for PaywallModal
-  const [isPaywallModalOpen, setIsPaywallModalOpen] = useState(false);
-  const [paywallModalConfig, setPaywallModalConfig] = useState({
-    type: 'deck',
-    title: '',
-    message: '',
-  });
-
   const { currentUser } = useAuth();
-  const { canSaveMoreDecks, isPremium, getCurrentLimits } = useSubscription();
-  const limits = useMemo(() => getCurrentLimits(), [getCurrentLimits]);
 
   const {
     commander,
@@ -254,21 +242,7 @@ const DeckBuilderAIPage = () => {
         return;
       }
 
-      // Step 3: Check paywall limits
-      const existingDeck = savedDecks.find(deck => deck.name === currentDeckName?.trim());
-      const isNewDeck = !existingDeck;
-      
-      if (isNewDeck && !isPremium && !canSaveMoreDecks) {
-        setPaywallModalConfig({
-          type: 'deck',
-          title: 'Deck Save Limit Reached',
-          message: `Free users can save up to ${limits?.maxDecks || 5} decks. Upgrade to Premium for unlimited deck saves!`
-        });
-        setIsPaywallModalOpen(true);
-        return;
-      }
-
-      // Step 4: Launch input modal or save directly
+      // Step 3: Launch input modal or save directly
       if (isFabClick || !currentDeckName) { 
         launchInputModal(true); 
       } else {
@@ -283,7 +257,7 @@ const DeckBuilderAIPage = () => {
       });
       setIsAlertModalOpen(true);
     }
-  }, [commander, cards, currentUser, isPremium, canSaveMoreDecks, currentDeckName, savedDecks, limits?.maxDecks, navigate]);
+  }, [commander, cards, currentUser, currentDeckName, savedDecks, navigate]);
 
   const openCommanderSearchModal = () => setIsCommanderSearchModalOpen(true);
   const closeCommanderSearchModal = () => setIsCommanderSearchModalOpen(false);
@@ -410,14 +384,7 @@ const DeckBuilderAIPage = () => {
             confirmText={inputModalConfig.confirmText}
           />
 
-          {/* Paywall Modal */}
-          <PaywallModal
-            isOpen={isPaywallModalOpen}
-            onClose={() => setIsPaywallModalOpen(false)}
-            type={paywallModalConfig.type}
-            title={paywallModalConfig.title}
-            message={paywallModalConfig.message}
-          />
+
 
           {/* Render CardDetailModal */}
           {isCardDetailModalOpen && selectedCardForDetailModal && (

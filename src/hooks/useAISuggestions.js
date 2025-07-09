@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { getSuggestions, getOpenAIApiKey } from '../utils/openaiAPI';
 import { searchCardByName } from '../utils/scryfallAPI';
 import { useDeck } from '../context/DeckContext';
-import { useSubscription } from '../context/SubscriptionContext';
+
 
 /**
  * Custom hook for getting and managing AI-generated card suggestions
@@ -15,7 +15,7 @@ import { useSubscription } from '../context/SubscriptionContext';
  */
 export const useAISuggestions = (options = {}) => {
   const { commander, cards } = useDeck();
-  const { canMakeAIRequest, incrementAIRequests, isPremium } = useSubscription();
+
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -35,22 +35,14 @@ export const useAISuggestions = (options = {}) => {
       return false;
     }
 
-    // Check paywall limits
-    if (!isPremium && !canMakeAIRequest) {
-      setPaywallBlocked(true);
-      setError('AI request limit reached. Upgrade to Premium for unlimited requests.');
-      return false;
-    }
+
 
     setIsLoading(true);
     setError(null);
     setPaywallBlocked(false);
 
     try {
-      // Increment AI request counter
-      if (!isPremium) {
-        incrementAIRequests();
-      }
+
 
       // Get the suggestions from OpenAI using the hardcoded API key
       const aiSuggestions = await getSuggestions(commander, cards, {
@@ -92,7 +84,7 @@ export const useAISuggestions = (options = {}) => {
     } finally {
       setIsLoading(false);
     }
-  }, [commander, cards, focusCategories, deckTheme, maxSuggestions, options.model, isPremium, canMakeAIRequest, incrementAIRequests]);
+  }, [commander, cards, focusCategories, deckTheme, maxSuggestions, options.model]);
 
   /**
    * Update focus categories for suggestions
@@ -144,8 +136,7 @@ export const useAISuggestions = (options = {}) => {
     apiKey,
     focusCategories,
     deckTheme,
-    canMakeAIRequest,
-    isPremium,
+
     getSuggestions: getSuggestionsFromAI,
     updateFocusCategories,
     updateDeckTheme,
