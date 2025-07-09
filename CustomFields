@@ -1,0 +1,47 @@
+{
+  "customFields": [
+    {
+      "id": "7GbpQNKTkpS3Od2U0xEl",
+      "name": "Password",
+      "model": "contact",
+      "fieldKey": "contact.password",
+      "placeholder": "",
+      "dataType": "TEXT",
+      "position": 350,
+      "documentType": "field",
+      "parentId": "1xCu11HB4L4h3oSdOrsm",
+      "locationId": "zKZ8Zy6VvGR1m7lNfRkY",
+      "dateAdded": "2025-05-16T19:36:10.850Z",
+      "standard": false
+    },
+    {
+      "id": "hPIWnTEsvK1pVbATGLS5",
+      "name": "Profile Picture",
+      "model": "contact",
+      "fieldKey": "contact.profile_picture",
+      "placeholder": "",
+      "dataType": "TEXT",
+      "position": 400,
+      "documentType": "field",
+      "parentId": "1xCu11HB4L4h3oSdOrsm",
+      "locationId": "zKZ8Zy6VvGR1m7lNfRkY",
+      "dateAdded": "2025-05-18T03:33:15.430Z",
+      "standard": false
+    },
+    {
+      "id": "zi3peZjkU9rZmf5j41Et",
+      "name": "Subscriber",
+      "model": "contact",
+      "fieldKey": "contact.subscriber",
+      "placeholder": "",
+      "dataType": "TEXT",
+      "position": 450,
+      "documentType": "field",
+      "parentId": "1xCu11HB4L4h3oSdOrsm",
+      "locationId": "zKZ8Zy6VvGR1m7lNfRkY",
+      "dateAdded": "2025-05-23T18:26:00.105Z",
+      "standard": false
+    }
+  ],
+  "traceId": "36c3712c-cc11-453a-ba60-dc51fc61a2bc"
+}

@@ -1,0 +1,63 @@
+Notes
+
+The OpenAI prompt for building decks currently only appends the selected archetype string (“Deck style: ${deckStyle}”) without differentiating how each style should behave. The prompt begins around line 80 in useAutoDeckBuilder.js and sets the general rules for building a 99‑card deck.
+
+The function analyzeCommander receives the deck style but likewise only incorporates it in a short analysis prompt (lines 456‑496) without style‑specific guidelines.
+
+Bracket determination for power level is handled separately in bracketAnalyzer.js. It assigns Bracket 1–5 based on game‑changing cards, tutors, combos, and other factors (lines 60‑112).
+
+Budget analysis exists in bucketClassify.js, which tracks price buckets and total deck cost while calculating other stats (lines 240‑292). Cards are also categorized into budget tiers based on price (lines 142‑148).
+
+Potential Improvements
+Add archetype-specific instructions to the AI prompt
+
+Extend buildCompleteDeck so each archetype has tailored rules. For example, append additional guidance when deckStyle is "competitive":
+if (deckStyle === 'competitive') {
+  prompt += `
+    Focus on high-efficiency staples, multiple tutors and combos.
+    Aim for Commander Bracket 4–5.
+  `;
+} else if (deckStyle === 'casual') {
+  prompt += `
+    Avoid mass land destruction, extra turns, and limit tutors.
+    Keep the deck around Bracket 1–3 for a relaxed power level.
+  `;
+} // etc. for aggro, control, tribal...
+
+This modification would live inside the prompt construction block in useAutoDeckBuilder.js near line 80.
+
+Implement budget enforcement for the “Budget Friendly” style
+
+After generating the card list, calculate total cost using each card’s prices.usd (already available when fetching from Scryfall). Reject or replace cards if the cost exceeds $250. The price-handling logic can mirror the total-cost calculation in bucketClassify.js lines 258‑292, but applied during deck assembly. Also add prompt guidance:
+if (deckStyle === 'budget') {
+  prompt += `
+    Keep the estimated deck cost under $250.
+    Minimize shock lands and expensive dual lands; favor basics or cheaper alternatives.
+  `;
+}
+
+Checking the total deck cost ensures the final list honors the budget constraint.
+
+Tie archetypes to Bracket expectations
+
+Utilize analyzeBracket after building the deck (or as part of validation) to confirm the deck falls in the desired bracket range. When deckStyle is “competitive,” warn the user if the bracket analysis is <4. For “casual,” warn if bracket >3. This can leverage the existing bracket analyzer results.
+
+Enhance style definitions
+
+Provide small rule sets for the remaining archetypes:
+
+Combo Focused – emphasize cards enabling infinite or near-infinite combos.
+
+Aggressive – prioritize low‑cost creatures and haste/extra combat effects.
+
+Control – focus on counterspells, board wipes, and recursion.
+
+Tribal – center on the commander’s creature type (if any) and synergy pieces.
+
+These rules can be added to the prompt generation in useAutoDeckBuilder.js to better steer OpenAI’s suggestions.
+
+Display budget information in the deck stats
+
+While total cost is already shown, highlight when a “budget” deck exceeds the desired threshold. This could be a simple warning within DeckStats when bucketCounts.totalCost > $250 for that archetype.
+
+Implementing these enhancements would allow the AI Deck Builder to produce decks that match user expectations for competitive strength and budget limits while giving each archetype more focused direction.

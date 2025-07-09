@@ -1,0 +1,23 @@
+{
+  "lastUpdated": "2023-01-01T00:00:00.000Z",
+  "commanders": [
+    {
+      "id": "sample-id-1",
+      "name": "Sample Commander",
+      "mana_cost": "{2}{W}{U}",
+      "type_line": "Legendary Creature — Human Wizard",
+      "oracle_text": "Sample commander text.",
+      "power": "3",
+      "toughness": "3",
+      "color_identity": ["W", "U"],
+      "image_uris": {
+        "small": "https://example.com/small.jpg",
+        "normal": "https://example.com/normal.jpg"
+      },
+      "legalities": {
+        "commander": "legal"
+      }
+    }
+  ],
+  "cards": []
+} 

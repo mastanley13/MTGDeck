@@ -1,0 +1,58 @@
+{
+    "object": {
+      "id": "68262828118aa5741c24051b",
+      "labels": {
+        "singular": "Deck",
+        "plural": "Decks"
+      },
+      "description": "",
+      "requiredProperties": [
+        "custom_objects.decks.decks"
+      ],
+      "searchableProperties": [
+        "custom_objects.decks.decks"
+      ],
+      "primaryDisplayProperty": "custom_objects.decks.decks",
+      "key": "custom_objects.decks",
+      "uniqueProperties": [],
+      "locationId": "zKZ8Zy6VvGR1m7lNfRkY",
+      "updatedAt": "2025-05-15T17:45:12.432Z",
+      "createdAt": "2025-05-15T17:45:12.432Z",
+      "icon": {
+        "class": "ix:group-objects",
+        "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%\" height=\"100%\" viewBox=\"0 0 512 512\"><path fill=\"currentColor\" d=\"M128 42.667V64h256V42.667h85.333V128H448v256h21.333v85.334H384V448H128v21.334H42.667V384H64V128H42.667V42.667zm256 64H128V128h-21.333v256H128v21.334h256V384h21.333V128H384zm-85.333 42.667v64h64v149.333H213.333v-64h-64V149.334zM320 256h-64v64h64zm-64-64h-64v64h21.333v-42.666H256z\"/></svg>"
+      },
+      "type": "USER_DEFINED"
+    },
+    "fields": [
+      {
+        "id": "Y3hGjhRwdBaYRE6kXdT7",
+        "standard": false,
+        "locationId": "zKZ8Zy6VvGR1m7lNfRkY",
+        "fieldKey": "custom_objects.decks.decks",
+        "name": "Decks",
+        "dataType": "TEXT",
+        "position": 50,
+        "parentId": "y9Kqm1XLg59IErUNQtNH",
+        "objectKey": "custom_objects.decks",
+        "dateAdded": "2025-05-15T17:45:12.554Z",
+        "dateUpdated": "2025-05-15T17:45:12.554Z"
+      },
+      {
+        "id": "fePUcUm8ryUMTrEM7jQa",
+        "standard": false,
+        "locationId": "zKZ8Zy6VvGR1m7lNfRkY",
+        "fieldKey": "custom_objects.decks.deck_data",
+        "name": "Deck Data",
+        "dataType": "LARGE_TEXT",
+        "position": 100,
+        "showInForms": true,
+        "parentId": "y9Kqm1XLg59IErUNQtNH",
+        "objectKey": "custom_objects.decks",
+        "dateAdded": "2025-05-17T00:17:21.292Z",
+        "dateUpdated": "2025-05-17T00:17:21.292Z"
+      }
+    ],
+    "cache": false,
+    "traceId": "4dc2f2bb-e6de-41c1-aea0-5a87aed22e0a"
+  }

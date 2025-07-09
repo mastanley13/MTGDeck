@@ -1,0 +1,77 @@
+Card Face Objects
+Multiface cards have a card_faces property containing at least two Card Face objects. Those objects have the following properties:
+
+PROPERTY	TYPE	ATN	DETAILS
+artist	String	
+Nullable
+The name of the illustrator of this card face. Newly spoiled cards may not have this field yet.
+artist_id	UUID	
+Nullable
+The ID of the illustrator of this card face. Newly spoiled cards may not have this field yet.
+cmc	Decimal	
+Nullable
+The mana value of this particular face, if the card is reversible.
+color_indicator	Colors	
+Nullable
+The colors in this face’s color indicator, if any.
+colors	Colors	
+Nullable
+This face’s colors, if the game defines colors for the individual face of this card.
+defense	String	
+Nullable
+This face’s defense, if any.
+flavor_text	String	
+Nullable
+The flavor text printed on this face, if any.
+illustration_id	UUID	
+Nullable
+A unique identifier for the card face artwork that remains consistent across reprints. Newly spoiled cards may not have this field yet.
+image_uris	Object	
+Nullable
+An object providing URIs to imagery for this face, if this is a double-sided card. If this card is not double-sided, then the image_uris property will be part of the parent object instead.
+layout	String	
+Nullable
+The layout of this card face, if the card is reversible.
+loyalty	String	
+Nullable
+This face’s loyalty, if any.
+mana_cost	String		The mana cost for this face. This value will be any empty string "" if the cost is absent. Remember that per the game rules, a missing mana cost and a mana cost of {0} are different values.
+name	String		The name of this particular face.
+object	String		A content type for this object, always card_face.
+oracle_id	UUID	
+Nullable
+The Oracle ID of this particular face, if the card is reversible.
+oracle_text	String	
+Nullable
+The Oracle text for this face, if any.
+power	String	
+Nullable
+This face’s power, if any. Note that some cards have powers that are not numeric, such as *.
+printed_name	String	
+Nullable
+The localized name printed on this face, if any.
+printed_text	String	
+Nullable
+The localized text printed on this face, if any.
+printed_type_line	String	
+Nullable
+The localized type line printed on this face, if any.
+toughness	String	
+Nullable
+This face’s toughness, if any.
+type_line	String	
+Nullable
+The type line of this particular face, if the card is reversible.
+watermark	String	
+Nullable
+The watermark on this particulary card face, if any.
+Related Card Objects
+Cards that are closely related to other cards (because they call them by name, or generate a token, or meld, etc) have a all_parts property that contains Related Card objects. Those objects have the following properties:
+
+PROPERTY	TYPE	ATN	DETAILS
+id	UUID		An unique ID for this card in Scryfall’s database.
+object	String		A content type for this object, always related_card.
+component	String		A field explaining what role this card plays in this relationship, one of token, meld_part, meld_result, or combo_piece.
+name	String		The name of this particular related card.
+type_line	String		The type line of this card.
+uri	URI		A URI where you can retrieve a full object describing this card on Scryfall’s API.

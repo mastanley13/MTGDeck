@@ -1,0 +1,19 @@
+{
+  "customFields": [
+    {
+      "id": "7GbpQNKTkpS3Od2U0xEl",
+      "name": "Password",
+      "model": "contact",
+      "fieldKey": "contact.password",
+      "placeholder": "",
+      "dataType": "TEXT",
+      "position": 350,
+      "documentType": "field",
+      "parentId": "1xCu11HB4L4h3oSdOrsm",
+      "locationId": "zKZ8Zy6VvGR1m7lNfRkY",
+      "dateAdded": "2025-05-16T19:36:10.850Z",
+      "standard": false
+    }
+  ],
+  "traceId": "327963f2-3a2b-401b-b2c6-5528da375c01"
+}
