@@ -81,6 +81,13 @@ const Legal = () => {
                   <p>This notice may be updated periodically to remain compliant with Wizards' Fan Content Policy, Scryfall's licensing terms, and other applicable laws. <em>Last updated 9 July 2025.</em></p>
                 </div>
               </section>
+
+              <section>
+                <h3 className="text-xl font-semibold text-primary-400 mb-4">7. Affiliate Disclosure</h3>
+                <div className="text-slate-300 space-y-3">
+                  <p>AI Deck Tutor is a participant in the Amazon Services LLC Associates Program and other affiliate programs. We may earn commissions on purchases made through our links.</p>
+                </div>
+              </section>
             </div>
 
             <div className="mt-12 pt-8 border-t border-slate-700/50 text-center">
