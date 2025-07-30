@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { HelmetProvider } from 'react-helmet-async';
 import './App.css';
 import HomePage from './pages/HomePage.jsx';
 import DeckBuilderPage from './pages/DeckBuilder.jsx';
@@ -24,6 +25,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 
 import Navbar from './components/ui/Navbar.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
+import { AdSenseHead } from './components/ui/GoogleAdSense.jsx';
 
 function App() {
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -34,15 +36,17 @@ function App() {
   }
 
   return (
-    <GoogleOAuthProvider 
-      clientId={GOOGLE_CLIENT_ID}
-      onScriptLoadError={(err) => console.error('Google OAuth Script Load Error:', err)}
-      onScriptLoadSuccess={() => console.log('Google OAuth Script Loaded Successfully')}
-    >
-      <AuthProvider>
-          <DeckProvider>
-            <Router>
-            <div className="app min-h-screen bg-slate-900 flex flex-col">
+    <HelmetProvider>
+      <GoogleOAuthProvider 
+        clientId={GOOGLE_CLIENT_ID}
+        onScriptLoadError={(err) => console.error('Google OAuth Script Load Error:', err)}
+        onScriptLoadSuccess={() => console.log('Google OAuth Script Loaded Successfully')}
+      >
+        <AuthProvider>
+            <DeckProvider>
+              <Router>
+              <div className="app min-h-screen bg-slate-900 flex flex-col">
+                <AdSenseHead />
               <Navbar />
               <main className="flex-1 px-4 md:px-6 lg:px-8 pb-12 max-w-7xl mx-auto w-full">
                 <Routes>
@@ -168,8 +172,9 @@ function App() {
             </div>
           </Router>
         </DeckProvider>
-    </AuthProvider>
-    </GoogleOAuthProvider>
+      </AuthProvider>
+      </GoogleOAuthProvider>
+    </HelmetProvider>
   );
 }
 
