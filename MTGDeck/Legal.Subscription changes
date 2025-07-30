@@ -1,0 +1,139 @@
+# AI Deck Tutor – Legal Page & Codebase Cleanup Instructions
+
+> **Purpose**  
+> Implement a dedicated Legal page, add an always-visible footer disclaimer, and strip **all** subscription / pay-wall references while preserving the email-/login-wall required for saving decks.
+
+---
+
+## 1. Create `/pages/legal.tsx` (or `.jsx`)  
+Use the same page wrapper / layout components as the rest of the site. Paste the **entire** block below inside the main content container.
+
+```md
+### Legal Notice & Fair-Use Disclaimer for **AI Deck Tutor**
+
+1. **Trademarks & Copyrights**  
+   - **MAGIC: THE GATHERING®**, **MTG®**, all card names, card images, set names, and associated logos are trademarks and © 1993 – 2025 **Wizards of the Coast LLC**, a subsidiary of Hasbro, Inc. All rights reserved.  
+   - **AI Deck Tutor** is **not** affiliated with, endorsed, sponsored, or specifically approved by Wizards of the Coast LLC or Hasbro, Inc.  
+   - Any use of Wizards IP on this site is permitted under Wizards’ *Fan Content Policy*. See <https://company.wizards.com/en/legal/fancontentpolicy>.
+
+2. **Third-Party Data Sources**  
+   - Card images & Oracle text courtesy of **Scryfall** (*CC BY-NC 4.0*).  
+   - Deck data aggregated from **EDHREC**, **Archidekt**, **Moxfield**, and other public APIs. These platforms are unaffiliated with Wizards or AI Deck Tutor.  
+   - All trademarks and IP remain the property of their respective owners.
+
+3. **Purpose of Use**  
+   - Content is presented **solely for educational, informational, and non-commercial community purposes**—helping players build, analyze, and enjoy Magic: The Gathering™ decks.  
+   - If you are a rights holder and believe your work is used improperly, please email **legal@aidecktutor.com** for prompt resolution.
+
+4. **No Official Representation**  
+   - Opinions and recommendations expressed are those of AI Deck Tutor and its contributors, **not** Wizards of the Coast, Hasbro, Scryfall, EDHREC, Archidekt, or Moxfield.  
+   - Wizards of the Coast does **not** guarantee, approve, or authorize this website.
+
+5. **Fair-Use Basis**  
+   - Card images, text excerpts, and statistical data are reproduced here in limited form under **fair use** (17 U.S.C. § 107) for commentary, research, and teaching.  
+   - AI Deck Tutor neither sells nor distributes official cards or digital objects.
+
+6. **Updates & Revisions**  
+   - This notice may be updated periodically to remain compliant with the Fan Content Policy, Scryfall’s terms, and applicable laws. **Last updated July 9 2025**.
+
+By using AI Deck Tutor you agree to these terms. Questions? **legal@aidecktutor.com**
+
+
+2. Add the Footer Disclaimer Site-Wide
+Locate the shared Footer component (or create one if missing).
+
+Insert the following single-line notice below any existing links:
+
+html
+<p class="text-xs text-center opacity-70">
+  Magic: The Gathering® and related logos are trademarks of Wizards of the Coast LLC, a subsidiary of Hasbro, Inc. <strong>AI Deck Tutor</strong> is unofficial Fan Content permitted under Wizards’ Fan Content Policy. Not approved, endorsed, or sponsored by Wizards. Portions of materials used are property of Wizards of the Coast LLC. © 1993–2025 Wizards of the Coast LLC.
+</p>
+Import / include this Footer
+
+Add to legal Page: 
+### Legal Notice & Fair‑Use Disclaimer for **AI Deck Tutor**
+
+1. **Trademarks & Copyrights**  
+   – **MAGIC: THE GATHERING®**, **MTG®**, all card names, card images, set names, and associated logos are trademarks and © 1993–2025 **Wizards of the Coast LLC**, a subsidiary of Hasbro, Inc. All rights reserved.  
+   – **AI Deck Tutor** is **not** affiliated with, endorsed, sponsored, or specifically approved by Wizards of the Coast LLC or Hasbro, Inc.  
+   – Any use of Wizards intellectual property on this site is permitted under Wizards’ *Fan Content Policy*. For full details, see <https://company.wizards.com/en/legal/fancontentpolicy>.
+
+2. **Third‑Party Data Sources**  
+   – Card images and Oracle text are provided courtesy of **Scryfall** (<https://scryfall.com>) under the *Creative Commons BY‑NC 4.0* licence.  
+   – Deck statistics and metagame data are aggregated from **EDHREC**, **Archidekt**, **Moxfield**, and other public APIs. These platforms are unaffiliated with Wizards of the Coast and with AI Deck Tutor.  
+   – All trademarks, service marks, and other intellectual‑property rights referenced remain the property of their respective owners.
+
+3. **Purpose of Use**  
+   Content on AI Deck Tutor is provided **solely for educational, informational, and non‑commercial community purposes**: helping players build, analyse, and enjoy Magic: The Gathering™ decks.  
+   No portion of this site is intended to infringe upon or dilute any intellectual‑property rights. If you are a rights holder and believe your work is used improperly, contact us at **legal@aidecktutor.com** for prompt resolution.
+
+4. **No Official Representation**  
+   Opinions, analyses, and recommendations expressed on AI Deck Tutor are those of the site and its contributors, **not** Wizards of the Coast, Hasbro, Scryfall, EDHREC, Archidekt, or Moxfield.  
+   Wizards of the Coast does **not** guarantee, approve, or authorise the operation or content of this website.
+
+5. **Fair‑Use Basis**  
+   Card images, text excerpts, and statistical data are reproduced here in limited form under the principles of **fair use** (17 U.S.C. § 107) for commentary, research, and teaching within the Magic community.  
+   All commercial rights to Wizards products are reserved to Wizards of the Coast LLC. AI Deck Tutor neither sells nor distributes official cards or digital objects.
+
+6. **Updates & Revisions**  
+   This notice may be updated periodically to remain compliant with Wizards’ Fan Content Policy, Scryfall’s licensing terms, and other applicable laws. *Last updated 9 July 2025.*
+
+
+Inject the footer disclaimer everywhere:
+Magic: The Gathering® and all related logos are trademarks of Wizards of the Coast LLC, a subsidiary of Hasbro, Inc. 
+AI Deck Tutor is unofficial Fan Content permitted under Wizards’ Fan Content Policy. Not approved, endorsed, or sponsored by Wizards. Portions of the materials used are property of Wizards of the Coast LLC. © 1993‑2025 Wizards of the Coast LLC.
+
+Import this Footer component on bottom of main pages
+
+Remove All Subscription / Pay‑Wall Features
+oal  Eliminate every subscription‑related artifact while keeping the email / login gate required to save decks.
+
+Files & Components
+
+Delete SubscriptionPage.jsx (or .tsx).
+
+Remove the entire @/paywall directory and all imports that reference it.
+
+Headers / Banners
+
+Remove the “Premium Plan / Free Plan” hero section from the landing page.
+
+Delete any promotional ribbons, callouts, or badges that mention upgrading or premium.
+
+Navigation Menus
+
+Strip the subscription link from the primary Navbar, hamburger menu, and mobile drawer.
+
+Profile Dropdown
+
+Remove the “Subscription” / “Manage Plan” entry from the profile‑menu component.
+
+Context / Store
+
+Delete subscriptionSlice (Redux) or any useSubscription context/provider hooks.
+
+Route Config
+
+Remove subscription routes from router.tsx / routes.js so they 404.
+
+Copy / Text Search
+
+Find and delete or rewrite occurrences of subscription, premium, upgrade, and paywall in UI copy (except inside this markdown).
+
+API Calls / Stripe
+
+Remove client calls to /api/stripe/* used only for billing.
+
+Delete server‑side Stripe handlers that are no longer needed.
+
+Environment Variables
+
+Remove unused STRIPE_* keys from .env files and deployment settings.
+
+Database
+
+Drop or ignore subscription tables/fields; keep auth and deck tables intact.
+
+Auth Gate (Keep)
+
+Retain the email / register / login wall that prompts users to sign in before saving decks to the cloud—no changes here.

@@ -146,6 +146,10 @@ function App() {
                     <p className="text-xs text-center text-slate-600 mt-4 leading-relaxed">
                       Magic: The Gathering® and all related logos are trademarks of Wizards of the Coast LLC, a subsidiary of Hasbro, Inc. <strong>AI Deck Tutor</strong> is unofficial Fan Content permitted under Wizards' Fan Content Policy. Not approved, endorsed, or sponsored by Wizards. Portions of the materials used are property of Wizards of the Coast LLC. © 1993‑2025 Wizards of the Coast LLC.
                     </p>
+                    {/* Affiliate Disclosure */}
+                    <p className="text-xs text-center text-slate-600 mt-2 leading-relaxed">
+                      AI Deck Tutor is a participant in the Amazon Services LLC Associates Program and other affiliate programs. We may earn commissions on purchases made through our links.
+                    </p>
                   </div>
                 </div>
               </footer>

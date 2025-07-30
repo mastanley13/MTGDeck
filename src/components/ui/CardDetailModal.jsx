@@ -7,6 +7,12 @@ import axios from 'axios'; // Import axios for API calls
 const CardDetailModal = ({ card, onClose }) => {
   if (!card) return null;
 
+  // Amazon affiliate utility function
+  const getAmazonAffiliateLink = (cardName) => {
+    const searchTerm = encodeURIComponent(`${cardName} MTG`);
+    return `https://www.amazon.com/s?k=${searchTerm}&tag=aidecktutor-20`;
+  };
+
   const [allArtworks, setAllArtworks] = useState([]);
   const [currentArtIndex, setCurrentArtIndex] = useState(0);
   const [artLoading, setArtLoading] = useState(false);
@@ -584,31 +590,31 @@ Keep response under 150 words total. Be direct and actionable.`
   const handleNextArt = () => setCurrentArtIndex(prev => (prev + 1) % allArtworks.length);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[70] p-2 sm:p-4 backdrop-blur-md overflow-y-auto" onClick={onClose}>
-      <div className="bg-gray-800 p-3 sm:p-4 rounded-lg shadow-2xl max-w-4xl w-full max-h-[95vh] flex flex-col md:flex-row gap-3 sm:gap-4 relative text-gray-200 border border-gray-700" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start sm:items-center justify-center z-[70] p-1 sm:p-2 md:p-4 backdrop-blur-md overflow-y-auto" onClick={onClose}>
+      <div className="bg-gray-800 p-2 sm:p-3 md:p-4 rounded-lg shadow-2xl w-full max-w-sm sm:max-w-2xl md:max-w-4xl min-h-fit max-h-none sm:max-h-[95vh] flex flex-col md:flex-row gap-2 sm:gap-3 md:gap-4 relative text-gray-200 border border-gray-700 my-2 sm:my-0" onClick={e => e.stopPropagation()}>
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-gray-400 hover:text-yellow-400 transition-colors z-20 p-1 bg-gray-700 hover:bg-gray-600 rounded-full"
+          className="absolute top-1 right-1 sm:top-2 sm:right-2 text-gray-400 hover:text-yellow-400 transition-colors z-20 p-1 bg-gray-700 hover:bg-gray-600 rounded-full"
           aria-label="Close modal"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
 
-        {/* Card Image Section */} 
-        <div className="md:w-[40%] flex-shrink-0 flex flex-col justify-center items-center relative">
-          <div className="relative">
+        {/* Card Image Section - Mobile: Full width, Desktop: 40% width */} 
+        <div className="w-full md:w-[40%] flex-shrink-0 flex flex-col justify-center items-center relative">
+          <div className="relative w-full flex justify-center">
             {mainImageUrl && !mainImageError ? (
               <img 
                 src={mainImageUrl} 
                 alt={`Art for ${displayCard.name} - ${currentArtwork.setName || card.set_name}`}
-                className="rounded-md max-w-full max-h-[75vh] md:max-h-[85vh] object-contain shadow-xl border-2 border-gray-600"
+                className="rounded-md w-full max-w-[280px] sm:max-w-[320px] md:max-w-none max-h-[40vh] sm:max-h-[50vh] md:max-h-[75vh] lg:max-h-[85vh] object-contain shadow-xl border-2 border-gray-600"
                 onLoad={handleMainImageLoad}
                 onError={() => handleMainImageError(mainImageUrl)}
               />
             ) : (
-              <div className="w-full aspect-[5/7] bg-gray-700 flex items-center justify-center text-gray-400 rounded-lg border-2 border-gray-600">
+              <div className="w-full max-w-[280px] sm:max-w-[320px] aspect-[5/7] bg-gray-700 flex items-center justify-center text-gray-400 rounded-lg border-2 border-gray-600">
                 <div className="text-center">
-                  <svg className="w-12 h-12 text-gray-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 sm:w-12 sm:h-12 text-gray-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   <span className="text-xs">Image Unavailable</span>
@@ -619,7 +625,7 @@ Keep response under 150 words total. Be direct and actionable.`
             
             {/* Double-faced card indicator on image */}
             {isDoubleFaced && (
-              <div className="absolute top-2 left-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg z-10">
+              <div className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-2 py-1 rounded-full font-semibold shadow-lg z-10">
                 DFC - Face {currentFace + 1}/{cardFaces.length}
               </div>
             )}
@@ -627,17 +633,18 @@ Keep response under 150 words total. Be direct and actionable.`
           
           {/* Prominent Flip Button for Double-Faced Cards */}
           {isDoubleFaced && (
-            <div className="mt-3 w-full flex justify-center">
+            <div className="mt-2 sm:mt-3 w-full flex justify-center">
               <button
                 onClick={toggleFace}
-                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center space-x-2 shadow-lg transition-all duration-200 transform hover:scale-105"
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-1.5 sm:py-2 px-3 sm:px-4 rounded-lg flex items-center space-x-1 sm:space-x-2 shadow-lg transition-all duration-200 transform hover:scale-105 text-xs sm:text-sm"
                 title={`Flip to ${cardFaces[(currentFace + 1) % cardFaces.length]?.name || 'other side'}`}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span>Flip to Face {(currentFace + 1) % cardFaces.length + 1}</span>
-                <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                <span className="hidden sm:inline">Flip to Face {(currentFace + 1) % cardFaces.length + 1}</span>
+                <span className="sm:hidden">Flip</span>
+                <span className="bg-white/20 px-1.5 sm:px-2 py-0.5 rounded-full text-xs">
                   {currentFace + 1}/{cardFaces.length}
                 </span>
               </button>
@@ -651,9 +658,9 @@ Keep response under 150 words total. Be direct and actionable.`
                 disabled={artLoading}
                 className={`bg-gray-600 hover:bg-gray-500 text-white text-xs py-1 px-2 rounded-md transition-colors ${artLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                Prev Art
+                Prev
               </button>
-              <p className="text-xs text-gray-400 mx-2 text-center">
+              <p className="text-xs text-gray-400 mx-1 sm:mx-2 text-center flex-1">
                 {artLoading ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-3 w-3 border border-gray-400 border-t-transparent mr-1"></div>
@@ -661,13 +668,13 @@ Keep response under 150 words total. Be direct and actionable.`
                   </div>
                 ) : (
                   <>
-                {currentArtIndex + 1} of {allArtworks.length}<br/>
-                {isDoubleFaced && <span className="block text-yellow-400 font-semibold">{currentFaceData?.name}</span>}
-                <span className="block truncate max-w-[120px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
+                <span className="block">{currentArtIndex + 1} of {allArtworks.length}</span>
+                {isDoubleFaced && <span className="block text-yellow-400 font-semibold text-xs truncate max-w-[100px] sm:max-w-[120px]" title={currentFaceData?.name}>{currentFaceData?.name}</span>}
+                <span className="block truncate max-w-[80px] sm:max-w-[120px] text-xs" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
                 {currentArtwork.treatmentType && currentArtwork.treatmentType !== 'Regular' && (
                   <span className="block text-blue-300 font-semibold text-2xs">{currentArtwork.treatmentType}</span>
                 )}
-                <span className="block truncate max-w-[120px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
+                <span className="block truncate max-w-[80px] sm:max-w-[120px] italic text-xs" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
                   </>
                 )}
               </p>
@@ -676,49 +683,50 @@ Keep response under 150 words total. Be direct and actionable.`
                 disabled={artLoading}
                 className={`bg-gray-600 hover:bg-gray-500 text-white text-xs py-1 px-2 rounded-md transition-colors ${artLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                Next Art
+                Next
               </button>
             </div>
           )}
 
           {/* Load More Versions Button - Show when only current card is loaded */}
           {allArtworks.length === 1 && !hasLoadedArtworks && !artLoading && card.oracle_id && (
-            <div className="mt-3 w-full flex justify-center">
+            <div className="mt-2 sm:mt-3 w-full flex justify-center">
               <button
                 onClick={handleLoadArtworks}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 px-4 rounded-md transition-colors flex items-center space-x-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 sm:py-2 px-3 sm:px-4 rounded-md transition-colors flex items-center space-x-1 sm:space-x-2"
               >
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span>Load Other Versions</span>
+                <span className="hidden sm:inline">Load Other Versions</span>
+                <span className="sm:hidden">More Versions</span>
               </button>
             </div>
           )}
 
            {allArtworks.length === 1 && currentArtwork.setName && !artLoading && (hasLoadedArtworks || !card.oracle_id) && (
-             <p className="text-xs text-gray-400 mt-2 text-center">
-                {isDoubleFaced && <span className="block text-yellow-400 font-semibold truncate max-w-[180px]">{currentFaceData?.name}</span>}
-                <span className="block truncate max-w-[180px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
+             <p className="text-xs text-gray-400 mt-2 text-center px-2">
+                {isDoubleFaced && <span className="block text-yellow-400 font-semibold truncate max-w-[200px] sm:max-w-[180px]" title={currentFaceData?.name}>{currentFaceData?.name}</span>}
+                <span className="block truncate max-w-[200px] sm:max-w-[180px]" title={`${currentArtwork.setName} #${currentArtwork.collector_number}`}>{currentArtwork.setName} #{currentArtwork.collector_number}</span>
                 {currentArtwork.treatmentType && currentArtwork.treatmentType !== 'Regular' && (
                   <span className="block text-blue-300 font-semibold text-2xs">{currentArtwork.treatmentType}</span>
                 )}
-                <span className="block truncate max-w-[180px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
+                <span className="block truncate max-w-[200px] sm:max-w-[180px] italic" title={currentArtwork.artist}>by {currentArtwork.artist}</span>
                 {hasLoadedArtworks && allArtworks.length === 1 && <span className="block text-gray-500 text-2xs mt-1">(Only version found)</span>}
               </p>
            )}
         </div>
 
-        {/* Card Info Section */} 
-        <div className="md:w-[60%] flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 pr-1 sm:pr-1.5 flex-grow">
-          <h2 className="text-xl sm:text-2xl font-bold text-yellow-400 tracking-wide mb-0.5 sm:mb-1 pr-6">{displayCard.name}</h2>
-          <div className="flex justify-between items-baseline mb-1 sm:mb-1.5">
-            <span className="text-gray-300 text-sm sm:text-base">{displayCard.type_line || displayCard.type}</span>
+        {/* Card Info Section - Mobile: Full width, Desktop: 60% width - No internal scrolling on mobile */} 
+        <div className="w-full md:w-[60%] flex flex-col md:overflow-y-auto md:scrollbar-thin md:scrollbar-thumb-gray-600 md:scrollbar-track-gray-800 pr-1 sm:pr-1.5 flex-grow">
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-yellow-400 tracking-wide mb-0.5 sm:mb-1 pr-8 sm:pr-6 break-words">{displayCard.name}</h2>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline mb-1 sm:mb-1.5 gap-1">
+            <span className="text-gray-300 text-sm sm:text-base break-words">{displayCard.type_line || displayCard.type}</span>
             {displayCard.mana_cost && <span className="text-yellow-400 font-mono text-sm sm:text-base">{parseManaSymbols(displayCard.mana_cost)}</span>}
           </div>
           
           {cardText && (
-            <div className="bg-gray-700 p-2 sm:p-3 rounded-md mb-1.5 sm:mb-2 text-xs sm:text-sm text-gray-200 leading-normal whitespace-pre-wrap border border-gray-600">
+            <div className="bg-gray-700 p-2 sm:p-3 rounded-md mb-1.5 sm:mb-2 text-xs sm:text-sm text-gray-200 leading-normal whitespace-pre-wrap border border-gray-600 break-words">
               {cardText.split('\n').map((line, index) => (
                 <p key={index} className="mb-1 last:mb-0">{parseManaSymbols(line)}</p>
               ))}
@@ -726,7 +734,7 @@ Keep response under 150 words total. Be direct and actionable.`
           )}
 
           {(displayCard.flavor_text || card.flavor_text) && (
-            <div className="italic text-2xs sm:text-xs text-gray-400 border-t border-gray-700 pt-1.5 mt-1.5 mb-1.5 sm:mb-2">
+            <div className="italic text-2xs sm:text-xs text-gray-400 border-t border-gray-700 pt-1.5 mt-1.5 mb-1.5 sm:mb-2 break-words">
               {(displayCard.flavor_text || card.flavor_text).split('\n').map((line, index) => <p key={index} className="mb-0.5 last:mb-0">{line}</p>)}
             </div>
           )}
@@ -765,7 +773,7 @@ Keep response under 150 words total. Be direct and actionable.`
                   </div>
                 ) : aiOverview ? (
                   <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 border border-purple-500/30 rounded-lg p-4">
-                    <div className="text-xs sm:text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">
+                    <div className="text-xs sm:text-sm text-gray-200 leading-relaxed whitespace-pre-wrap break-words">
                       {aiOverview.split('\n').map((paragraph, index) => (
                         paragraph.trim() && <p key={index} className="mb-3 last:mb-0">{paragraph.trim()}</p>
                       ))}
@@ -811,7 +819,7 @@ Keep response under 150 words total. Be direct and actionable.`
           {currentPrintingData.legalities && (
             <div className="mt-2 pt-2 border-t border-gray-700 flex-grow flex flex-col min-h-[80px]">
               <h4 className="text-xs sm:text-sm font-semibold mb-1 text-gray-100">Format Legalities:</h4>
-              <div className="grid grid-cols-2 gap-x-2 sm:gap-x-3 gap-y-0 text-2xs sm:text-xs flex-grow overflow-y-auto max-h-28 sm:max-h-32 scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-700 pr-0.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 sm:gap-x-3 gap-y-0 text-2xs sm:text-xs flex-grow md:overflow-y-auto md:max-h-28 md:scrollbar-thin md:scrollbar-thumb-gray-500 md:scrollbar-track-gray-700 pr-0.5">
                 {formatsToShow.sort((a,b) => a.name.localeCompare(b.name)).map(format => {
                   const status = currentPrintingData.legalities[format.key];
                   return (
@@ -825,12 +833,50 @@ Keep response under 150 words total. Be direct and actionable.`
             </div>
           )}
           
-          <div className="mt-auto pt-2 space-x-3 text-center">
-            {currentPrintingData.scryfall_uri && <a href={currentPrintingData.scryfall_uri} target="_blank" rel="noopener noreferrer" className="text-2xs sm:text-xs text-blue-400 hover:text-blue-300 underline">Scryfall</a>}
-            {currentPrintingData.related_uris?.edhrec && <a href={currentPrintingData.related_uris.edhrec} target="_blank" rel="noopener noreferrer" className="text-2xs sm:text-xs text-purple-400 hover:text-purple-300 underline">EDHREC</a>}
+          <div className="mt-auto pt-2 flex flex-wrap gap-2 justify-center">
+            {currentPrintingData.scryfall_uri && (
+              <a 
+                href={currentPrintingData.scryfall_uri} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 border border-blue-400/30 hover:border-blue-300/50 hover:from-blue-600 hover:to-blue-700 hover:scale-105 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
+                  <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
+                </svg>
+                Scryfall
+              </a>
+            )}
+            {currentPrintingData.related_uris?.edhrec && (
+              <a 
+                href={currentPrintingData.related_uris.edhrec} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 border border-purple-400/30 hover:border-purple-300/50 hover:from-purple-600 hover:to-purple-700 hover:scale-105 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+              >
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
+                  <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
+                </svg>
+                EDHREC
+              </a>
+            )}
+            <a 
+              href={getAmazonAffiliateLink(displayCard.name)} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 border border-orange-400/30 hover:border-orange-300/50 hover:from-orange-600 hover:to-orange-700 hover:scale-105 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+            >
+              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/>
+                <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
+              </svg>
+              Amazon
+            </a>
           </div>
 
-          <p className="text-2xs sm:text-xs text-gray-500 mt-1.5 text-center">
+          <p className="text-2xs sm:text-xs text-gray-500 mt-1.5 text-center break-words">
             {artLoading ? (
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-3 w-3 border border-gray-500 border-t-transparent mr-1"></div>
