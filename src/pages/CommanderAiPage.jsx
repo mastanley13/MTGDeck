@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Seo } from '../components/Seo';
 import CardDetailModal from '../components/ui/CardDetailModal';
 import AlertModal from '../components/ui/AlertModal.jsx';
 import InputModal from '../components/ui/InputModal.jsx';
@@ -433,7 +434,12 @@ Requirements:
   };
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <>
+      <Seo 
+        title="Commander AI – Find Your Perfect MTG Commander"
+        description="Describe your playstyle and let AI suggest the perfect commanders for your MTG deck. Get personalized commander recommendations."
+      />
+      <div className="min-h-screen bg-slate-900">
       {/* Background effects */}
       <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>
@@ -718,12 +724,14 @@ Requirements:
           </div>
         )}
 
-        {/* Modal */}
-        {isModalOpen && selectedCardForModal && (
-          <CardDetailModal card={selectedCardForModal} onClose={handleCloseModal} />
-        )}
       </div>
-    </div>
+      </div>
+
+      {/* Modal */}
+      {isModalOpen && selectedCardForModal && (
+        <CardDetailModal card={selectedCardForModal} onClose={handleCloseModal} />
+      )}
+    </>
   );
 };
 

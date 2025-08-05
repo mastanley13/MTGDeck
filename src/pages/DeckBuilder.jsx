@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Seo } from '../components/Seo';
 import CommanderSearch from '../components/search/CommanderSearch.jsx';
 import SearchBar from '../components/search/SearchBar.jsx';
 import SearchResults from '../components/search/SearchResults.jsx';
@@ -311,6 +312,10 @@ const DeckBuilderAIPage = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
+      <Seo 
+        title="AI Deck Builder – Commander decks in one click"
+        description="Build a full MTG commander deck with AI, export to TCGplayer, and more."
+      />
       <div className="min-h-screen bg-slate-900">
         {/* Background effects */}
         <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">

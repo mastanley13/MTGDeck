@@ -1,29 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '../components/Seo';
 
 const HomePage = () => {
   return (
     <>
-      <Helmet>
-        <title>AI Deck Tutor - Build Powerful MTG Commander Decks with AI</title>
-        <meta name="description" content="Create, optimize, and share your Magic: The Gathering Commander decks with AI-powered recommendations and professional-grade tools. Build better decks with AI assistance." />
-        <meta name="keywords" content="MTG, Magic The Gathering, Commander, Deck Builder, AI, Card Game, EDH, deck building" />
-        <link rel="canonical" href="https://aidecktutor.com" />
-        
-        {/* Open Graph */}
-        <meta property="og:title" content="AI Deck Tutor - Build Powerful MTG Commander Decks with AI" />
-        <meta property="og:description" content="Create, optimize, and share your Magic: The Gathering Commander decks with AI-powered recommendations and professional-grade tools." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://aidecktutor.com" />
-        <meta property="og:image" content="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/6830e4ad6417b23718765500.png" />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="AI Deck Tutor - Build Powerful MTG Commander Decks with AI" />
-        <meta name="twitter:description" content="Create, optimize, and share your Magic: The Gathering Commander decks with AI-powered recommendations." />
-        <meta name="twitter:image" content="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/6830e4ad6417b23718765500.png" />
-      </Helmet>
+      <Seo 
+        title="AI Deck Tutor - Build Powerful MTG Commander Decks with AI"
+        description="Create, optimize, and share your Magic: The Gathering Commander decks with AI-powered recommendations and professional-grade tools. Build better decks with AI assistance."
+      />
       
       <div className="min-h-screen bg-slate-900 overflow-hidden">
         {/* Background effects */}

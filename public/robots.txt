@@ -1,8 +1,28 @@
 User-agent: *
 Allow: /
 
-# Block admin + debug routes
-Disallow: /admin
-Disallow: /debug
+# Sitemap
+Sitemap: https://www.aidecktutor.com/sitemap.xml
 
-Sitemap: https://aidecktutor.com/sitemap.xml 
+# Disallow admin and debug pages
+Disallow: /debug
+Disallow: /admin
+
+# Allow all other pages
+Allow: /builder
+Allow: /card-search
+Allow: /commander-ai
+Allow: /tutor-ai
+Allow: /how-to-play
+Allow: /blog
+Allow: /contact
+Allow: /socials
+Allow: /legal
+Allow: /login
+Allow: /register
+Allow: /about
+Allow: /profile
+Allow: /decks
+
+# Crawl delay (optional - helps with server load)
+Crawl-delay: 1 
