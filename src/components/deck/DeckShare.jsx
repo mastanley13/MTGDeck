@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { generateShareableUrl } from '../../utils/deckExporter';
+import { getTCGPlayerMassEntryLink } from '../../utils/tcgPlayerUtils';
 
 const DeckShare = ({ deck }) => {
   const [copied, setCopied] = useState(false);
@@ -16,6 +17,7 @@ const DeckShare = ({ deck }) => {
   }
 
   const shareableUrl = generateShareableUrl(deck);
+  const tcgPlayerMassEntryLink = getTCGPlayerMassEntryLink(deck);
 
   const handleCopied = () => {
     setCopied(true);
@@ -79,6 +81,25 @@ const DeckShare = ({ deck }) => {
           </a>
         </div>
       </div>
+      
+             {tcgPlayerMassEntryLink && (
+         <div className="mt-4">
+           <h3 className="text-md font-semibold mb-2 text-logoScheme-gold">Purchase Deck</h3>
+           <a
+             href={tcgPlayerMassEntryLink}
+             target="_blank"
+             rel="sponsored noopener noreferrer"
+             className="inline-flex items-center px-4 py-2 bg-white text-gray-800 rounded-lg hover:shadow-xl border border-gray-200 hover:border-gray-300 transition-all duration-300 transform hover:scale-105 shadow-lg"
+           >
+             <img 
+               src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/68927a7a7b1adb516a0fdffc.png" 
+               alt="TCGPlayer" 
+               className="w-5 h-5 mr-2"
+             />
+             <span className="text-gray-700 font-semibold">Buy Deck on TCGPlayer</span>
+           </a>
+         </div>
+       )}
     </div>
   );
 };

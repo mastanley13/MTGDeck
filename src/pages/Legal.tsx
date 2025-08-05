@@ -107,7 +107,7 @@ const Legal = () => {
                 <section>
                   <h3 className="text-xl font-semibold text-primary-400 mb-4">7. Affiliate Disclosure</h3>
                   <div className="text-slate-300 space-y-3">
-                    <p>AI Deck Tutor is a participant in the Amazon Services LLC Associates Program and other affiliate programs. We may earn commissions on purchases made through our links.</p>
+                    <p>AI Deck Tutor is a participant in the Amazon Services LLC Associates Program, TCGPlayer's affiliate program, and other affiliate programs. We may earn commissions on purchases made through our affiliate links.</p>
                   </div>
                 </section>
               </div>

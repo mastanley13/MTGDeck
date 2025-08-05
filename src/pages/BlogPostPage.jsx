@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { blogService } from '../services/blogService';
+import DOMPurify from 'dompurify';
 
 const BlogPostPage = () => {
+  const contentRef = useRef(null);
   const { slug } = useParams();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,11 @@ const BlogPostPage = () => {
         throw new Error('Blog post not found');
       }
       
-      setPost(foundPost);
+      const sanitizedContent = DOMPurify.sanitize(foundPost.content, {
+        ADD_TAGS: ['iframe', 'script'],
+        ADD_ATTR: ['type', 'src', 'async', 'id']
+      });
+      setPost({ ...foundPost, content: sanitizedContent });
     } catch (err) {
       setError('Failed to load blog post. Please try again later.');
       console.error('Error fetching post:', err);
@@ -31,6 +37,21 @@ const BlogPostPage = () => {
       setLoading(false);
     }
   };
+
+  /* Execute any inline or external scripts that were part of the blog HTML */
+  useEffect(() => {
+    if (!post || !contentRef.current) return;
+    const scripts = contentRef.current.querySelectorAll('script');
+    scripts.forEach((oldScript) => {
+      const newScript = document.createElement('script');
+      // Copy attributes
+      Array.from(oldScript.attributes).forEach((attr) => {
+        newScript.setAttribute(attr.name, attr.value);
+      });
+      newScript.text = oldScript.textContent;
+      oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
+  }, [post]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -115,6 +136,7 @@ const BlogPostPage = () => {
             </header>
 
             <div 
+              ref={contentRef}
               className="prose prose-invert prose-lg max-w-none"
               dangerouslySetInnerHTML={{ __html: post.content }}
             />

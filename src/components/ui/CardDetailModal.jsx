@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { parseManaSymbols } from '../../utils/manaSymbols';
 import { getOptimalImageUrl, IMAGE_CONTEXTS } from '../../utils/imageUtils.jsx';
+import { getTCGPlayerCardLink, getTCGPlayerTrackingPixelUrl } from '../../utils/tcgPlayerUtils';
 
 import axios from 'axios'; // Import axios for API calls
 
@@ -12,6 +13,8 @@ const CardDetailModal = ({ card, onClose }) => {
     const searchTerm = encodeURIComponent(`${cardName} MTG`);
     return `https://www.amazon.com/s?k=${searchTerm}&tag=aidecktutor-20`;
   };
+
+
 
   const [allArtworks, setAllArtworks] = useState([]);
   const [currentArtIndex, setCurrentArtIndex] = useState(0);
@@ -591,6 +594,8 @@ Keep response under 150 words total. Be direct and actionable.`
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start sm:items-center justify-center z-[70] p-1 sm:p-2 md:p-4 backdrop-blur-md overflow-y-auto" onClick={onClose}>
+      {/* TCGPlayer affiliate tracking pixel */}
+      <img height="0" width="0" src={getTCGPlayerTrackingPixelUrl()} style={{position: 'absolute', visibility: 'hidden'}} alt="" />
       <div className="bg-gray-800 p-2 sm:p-3 md:p-4 rounded-lg shadow-2xl w-full max-w-sm sm:max-w-2xl md:max-w-4xl min-h-fit max-h-none sm:max-h-[95vh] flex flex-col md:flex-row gap-2 sm:gap-3 md:gap-4 relative text-gray-200 border border-gray-700 my-2 sm:my-0" onClick={e => e.stopPropagation()}>
         <button
           onClick={onClose}
@@ -873,6 +878,19 @@ Keep response under 150 words total. Be direct and actionable.`
                 <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/>
               </svg>
               Amazon
+            </a>
+            <a 
+              href={getTCGPlayerCardLink(displayCard.name)} 
+              target="_blank" 
+              rel="sponsored noopener noreferrer" 
+              className="inline-flex items-center justify-center px-3 py-2 text-xs font-semibold rounded-lg bg-white shadow-lg hover:shadow-xl border border-gray-200 hover:border-gray-300 hover:scale-105 transition-all duration-300 transform focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            >
+              <img 
+                src="https://storage.googleapis.com/msgsndr/zKZ8Zy6VvGR1m7lNfRkY/media/68927a7a7b1adb516a0fdffc.png" 
+                alt="TCGPlayer" 
+                className="w-4 h-4 mr-2"
+              />
+              <span className="text-gray-700 font-semibold">TCGPlayer</span>
             </a>
           </div>
 

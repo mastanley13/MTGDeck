@@ -152,7 +152,7 @@ function App() {
                     </p>
                     {/* Affiliate Disclosure */}
                     <p className="text-xs text-center text-slate-600 mt-2 leading-relaxed">
-                      AI Deck Tutor is a participant in the Amazon Services LLC Associates Program and other affiliate programs. We may earn commissions on purchases made through our links.
+                      AI Deck Tutor is a participant in the Amazon Services LLC Associates Program, TCGPlayer's affiliate program, and other affiliate programs. We may earn commissions on purchases made through our affiliate links.
                     </p>
                   </div>
                 </div>
