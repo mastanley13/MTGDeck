@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://www.aidecktutor.com/sitemap.xml
+Sitemap: https://aidecktutor.com/sitemap.xml
 
 # Disallow admin and debug pages
 Disallow: /debug

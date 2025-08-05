@@ -1,7 +1,4 @@
 {
-  "redirects": [
-    { "source": "/(.*)", "destination": "https://aidecktutor.com/$1", "permanent": true }
-  ],
   "rewrites": [
     { "source": "/ads.txt", "destination": "/ads.txt" },
     { "source": "/(.*)", "destination": "/index.html" }

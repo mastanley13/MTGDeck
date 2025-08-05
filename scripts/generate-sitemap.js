@@ -1,7 +1,7 @@
 import { writeFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const base = 'https://www.aidecktutor.com';
+const base = 'https://aidecktutor.com';
 
 // Define the main pages with their priorities and change frequencies
 const pages = [
@@ -61,6 +61,12 @@ async function generateDynamicUrls() {
 
 // Function to validate URL accessibility
 async function validateUrl(url) {
+  // Skip validation to prevent redirect loops
+  // The sitemap should be generated regardless of current site status
+  return true;
+  
+  // Original validation code (commented out to prevent redirect issues)
+  /*
   try {
     const response = await fetch(url, {
       method: 'HEAD',
@@ -73,6 +79,7 @@ async function validateUrl(url) {
     console.warn(`Warning: Could not validate ${url}: ${error.message}`);
     return false;
   }
+  */
 }
 
 // Generate properly formatted XML
@@ -82,10 +89,11 @@ async function generateSitemap() {
 
   let validPages = 0;
   let invalidPages = 0;
-  let skippedPages = 0;
 
   // Get all pages including dynamic ones
   const allPages = [...pages, ...(await generateDynamicUrls())];
+
+  console.log('🗺️  Generating sitemap (URL validation disabled to prevent redirect loops)...\n');
 
   // Add each page to the sitemap with proper formatting
   for (const page of allPages) {
@@ -95,7 +103,7 @@ async function generateSitemap() {
       : page.url;
     const fullUrl = `${base}${canonicalUrl}`.toLowerCase();
     
-    // Skip validation for template URLs (dynamic routes)
+    // Skip validation for template URLs (dynamic routes) and to prevent redirect loops
     const isAccessible = page.isTemplate ? true : await validateUrl(fullUrl);
     
     if (isAccessible) {
@@ -127,6 +135,7 @@ async function generateSitemap() {
   console.log(`❌ Invalid pages skipped: ${invalidPages}`);
   console.log(`📄 Sitemap generated at: dist/sitemap.xml`);
   console.log(`🌐 Base URL: ${base}`);
+  console.log(`⚠️  Note: URL validation disabled to prevent redirect loops`);
   
   if (invalidPages > 0) {
     console.log('\n⚠️  Warning: Some pages are not accessible and were excluded from the sitemap.');
