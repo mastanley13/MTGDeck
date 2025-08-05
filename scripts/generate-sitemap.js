@@ -1,6 +1,4 @@
 import { writeFileSync } from 'node:fs';
-import { SitemapStream, streamToPromise } from 'sitemap';
-import { glob } from 'glob';
 
 const base = 'https://aidecktutor.com';
 
@@ -20,23 +18,22 @@ const pages = [
   { url: '/register', priority: 0.4, changefreq: 'monthly' },
 ];
 
-// Create sitemap stream
-const sm = new SitemapStream({ hostname: base });
+// Generate properly formatted XML
+let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
-// Add each page to the sitemap
+// Add each page to the sitemap with proper formatting
 pages.forEach(page => {
-  sm.write({
-    url: page.url,
-    changefreq: page.changefreq,
-    priority: page.priority,
-    lastmod: new Date().toISOString().split('T')[0] // YYYY-MM-DD format
-  });
+  xml += '  <url>\n';
+  xml += `    <loc>${base}${page.url}</loc>\n`;
+  xml += `    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n`;
+  xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
+  xml += `    <priority>${page.priority}</priority>\n`;
+  xml += '  </url>\n';
 });
 
-// End the stream and get the XML
-sm.end();
-const xml = await streamToPromise(sm);
+xml += '</urlset>';
 
 // Write to dist directory (Vite build output)
-writeFileSync('dist/sitemap.xml', xml.toString());
+writeFileSync('dist/sitemap.xml', xml);
 console.log('Sitemap generated successfully at dist/sitemap.xml'); 

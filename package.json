@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build && node scripts/generate-sitemap.js",
     "preview": "vite preview",
     "lint": "eslint .",
+    "generate:sitemap": "node scripts/generate-sitemap.js",
+    "validate:sitemap": "node scripts/validate-sitemap.js",
     "test:webhooks": "node src/scripts/testWebhooks.js",
     "test:ghl": "node src/scripts/testGHLWebhook.js",
     "test:legality": "node src/scripts/testLegalityService.js",
