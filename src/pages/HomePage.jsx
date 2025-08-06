@@ -90,7 +90,7 @@ const HomePage = () => {
               
               <div className="grid lg:grid-cols-3 gap-12">
                 {/* Deck Builder AI Card */}
-                <div className="group relative h-full">
+                <div className="group relative h-full deck-builder-section">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
                   <div className="relative card-modern p-10 hover-glow animate-fade-in delay-300 border-primary-500/20 group-hover:border-primary-400/30 transition-all duration-500 h-full flex flex-col">
                     <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mb-8 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
@@ -113,7 +113,7 @@ const HomePage = () => {
                 </div>
 
                 {/* Commander AI Card */}
-                <div className="group relative h-full">
+                <div className="group relative h-full commander-ai-section">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
                   <div className="relative card-modern p-10 hover-glow animate-fade-in delay-400 border-primary-500/20 group-hover:border-primary-400/30 transition-all duration-500 h-full flex flex-col">
                     <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mb-8 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
@@ -136,7 +136,7 @@ const HomePage = () => {
                 </div>
 
                 {/* Card Search Card */}
-                <div className="group relative h-full">
+                <div className="group relative h-full card-search-section">
                   <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
                   <div className="relative card-modern p-10 hover-glow animate-fade-in delay-500 border-primary-500/20 group-hover:border-primary-400/30 transition-all duration-500 h-full flex flex-col">
                     <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mb-8 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
@@ -257,7 +257,7 @@ const HomePage = () => {
                 </div>
 
                 {/* Advanced Analytics */}
-                <div className="group text-center animate-fade-in delay-700 px-2">
+                <div className="group text-center animate-fade-in delay-700 px-2 deck-analytics-section">
                   <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mx-auto mb-6 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
                     <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -270,7 +270,7 @@ const HomePage = () => {
                 </div>
 
                 {/* Easy Deck Management */}
-                <div className="group text-center animate-fade-in delay-800 px-2">
+                <div className="group text-center animate-fade-in delay-800 px-2 import-export-section">
                   <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mx-auto mb-6 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
                     <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -280,6 +280,68 @@ const HomePage = () => {
                   <p className="text-slate-400 text-sm leading-relaxed">
                     Save, organize, and share your decks with a clean, intuitive interface
                   </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Blog & Resources Section */}
+          <section className="relative py-32 px-4">
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 via-slate-800/30 to-slate-900/50"></div>
+            
+            <div className="relative z-10 max-w-7xl mx-auto">
+              <div className="text-center mb-20">
+                <h2 className="text-5xl lg:text-6xl font-bold text-gradient-primary mb-8 animate-fade-in">
+                  Learn & Improve Your Game
+                </h2>
+                <p className="text-2xl text-slate-400 max-w-4xl mx-auto animate-fade-in delay-200">
+                  Access expert insights, strategy guides, and the latest Commander meta analysis
+                </p>
+              </div>
+              
+              <div className="grid lg:grid-cols-2 gap-12">
+                {/* Blog Section */}
+                <div className="group relative h-full blog-section">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
+                  <div className="relative card-modern p-10 hover-glow animate-fade-in delay-300 border-primary-500/20 group-hover:border-primary-400/30 transition-all duration-500 h-full flex flex-col">
+                    <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mb-8 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <h3 className="text-3xl font-bold text-white mb-6">MTG Blog & Resources</h3>
+                    <p className="text-slate-300 leading-relaxed mb-8 text-lg flex-grow">
+                      Stay updated with the latest Commander strategies, card reviews, and meta analysis from our expert team.
+                    </p>
+                    <Link to="/blog" className="btn-modern btn-modern-ghost btn-modern-md group/btn mt-auto">
+                      <span>Read Blog</span>
+                      <svg className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Tutor AI Section */}
+                <div className="group relative h-full tutor-ai-section">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-blue-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500 opacity-0 group-hover:opacity-100"></div>
+                  <div className="relative card-modern p-10 hover-glow animate-fade-in delay-400 border-primary-500/20 group-hover:border-primary-400/30 transition-all duration-500 h-full flex flex-col">
+                    <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary-500 to-blue-500 flex items-center justify-center mb-8 shadow-modern-primary group-hover:scale-110 transition-transform duration-300">
+                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-3xl font-bold text-white mb-6">AI Gameplay Tutor</h3>
+                    <p className="text-slate-300 leading-relaxed mb-8 text-lg flex-grow">
+                      Learn advanced strategies and get real-time advice during your games with our AI tutor.
+                    </p>
+                    <Link to="/tutor-ai" className="btn-modern btn-modern-ghost btn-modern-md group/btn mt-auto">
+                      <span>Get Tutored</span>
+                      <svg className="w-5 h-5 ml-2 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

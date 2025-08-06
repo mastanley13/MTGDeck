@@ -1,4 +1,4 @@
-# GoHighLevel Blog RSS Integration Guide
+Re# GoHighLevel Blog RSS Integration Guide
 
 This guide explains how to integrate GoHighLevel (GHL) blog content with your website using RSS feeds. The system processes both plaintext and HTML/CSS content from GHL's RSS feed and transforms it into clean, displayable blog posts.
 
