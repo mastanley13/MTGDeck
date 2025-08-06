@@ -7,7 +7,7 @@ const BlogPage = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const categories = ['All', 'Blog'];
+  const categories = ['All', 'Blog', 'Guides', 'Strategy', 'Deck Ideas', 'News'];
 
   useEffect(() => {
     fetchPosts();
@@ -43,6 +43,17 @@ const BlogPage = () => {
     });
   };
 
+  const getCategoryColor = (category) => {
+    const colors = {
+      'Blog': 'bg-blue-500/20 text-blue-300',
+      'Guides': 'bg-green-500/20 text-green-300',
+      'Strategy': 'bg-purple-500/20 text-purple-300',
+      'Deck Ideas': 'bg-orange-500/20 text-orange-300',
+      'News': 'bg-red-500/20 text-red-300'
+    };
+    return colors[category] || 'bg-primary-500/20 text-primary-300';
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 overflow-hidden">
       {/* Background Effects */}
@@ -59,9 +70,26 @@ const BlogPage = () => {
           <h1 className="text-5xl sm:text-6xl font-bold text-white mb-6">
             <span className="text-gradient-primary">MTG Commander</span> Blog
           </h1>
-          <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+          <p className="text-xl text-slate-300 max-w-3xl mx-auto mb-8">
             Discover strategies, deck guides, and insights from the Commander community
           </p>
+          
+          {/* Category Filter */}
+          <div className="flex flex-wrap justify-center gap-2 mb-8">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === category
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Blog Posts Grid */}
@@ -95,7 +123,7 @@ const BlogPage = () => {
             {posts.map((post) => (
               <Link 
                 key={post.id}
-                to={`/blog/${encodeURIComponent(post.slug.split('/').pop())}`}
+                to={`/blog/${encodeURIComponent(post.slug)}`}
                 className="card-modern hover-glow group"
               >
                 <div className="overflow-hidden rounded-t-3xl">
@@ -104,17 +132,30 @@ const BlogPage = () => {
                       src={post.image} 
                       alt={post.title}
                       className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
                     />
+                  )}
+                  {(!post.image || !post.image.trim()) && (
+                    <div className="w-full h-48 bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center">
+                      <img 
+                        src="/public/images/aitutoricon.png" 
+                        alt="AI Deck Tutor"
+                        className="w-16 h-16 object-contain opacity-60"
+                      />
+                    </div>
                   )}
                 </div>
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="px-3 py-1 bg-primary-500/20 text-primary-300 rounded-full text-sm">
+                    <span className={`px-3 py-1 rounded-full text-sm ${getCategoryColor(post.category)}`}>
                       {post.category}
                     </span>
                     <span className="text-slate-400 text-sm">{post.readTime}</span>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-primary-300 transition-colors">
+                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-primary-300 transition-colors line-clamp-2">
                     {post.title}
                   </h3>
                   <p className="text-slate-400 mb-4 line-clamp-3">
@@ -152,7 +193,20 @@ const BlogPage = () => {
               </svg>
             </div>
             <h3 className="text-2xl font-bold text-white mb-4">No Blog Posts Yet</h3>
-            <p className="text-slate-400 mb-8">Blog posts will appear here once they are published.</p>
+            <p className="text-slate-400 mb-8">
+              {selectedCategory === 'All' 
+                ? 'Blog posts will appear here once they are published.'
+                : `No posts found in the "${selectedCategory}" category.`
+              }
+            </p>
+            {selectedCategory !== 'All' && (
+              <button
+                onClick={() => setSelectedCategory('All')}
+                className="btn-modern btn-modern-primary btn-modern-md"
+              >
+                View All Posts
+              </button>
+            )}
           </div>
         )}
       </div>
