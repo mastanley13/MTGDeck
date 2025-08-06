@@ -1,0 +1,324 @@
+{
+  "summary": {
+    "passed": 47,
+    "failed": 0,
+    "warnings": 5,
+    "total": 52,
+    "score": 100
+  },
+  "timestamp": "2025-08-06T15:17:05.560Z",
+  "details": [
+    {
+      "component": "TutorialSystem",
+      "type": "pass",
+      "message": "Component file exists",
+      "timestamp": "2025-08-06T15:17:05.554Z"
+    },
+    {
+      "component": "TutorialSystem",
+      "type": "pass",
+      "message": "Responsive design breakpoints implemented",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialSystem",
+      "type": "pass",
+      "message": "Keyboard navigation implemented",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialSystem",
+      "type": "pass",
+      "message": "Accessibility features implemented",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialSystem",
+      "type": "pass",
+      "message": "AI components properly integrated",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialSystem",
+      "type": "pass",
+      "message": "Celebration system implemented",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialSystem",
+      "type": "pass",
+      "message": "Interactive search tutorial implemented",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialSystem",
+      "type": "warn",
+      "message": "Performance optimizations could be improved",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialContext",
+      "type": "pass",
+      "message": "Component file exists",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialContext",
+      "type": "pass",
+      "message": "MTG-specific content implemented",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialContext",
+      "type": "pass",
+      "message": "AI details structure implemented",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialContext",
+      "type": "pass",
+      "message": "Tutorial steps properly structured",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialContext",
+      "type": "pass",
+      "message": "localStorage persistence implemented",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialContext",
+      "type": "warn",
+      "message": "Found 2 tutorial steps - needs more content",
+      "timestamp": "2025-08-06T15:17:05.555Z"
+    },
+    {
+      "component": "TutorialTrigger",
+      "type": "pass",
+      "message": "Component file exists",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "TutorialTrigger",
+      "type": "warn",
+      "message": "Missing some trigger variants",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "TutorialTrigger",
+      "type": "pass",
+      "message": "Mobile-responsive behavior implemented",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "TutorialTrigger",
+      "type": "pass",
+      "message": "Accessibility attributes present",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "TutorialTrigger",
+      "type": "pass",
+      "message": "First-time user pulse animation implemented",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "AIEducation",
+      "type": "pass",
+      "message": "Component file exists",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "AIEducation",
+      "type": "pass",
+      "message": "Conditional rendering implemented",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "AIEducation",
+      "type": "pass",
+      "message": "AI education content structure complete",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "AIEducation",
+      "type": "pass",
+      "message": "Learning path component included",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "AIDemo",
+      "type": "pass",
+      "message": "Component file exists",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "AIDemo",
+      "type": "pass",
+      "message": "Conditional rendering implemented",
+      "timestamp": "2025-08-06T15:17:05.556Z"
+    },
+    {
+      "component": "AIDemo",
+      "type": "pass",
+      "message": "Interactive demo system implemented",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "AIDemo",
+      "type": "pass",
+      "message": "Prompt engineering guide included",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "AITransparency",
+      "type": "pass",
+      "message": "Component file exists",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "AITransparency",
+      "type": "pass",
+      "message": "Conditional rendering implemented",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "AITransparency",
+      "type": "pass",
+      "message": "Transparency sections complete",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "AITransparency",
+      "type": "pass",
+      "message": "Accuracy metrics included",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "TutorialProgress",
+      "type": "pass",
+      "message": "Component file exists",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "TutorialProgress",
+      "type": "warn",
+      "message": "Progress variants incomplete",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "TutorialProgress",
+      "type": "pass",
+      "message": "Progress accessibility implemented",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "TutorialProgress",
+      "type": "pass",
+      "message": "Completion celebration implemented",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "Navbar",
+      "type": "pass",
+      "message": "Component file exists",
+      "timestamp": "2025-08-06T15:17:05.557Z"
+    },
+    {
+      "component": "Navbar",
+      "type": "pass",
+      "message": "Tutorial components integrated",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "Navbar",
+      "type": "pass",
+      "message": "Responsive tutorial triggers implemented",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "Navbar",
+      "type": "pass",
+      "message": "Mobile tutorial section implemented",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "TutorialSystem-Performance",
+      "type": "pass",
+      "message": "React hooks optimization found",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "TutorialSystem-Performance",
+      "type": "pass",
+      "message": "Effect cleanup implemented",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "TutorialSystem-Performance",
+      "type": "pass",
+      "message": "Conditional rendering optimization found",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "TutorialTrigger-Performance",
+      "type": "pass",
+      "message": "Effect cleanup implemented",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "AIDemo-Performance",
+      "type": "pass",
+      "message": "Effect cleanup implemented",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "AIDemo-Performance",
+      "type": "pass",
+      "message": "Conditional rendering optimization found",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "Performance",
+      "type": "pass",
+      "message": "Performance optimizations are comprehensive",
+      "timestamp": "2025-08-06T15:17:05.558Z"
+    },
+    {
+      "component": "TutorialSystem-ErrorHandling",
+      "type": "pass",
+      "message": "Null/undefined checks found",
+      "timestamp": "2025-08-06T15:17:05.559Z"
+    },
+    {
+      "component": "TutorialContext-ErrorHandling",
+      "type": "pass",
+      "message": "Null/undefined checks found",
+      "timestamp": "2025-08-06T15:17:05.559Z"
+    },
+    {
+      "component": "TutorialContext-ErrorHandling",
+      "type": "pass",
+      "message": "Error handling mechanisms found",
+      "timestamp": "2025-08-06T15:17:05.559Z"
+    },
+    {
+      "component": "AIDemo-ErrorHandling",
+      "type": "pass",
+      "message": "Null/undefined checks found",
+      "timestamp": "2025-08-06T15:17:05.560Z"
+    },
+    {
+      "component": "AIEducation-ErrorHandling",
+      "type": "pass",
+      "message": "Null/undefined checks found",
+      "timestamp": "2025-08-06T15:17:05.560Z"
+    },
+    {
+      "component": "ErrorHandling",
+      "type": "warn",
+      "message": "Error handling is adequate",
+      "timestamp": "2025-08-06T15:17:05.560Z"
+    }
+  ]
+}

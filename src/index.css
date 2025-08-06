@@ -1,7 +1,63 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@tailwind base;
+
+/* Tutorial Mobile Enhancement Styles */
+.tutorial-mobile-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #1e293b;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tutorial-mobile-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tutorial-mobile-scroll::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 2px;
+}
+
+.tutorial-mobile-scroll::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 2px;
+}
+
+.tutorial-mobile-scroll::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Mobile touch feedback */
+.tutorial-touch-feedback {
+  -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+  touch-action: manipulation;
+}
+
+/* Tutorial highlight animation */
+.tutorial-highlight {
+  animation: tutorial-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  position: relative;
+  z-index: 50;
+}
+
+@keyframes tutorial-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+/* Mobile-optimized drag handle */
+.mobile-drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.mobile-drag-handle:active {
+  cursor: grabbing;
+}
 
 /* Budget Slider Styles */
 .slider {
@@ -76,4 +132,60 @@
   cursor: not-allowed;
   background: #64748b; /* slate-500 */
   box-shadow: none;
+}
+
+/* Tutorial System Styles */
+.tutorial-highlight {
+  position: relative;
+  z-index: 9998;
+  animation: tutorial-pulse 2s ease-in-out infinite;
+  border-radius: 8px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+@keyframes tutorial-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.3), 0 0 30px rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 768px) {
+  .tutorial-highlight {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.6), 0 0 15px rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-highlight {
+    animation: none;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.5);
+  }
+  
+  .animate-pulse-slow {
+    animation: none;
+  }
+}
+
+/* Focus management for tutorial */
+.tutorial-focus-trap {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.tutorial-focus-trap > * {
+  pointer-events: auto;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .tutorial-highlight {
+    box-shadow: 0 0 0 4px #ffffff, 0 0 0 8px #000000;
+  }
 }
