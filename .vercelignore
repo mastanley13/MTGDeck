@@ -1,0 +1,44 @@
+# Node modules
+node_modules
+
+# Build files
+dist
+build_output.txt
+
+# Test files
+**/*.test.js
+**/*.test.jsx
+**/*.test.ts
+**/*.test.tsx
+test/
+coverage/
+
+# Development files
+.env.local
+.env.development
+.env.development.local
+.vscode/
+.idea/
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Git related
+.git/
+.gitignore
+
+# Other
+*.csv
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!vercel.json

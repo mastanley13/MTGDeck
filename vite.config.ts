@@ -12,6 +12,19 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          charts: ['chart.js', 'react-chartjs-2', 'recharts'],
+          ui: ['@heroicons/react', '@tabler/icons-react', 'react-toastify'],
+          utils: ['lodash', 'axios', 'dompurify']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  },
   server: {
     proxy: {
       '/api': {

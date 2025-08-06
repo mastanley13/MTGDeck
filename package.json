@@ -6,6 +6,7 @@
     "start": "node src/server.js",
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/generate-sitemap.js",
+    "vercel-build": "tsc -b && vite build && node scripts/generate-sitemap.js",
     "build:check": "npm run build && node scripts/check-redirects.js",
     "build:validate": "node scripts/build-and-validate.js",
     "preview": "vite preview",
