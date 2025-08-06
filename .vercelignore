@@ -1,9 +1,12 @@
-# Node modules
-node_modules
-
-# Build files
-dist
-build_output.txt
+# Development files
+.git
+.github
+.vscode
+.idea
+.DS_Store
+*.log
+*.tmp
+Thumbs.db
 
 # Test files
 **/*.test.js
@@ -13,32 +16,37 @@ build_output.txt
 test/
 coverage/
 
-# Development files
-.env.local
-.env.development
-.env.development.local
-.vscode/
-.idea/
-
-# Temporary files
-*.log
-*.tmp
-.DS_Store
-Thumbs.db
-
 # Documentation
 docs/
 *.md
 !README.md
 
-# Git related
-.git/
-.gitignore
-
-# Other
+# Data files
 *.csv
-*.json
+additionalobjectdeck/
+Archetypenotes/
+association/
+BlogNotes/
+BlogNotes2.0/
+Contact Fields/
+CustomFields/
+object/
+Scryfall_faces_object/
+Profile Picture/
+reflio api/
+MTGDeck/
+
+# Build artifacts
+build_output.txt
+
+# Keep essential files
 !package.json
 !package-lock.json
 !tsconfig.json
 !vercel.json
+!api/
+!public/
+!src/
+!scripts/
+!dist/
+!index.html

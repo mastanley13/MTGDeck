@@ -1,0 +1,10 @@
+{
+  "projectId": "prj_aideck_tutor",
+  "orgId": "org_aideck_tutor",
+  "settings": {
+    "framework": "vite",
+    "buildCommand": "npm run vercel-build",
+    "outputDirectory": "dist",
+    "devCommand": "npm run dev"
+  }
+}

@@ -1,31 +1,8 @@
-import express from 'express';
-import cors from 'cors';
-import webhookRoutes from '../src/api/webhookRoutes.js';
-
-// Express setup for Vercel serverless functions
-const app = express();
-
-// CORS configuration
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://aidecktutor.com', 'https://www.aidecktutor.com']
-    : ['http://localhost:5173', 'http://127.0.0.1:5173'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Version']
-};
-
-// Middleware
-app.use(cors(corsOptions));
-app.use(express.json());
-
-// Routes
-app.use('/api/webhooks', webhookRoutes);
-
-// Basic health check route
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
-
-// Export for Vercel serverless functions
-export default app;
+export default function handler(req, res) {
+  res.status(200).json({
+    message: 'AIDeckTutor API',
+    version: '1.0.0',
+    status: 'online',
+    timestamp: new Date().toISOString()
+  });
+}
