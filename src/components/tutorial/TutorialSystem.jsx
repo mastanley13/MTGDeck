@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTutorial } from '../../context/TutorialContext';
-import AIEducation, { AILearningPath } from './AIEducation';
+import AIEducation from './AIEducation';
 import AIDemo, { PromptGuide } from './AIDemo';
 import AITransparency from './AITransparency';
 
@@ -29,7 +29,6 @@ const TutorialSystem = () => {
     showTutorial, 
     hasCompletedTutorial,
     currentStep,
-    completedSteps,
     tutorialSteps,
     getCurrentStepData,
     startTutorial, 
@@ -224,9 +223,8 @@ const TutorialSystem = () => {
     
     return (
       <div className="bg-gradient-to-r from-mtg-gold/20 to-yellow-600/20 rounded-lg p-4 border border-yellow-600/30">
-        <h4 className="text-yellow-400 font-semibold mb-2 flex items-center">
-          <span className="text-lg mr-2">⚡</span>
-          MTG Example:
+        <h4 className="text-yellow-400 font-semibold mb-2">
+          Strategy Tip
         </h4>
         <p className="text-slate-200 text-sm">{currentStepData.mtgExample}</p>
       </div>
@@ -295,36 +293,6 @@ const TutorialSystem = () => {
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-10 h-1.5 bg-slate-600 rounded-full"></div>
             )}
             <div className="flex items-center space-x-3">
-              {/* Enhanced Progress indicators */}
-              <div className="flex items-center space-x-2">
-                <div className="flex space-x-1">
-                  {tutorialSteps.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`rounded-full transition-all duration-300 ${
-                        layout === 'bottom-sheet' ? 'w-3 h-3' : layout === 'modal' ? 'w-2.5 h-2.5' : 'w-2 h-2'
-                      } ${
-                        index === currentStep 
-                          ? 'bg-primary-500 shadow-lg shadow-primary-500/50' 
-                          : completedSteps.includes(index) 
-                            ? 'bg-green-500' 
-                            : 'bg-slate-600'
-                      }`}
-                      role="progressbar"
-                      aria-valuenow={index <= currentStep ? 100 : 0}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={`Step ${index + 1} ${index <= currentStep ? 'completed' : 'pending'}`}
-                    />
-                  ))}
-                </div>
-                {/* Step counter for mobile */}
-                {(layout === 'bottom-sheet' || layout === 'modal') && (
-                  <span className="text-xs text-slate-400 ml-2">
-                    {currentStep + 1}/{tutorialSteps.length}
-                  </span>
-                )}
-              </div>
               
               {/* Keyboard hint */}
               <div className="hidden sm:flex items-center text-xs text-slate-500">
@@ -349,10 +317,7 @@ const TutorialSystem = () => {
             layout === 'bottom-sheet' ? 'p-4 pt-3' : layout === 'modal' ? 'p-4' : 'p-6'
           }`}>
             <div className="space-y-4">
-              {/* AI Learning Progress - only show for AI steps */}
-              {isAIStep() && (
-                <AILearningPath currentStep={currentStep} totalSteps={tutorialSteps.length} />
-              )}
+
               
               <h3 id="tutorial-title" className={`font-bold text-white leading-tight ${
                 layout === 'bottom-sheet' ? 'text-lg' : layout === 'modal' ? 'text-lg' : 'text-xl'
@@ -407,23 +372,7 @@ const TutorialSystem = () => {
                 </div>
               )}
 
-              {/* Progress indicator */}
-              <div className="bg-slate-700/30 rounded-lg p-3">
-                <p className="text-xs text-slate-400">
-                  Step {currentStep + 1} of {tutorialSteps.length}
-                </p>
-                <div className="w-full bg-slate-600 rounded-full h-1.5 mt-2">
-                  <div 
-                    className="bg-gradient-to-r from-primary-500 to-blue-500 h-1.5 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentStep + 1) / tutorialSteps.length) * 100}%` }}
-                    role="progressbar"
-                    aria-valuenow={(currentStep + 1) / tutorialSteps.length * 100}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label="Tutorial progress"
-                  />
-                </div>
-              </div>
+
             </div>
           </div>
 

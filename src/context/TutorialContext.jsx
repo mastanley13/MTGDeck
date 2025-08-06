@@ -14,7 +14,6 @@ export const TutorialProvider = ({ children }) => {
   const [tutorialState, setTutorialState] = useState({
     isActive: false,
     currentStep: 0,
-    completedSteps: [],
     showTutorial: false,
     hasCompletedTutorial: false
   });
@@ -38,7 +37,7 @@ export const TutorialProvider = ({ children }) => {
       position: 'center',
       target: null,
       celebration: 'Welcome to smarter deck building!',
-      mtgExample: 'Whether you\'re building competitive or casual, we\'ll help you make every card choice count.'
+      mtgExample: 'From mana curve optimization to synergy analysis, our AI tools ensure your deck performs at its best in any playgroup.'
     },
     {
       id: 'deck-builder',
@@ -52,7 +51,7 @@ export const TutorialProvider = ({ children }) => {
         'Real-time deck validation and format legality checking',
         'Smart mana curve analysis and optimization'
       ],
-      mtgExample: 'Select your commander and let AI suggest synergistic cards. For example, with Kaalia of the Vast, get recommendations for Angels, Demons, and Dragons that maximize her triggered ability.',
+      mtgExample: 'Looking to maximize your commander\'s potential? Our AI analyzes thousands of successful decks to find hidden synergies and powerful combinations you might have missed.',
       celebration: 'Your deck building toolkit is ready!'
     },
     {
@@ -67,7 +66,7 @@ export const TutorialProvider = ({ children }) => {
         'Suggestions for deck archetypes and play styles',
         'Strategic insights for different commanders'
       ],
-      mtgExample: 'Looking for a new commander? Get AI recommendations based on your preferred play style - whether you like aggressive strategies, control decks, or combo gameplay.',
+      mtgExample: 'Want to build around lifegain but not sure which commander to choose? Our AI can suggest perfect commanders like Karlov or Oloro, along with proven strategies for each.',
       celebration: 'Find your perfect commander!'
     },
     {
@@ -103,7 +102,7 @@ export const TutorialProvider = ({ children }) => {
         'Understand card interactions and synergies',
         'Improve your multiplayer Commander politics'
       ],
-      mtgExample: 'Need help with difficult gameplay decisions? Get AI advice on timing, card interactions, and strategic plays to improve your Commander games.',
+      mtgExample: 'Should you cast your board wipe now or wait? Our AI considers factors like opponent\'s open mana, known cards in hand, and likely responses to help you make the optimal play.',
       celebration: 'Level up your gameplay skills!'
     },
     {
@@ -118,7 +117,7 @@ export const TutorialProvider = ({ children }) => {
         'Color identity and mana base analysis', 
         'Deck composition statistics and insights'
       ],
-      mtgExample: 'View your deck\'s mana curve, see how many creatures vs spells you have, and analyze your color distribution for optimal performance.',
+      mtgExample: 'Is your deck running enough ramp? Our analytics can show if your 3-color deck needs more mana rocks or land-based ramp to consistently cast your commander by turn 4.',
       celebration: 'Master deck analysis like a pro!'
     },
     {
@@ -133,7 +132,7 @@ export const TutorialProvider = ({ children }) => {
         'Export your decks to share with others',
         'Easy deck editing and modification tools'
       ],
-      mtgExample: 'Keep all your Commander decks organized in one place, import existing decklists, and export them to share with your playgroup.',
+      mtgExample: 'Found an interesting decklist on MTGGoldfish? Import it directly, customize it with our AI suggestions, then export it to your favorite deck building site.',
       celebration: 'Your deck collection is organized!'
     },
     {
@@ -148,7 +147,7 @@ export const TutorialProvider = ({ children }) => {
         'Card reviews and meta analysis',
         'Community content and discussions'
       ],
-      mtgExample: 'Read about the latest Commander strategies, card interactions, and deck building techniques from experienced players.',
+      mtgExample: 'Discover in-depth articles on topics like "Politics in Commander: When to Make Deals" or "Building a Budget Mana Base for 3-Color Decks" written by experienced players.',
       celebration: 'Expand your Magic knowledge!'
     },
     {
@@ -165,7 +164,7 @@ export const TutorialProvider = ({ children }) => {
       ],
       celebration: 'Welcome to smarter deck building!',
       finalMessage: 'You\'re now equipped with powerful tools to build better Commander decks. Start creating!',
-      mtgExample: 'Ready to build your next Commander masterpiece? Use these tools to create decks that will impress your playgroup!'
+      mtgExample: 'Time to put it all together! Use AI suggestions to find the perfect commander, optimize your mana base with analytics, and share your masterpiece with detailed strategy guides.'
     }
   ];
 
@@ -185,7 +184,6 @@ export const TutorialProvider = ({ children }) => {
       ...prev,
       isActive: true,
       currentStep: 0,
-      completedSteps: [],
       showTutorial: true
     }));
   };
@@ -204,8 +202,7 @@ export const TutorialProvider = ({ children }) => {
       }
       return {
         ...prev,
-        currentStep: nextStepIndex,
-        completedSteps: [...prev.completedSteps, prev.currentStep]
+        currentStep: nextStepIndex
       };
     });
   };
@@ -241,7 +238,6 @@ export const TutorialProvider = ({ children }) => {
     setTutorialState({
       isActive: false,
       currentStep: 0,
-      completedSteps: [],
       showTutorial: false,
       hasCompletedTutorial: false
     });

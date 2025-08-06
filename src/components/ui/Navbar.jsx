@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTutorial } from '../../context/TutorialContext';
 import TutorialTrigger from '../tutorial/TutorialTrigger.jsx';
-import TutorialProgress from '../tutorial/TutorialProgress.jsx';
+
 
 // Placeholder - replace with the same ID used in UserProfilePage.jsx
 const PROFILE_PIC_CUSTOM_FIELD_ID = "hPIWnTEsvK1pVbATGLS5";
@@ -663,10 +663,7 @@ const Navbar = () => {
                 Help & Learning
               </div>
               
-              {/* Tutorial Progress for mobile */}
-              <div className="mb-3 px-3">
-                <TutorialProgress variant="compact" showLabels={true} />
-              </div>
+
               
               <button
                 onClick={() => {

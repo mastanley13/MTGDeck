@@ -139,45 +139,6 @@ const AIEducation = ({ aiDetails, isVisible = true }) => {
   );
 };
 
-// Progressive AI Learning Component
-export const AILearningPath = ({ currentStep, totalSteps }) => {
-  const learningStages = [
-    { stage: 'Basic', range: [0, 2], description: 'Introduction to AI-assisted deck building' },
-    { stage: 'Intermediate', range: [3, 5], description: 'Understanding AI recommendations and limitations' },
-    { stage: 'Advanced', range: [6, totalSteps], description: 'Mastering AI tools for competitive play' }
-  ];
 
-  const getCurrentStage = () => {
-    return learningStages.find(stage => 
-      currentStep >= stage.range[0] && currentStep <= stage.range[1]
-    ) || learningStages[0];
-  };
-
-  const currentStage = getCurrentStage();
-
-  return (
-    <div className="mb-4 p-3 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-lg border border-purple-500/30">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-sm font-semibold text-purple-300">AI Learning Progress</h4>
-        <span className="text-xs text-purple-400">{currentStage.stage} Level</span>
-      </div>
-      <p className="text-xs text-slate-300 mb-2">{currentStage.description}</p>
-      <div className="flex space-x-1">
-        {learningStages.map((stage, index) => (
-          <div
-            key={stage.stage}
-            className={`flex-1 h-2 rounded-full transition-all duration-300 ${
-              stage.stage === currentStage.stage 
-                ? 'bg-gradient-to-r from-purple-500 to-blue-500' 
-                : index < learningStages.indexOf(currentStage)
-                  ? 'bg-green-500'
-                  : 'bg-slate-600'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
 
 export default AIEducation;

@@ -1,11 +1,10 @@
 // Tutorial System Components
 export { default as TutorialSystem } from './TutorialSystem.jsx';
 export { default as TutorialTrigger } from './TutorialTrigger.jsx';
-export { default as TutorialProgress } from './TutorialProgress.jsx';
 export { default as CardSearchTutorial } from './CardSearchTutorial.jsx';
 
 // AI Education Components
-export { default as AIEducation, AILearningPath } from './AIEducation.jsx';
+export { default as AIEducation } from './AIEducation.jsx';
 export { default as AIDemo, PromptGuide } from './AIDemo.jsx';
 export { default as AITransparency } from './AITransparency.jsx';
 export { default as AIQuickReference } from './AIQuickReference.jsx';
