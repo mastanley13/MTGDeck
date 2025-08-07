@@ -165,13 +165,6 @@ function App() {
                 </div>
               </footer>
               <TutorialSystem />
-              {/* Floating tutorial trigger for testing */}
-              <TutorialTrigger 
-                variant="floating" 
-                showText={true}
-                text="Test Tutorial"
-                className="z-[9998]"
-              />
               <ToastContainer
                 position="bottom-right"
                 autoClose={3000}

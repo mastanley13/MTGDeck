@@ -47,7 +47,7 @@ const AIEducation = ({ aiDetails, isVisible = true }) => {
               </h5>
               <ul className="space-y-1">
                 {aiDetails.limitations.map((limitation, index) => (
-                  <li key={index} className="text-xs text-yellow-100 flex items-start space-x-2">
+                  <li key={index} className="text-xs text-yellow-100 flex items-start space-x-2 break-words">
                     <span className="text-yellow-400 mt-0.5 flex-shrink-0">•</span>
                     <span>{limitation}</span>
                   </li>
@@ -69,7 +69,7 @@ const AIEducation = ({ aiDetails, isVisible = true }) => {
               </h5>
               <ul className="space-y-2">
                 {aiDetails.userTips.map((tip, index) => (
-                  <li key={index} className="text-xs text-blue-100 flex items-start space-x-2">
+                  <li key={index} className="text-xs text-blue-100 flex items-start space-x-2 break-words">
                     <span className="text-blue-400 mt-0.5 flex-shrink-0">{index + 1}.</span>
                     <span>{tip}</span>
                   </li>

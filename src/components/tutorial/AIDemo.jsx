@@ -138,7 +138,7 @@ const AIDemo = ({ demoType, isVisible = true }) => {
         <div className="mb-3">
           <div className="text-xs text-slate-400 mb-1">Input:</div>
           <div className="bg-slate-900/50 rounded p-2 border-l-2 border-blue-500">
-            <code className="text-xs text-blue-300">{currentDemo.input}</code>
+            <code className="text-xs text-blue-300 break-words whitespace-pre-wrap">{currentDemo.input}</code>
           </div>
         </div>
 
@@ -147,7 +147,7 @@ const AIDemo = ({ demoType, isVisible = true }) => {
           <div className="text-xs text-slate-400 mb-1">AI Processing:</div>
           <div className="bg-slate-900/50 rounded p-2 border-l-2 border-yellow-500 flex items-center">
             <div className="animate-spin w-3 h-3 border-2 border-yellow-400 border-t-transparent rounded-full mr-2"></div>
-            <code className="text-xs text-yellow-300">{currentDemo.process}</code>
+            <code className="text-xs text-yellow-300 break-words whitespace-pre-wrap">{currentDemo.process}</code>
           </div>
         </div>
 
@@ -155,14 +155,14 @@ const AIDemo = ({ demoType, isVisible = true }) => {
         <div className="mb-3">
           <div className="text-xs text-slate-400 mb-1">AI Recommendation:</div>
           <div className="bg-slate-900/50 rounded p-2 border-l-2 border-green-500">
-            <code className="text-xs text-green-300">{currentDemo.output}</code>
+            <code className="text-xs text-green-300 break-words whitespace-pre-wrap">{currentDemo.output}</code>
           </div>
         </div>
 
         {/* Explanation */}
         <div className="bg-purple-900/20 rounded p-2 border border-purple-500/30">
           <div className="text-xs text-slate-400 mb-1">Why this recommendation:</div>
-          <p className="text-xs text-purple-200">{currentDemo.explanation}</p>
+          <p className="text-xs text-purple-200 break-words">{currentDemo.explanation}</p>
         </div>
       </div>
 
@@ -238,7 +238,7 @@ export const PromptGuide = ({ isVisible = true }) => {
             {/* Bad Example */}
             <div className="mb-2">
               <div className="text-xs text-red-400 mb-1">❌ Vague Prompt:</div>
-              <code className="text-xs text-red-300 bg-red-900/20 px-2 py-1 rounded">
+              <code className="text-xs text-red-300 bg-red-900/20 px-2 py-1 rounded break-words whitespace-pre-wrap">
                 "{example.bad}"
               </code>
             </div>
@@ -246,7 +246,7 @@ export const PromptGuide = ({ isVisible = true }) => {
             {/* Good Example */}
             <div className="mb-2">
               <div className="text-xs text-green-400 mb-1">✅ Specific Prompt:</div>
-              <code className="text-xs text-green-300 bg-green-900/20 px-2 py-1 rounded">
+              <code className="text-xs text-green-300 bg-green-900/20 px-2 py-1 rounded break-words whitespace-pre-wrap">
                 "{example.good}"
               </code>
             </div>

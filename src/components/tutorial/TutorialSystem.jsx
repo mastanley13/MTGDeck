@@ -15,8 +15,7 @@ const TutorialSystem = () => {
     height: typeof window !== 'undefined' ? window.innerHeight : 768
   });
   const [currentSearchExample, setCurrentSearchExample] = useState(0);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [celebrationMessage, setCelebrationMessage] = useState('');
+  // Celebration popups removed per requirements
   
   // Responsive breakpoints
   const isMobile = viewportSize.width < 768;
@@ -35,7 +34,8 @@ const TutorialSystem = () => {
     nextStep: contextNextStep, 
     previousStep: contextPreviousStep,
     skipTutorial: contextSkipTutorial,
-    completeTutorial 
+    completeTutorial,
+    startPath
   } = useTutorial();
 
   // Handle viewport resize
@@ -90,6 +90,24 @@ const TutorialSystem = () => {
     }
   }, [isActive, handleKeyDown]);
 
+  // Prevent background scroll on mobile when tutorial is active
+  useEffect(() => {
+    if (!isActive) return;
+    if (isMobile) {
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+      const originalBodyTouchAction = document.body.style.touchAction;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+      return () => {
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+        document.body.style.touchAction = originalBodyTouchAction;
+      };
+    }
+  }, [isActive, isMobile]);
+
   useEffect(() => {
     // Check if tutorial has been completed before
     if (!hasCompletedTutorial && location.pathname === '/') {
@@ -116,14 +134,7 @@ const TutorialSystem = () => {
 
   const handleNextStep = () => {
     const step = getCurrentStepData();
-    
-    // Show celebration for special steps
-    if (step.celebration) {
-      setCelebrationMessage(step.celebration);
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 2000);
-    }
-    
+
     // Handle navigation for specific steps
     if (step.id === 'deck-builder') {
       navigate('/builder');
@@ -134,10 +145,18 @@ const TutorialSystem = () => {
     } else if (step.id === 'card-search' || step.id === 'search-syntax') {
       navigate('/card-search');
     } else if (step.id === 'blog-resources') {
-      navigate('/blog');
+      // Redirect to How To Play instead of Blog
+      navigate('/how-to-play');
     }
     
+    // If last step, return to starting page user was on
+    const isFinalStep = currentStep >= tutorialSteps.length - 1;
     contextNextStep();
+    if (isFinalStep) {
+      if (startPath) {
+        navigate(startPath);
+      }
+    }
   };
 
   const handlePreviousStep = () => {
@@ -167,19 +186,7 @@ const TutorialSystem = () => {
   const layout = getTutorialLayout();
   const currentStepData = getCurrentStepData();
 
-  // Render celebration overlay
-  const CelebrationOverlay = () => showCelebration && (
-    <div className="fixed inset-0 z-[10001] flex items-center justify-center pointer-events-none">
-      <div className="bg-gradient-to-r from-primary-500 to-purple-600 text-white px-8 py-4 rounded-2xl shadow-2xl animate-pulse">
-        <div className="flex items-center space-x-3">
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="font-semibold">{celebrationMessage}</span>
-        </div>
-      </div>
-    </div>
-  );
+  // Celebration overlay removed per requirements
 
   // Interactive Search Tutorial Component
   const InteractiveSearchTutorial = () => {
@@ -247,7 +254,7 @@ const TutorialSystem = () => {
 
   return (
     <>
-      <CelebrationOverlay />
+      {/* Celebration overlay removed */}
       
       {/* Responsive overlay */}
       <div 
@@ -265,7 +272,7 @@ const TutorialSystem = () => {
         ref={tutorialRef}
         className={`fixed z-[10000] transition-all duration-300 focus:outline-none ${
           layout === 'bottom-sheet' 
-            ? 'bottom-0 left-0 right-0 max-h-[80vh] min-h-[50vh]' 
+            ? 'bottom-0 left-0 right-0 w-full h-[75dvh] max-h-[85dvh] min-h-[50dvh]'
             : layout === 'modal'
             ? 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-lg max-h-[85vh]'
             : 'top-0 right-0 h-full w-96 max-w-[90vw]'
@@ -275,8 +282,9 @@ const TutorialSystem = () => {
         aria-labelledby="tutorial-title"
         aria-describedby="tutorial-description"
         aria-modal="true"
+        style={layout === 'bottom-sheet' ? { WebkitOverflowScrolling: 'touch' } : undefined}
       >
-        <div className={`bg-slate-800/96 backdrop-blur-xl shadow-2xl flex flex-col ${
+        <div className={`bg-slate-800/96 backdrop-blur-xl shadow-2xl flex flex-col min-h-0 ${
           layout === 'bottom-sheet' 
             ? 'rounded-t-3xl border-t-2 border-slate-600/60 h-full' 
             : layout === 'modal'
@@ -286,19 +294,14 @@ const TutorialSystem = () => {
           
           {/* Enhanced Mobile Header */}
           <div className={`flex justify-between items-center border-b border-slate-700/50 ${
-            layout === 'bottom-sheet' ? 'p-4 pb-3' : layout === 'modal' ? 'p-4' : 'p-4'
+            layout === 'bottom-sheet' ? 'p-4 pb-3 sticky top-0 z-10 bg-slate-800/95 backdrop-blur-xl' : layout === 'modal' ? 'p-4' : 'p-4'
           }`}>
             {/* Mobile drag handle for bottom sheet */}
             {layout === 'bottom-sheet' && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-10 h-1.5 bg-slate-600 rounded-full"></div>
             )}
             <div className="flex items-center space-x-3">
-              
-              {/* Keyboard hint */}
-              <div className="hidden sm:flex items-center text-xs text-slate-500">
-                <kbd className="px-1.5 py-0.5 bg-slate-700 rounded text-slate-300">Esc</kbd>
-                <span className="mx-1">to close</span>
-              </div>
+              {/* Title could appear here if needed */}
             </div>
             
             <button
@@ -313,9 +316,9 @@ const TutorialSystem = () => {
           </div>
 
           {/* Enhanced Mobile Content */}
-          <div className={`flex-1 overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 ${
-            layout === 'bottom-sheet' ? 'p-4 pt-3' : layout === 'modal' ? 'p-4' : 'p-6'
-          }`}>
+          <div className={`flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600 ${
+            layout === 'bottom-sheet' ? 'p-4 pt-3 pb-24' : layout === 'modal' ? 'p-4' : 'p-6'
+          }`} style={layout === 'bottom-sheet' ? { touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' } : undefined}>
             <div className="space-y-4">
 
               
@@ -349,7 +352,7 @@ const TutorialSystem = () => {
               
               {/* AI Transparency - show on completion step */}
               {currentStepData.id === 'completion' && (
-                <AITransparency isVisible={true} />
+                <AITransparency isVisible={true} hideSections={['accuracy']} />
               )}
               
               {/* Interactive Search Tutorial */}
@@ -378,7 +381,7 @@ const TutorialSystem = () => {
 
           {/* Enhanced Mobile Actions */}
           <div className={`border-t border-slate-700/50 ${
-            layout === 'bottom-sheet' ? 'p-4 pb-5' : layout === 'modal' ? 'p-4' : 'p-4'
+            layout === 'bottom-sheet' ? 'p-4 pb-5 pb-[max(16px,env(safe-area-inset-bottom))] sticky bottom-0 bg-slate-800/95 backdrop-blur-xl z-10' : layout === 'modal' ? 'p-4' : 'p-4'
           }`}>
             {/* Mobile-first layout */}
             {layout === 'bottom-sheet' ? (
@@ -397,14 +400,6 @@ const TutorialSystem = () => {
                 
                 {/* Secondary actions row */}
                 <div className="flex justify-between items-center">
-                  <button
-                    onClick={handleSkipTutorial}
-                    className="text-slate-400 hover:text-white transition-colors text-base py-2 px-4 rounded-lg hover:bg-slate-700/50 tutorial-touch-feedback"
-                    aria-label="Skip tutorial"
-                  >
-                    Skip
-                  </button>
-                  
                   {currentStep > 0 && (
                     <button
                       onClick={handlePreviousStep}
@@ -415,6 +410,14 @@ const TutorialSystem = () => {
                       <span>Back</span>
                     </button>
                   )}
+                  
+                  <button
+                    onClick={handleSkipTutorial}
+                    className="text-slate-400 hover:text-white transition-colors text-base py-2 px-4 rounded-lg hover:bg-slate-700/50 tutorial-touch-feedback"
+                    aria-label="Skip tutorial"
+                  >
+                    Skip
+                  </button>
                 </div>
               </div>
             ) : (
@@ -459,9 +462,8 @@ const TutorialSystem = () => {
             {/* Touch hints for mobile */}
             {layout === 'bottom-sheet' && (
               <div className="flex justify-center mt-2 pt-2 border-t border-slate-700/30">
-                <div className="flex items-center text-xs text-slate-500 space-x-6">
+                <div className="flex items-center text-xs text-slate-500">
                   <span className="flex items-center">
-                    <span className="text-slate-600 mr-1">💬</span>
                     <span>Swipe or tap to navigate</span>
                   </span>
                 </div>

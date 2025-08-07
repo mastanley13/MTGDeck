@@ -15,7 +15,8 @@ export const TutorialProvider = ({ children }) => {
     isActive: false,
     currentStep: 0,
     showTutorial: false,
-    hasCompletedTutorial: false
+    hasCompletedTutorial: false,
+    startPath: '/'
   });
 
   const [featureHighlights, setFeatureHighlights] = useState({
@@ -180,11 +181,13 @@ export const TutorialProvider = ({ children }) => {
   }, []);
 
   const startTutorial = () => {
+    const currentPath = window.location.pathname;
     setTutorialState(prev => ({
       ...prev,
       isActive: true,
       currentStep: 0,
-      showTutorial: true
+      showTutorial: true,
+      startPath: currentPath
     }));
   };
 

@@ -91,24 +91,15 @@ const TutorialTrigger = ({
   };
 
   const getTutorialIcon = () => {
-    if (hasCompletedTutorial) {
-      return (
-        <svg className={getIconSize()} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      );
-    }
+    // Always show a question-circle icon to avoid confusion with refresh
     return (
-      <svg className={getIconSize()} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className={getIconSize()} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     );
   };
 
   const getDisplayText = () => {
-    if (hasCompletedTutorial) {
-      return isMobile ? 'Retake' : 'Retake Tour';
-    }
     if (variant === 'hero') {
       return 'Start Your MTG Journey';
     }
@@ -149,7 +140,7 @@ const TutorialTrigger = ({
       {/* Tooltip for mobile */}
       {isMobile && variant === 'floating' && (
         <div className="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs text-white bg-slate-900 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-          {hasCompletedTutorial ? 'Retake tour' : 'Learn the basics'}
+          Take a tour
           <div className="absolute top-full right-2 w-0 h-0 border-l-2 border-r-2 border-t-4 border-transparent border-t-slate-900" />
         </div>
       )}

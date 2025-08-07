@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 /**
  * Component for explaining AI transparency, data sources, and decision-making process
  */
-const AITransparency = ({ isVisible = true }) => {
+const AITransparency = ({ isVisible = true, hideSections = [] }) => {
   const [activeSection, setActiveSection] = useState('data');
 
   if (!isVisible) return null;
@@ -96,9 +96,7 @@ const AITransparency = ({ isVisible = true }) => {
               </div>
             </div>
           </div>
-          <div className="text-xs text-slate-400">
-            Metrics based on user feedback and deck performance analysis over 50,000+ generated decks.
-          </div>
+          {/* Metrics explanatory text removed per requirements */}
         </div>
       )
     },
@@ -139,6 +137,9 @@ const AITransparency = ({ isVisible = true }) => {
     }
   };
 
+  // Filter out hidden sections
+  const visibleEntries = Object.entries(sections).filter(([key]) => !hideSections.includes(key));
+
   return (
     <div className="mt-4 bg-gradient-to-br from-slate-800/80 to-slate-700/80 rounded-lg border border-slate-600/50 overflow-hidden">
       {/* Header */}
@@ -153,7 +154,7 @@ const AITransparency = ({ isVisible = true }) => {
 
       {/* Tab Navigation */}
       <div className="flex border-b border-slate-600/30 bg-slate-800/30">
-        {Object.entries(sections).map(([key, section]) => (
+        {visibleEntries.map(([key, section]) => (
           <button
             key={key}
             onClick={() => setActiveSection(key)}
@@ -170,23 +171,12 @@ const AITransparency = ({ isVisible = true }) => {
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        {sections[activeSection].content}
+      <div className="p-4 max-h-80 overflow-y-auto md:max-h-none">
+        {sections[activeSection]?.content}
       </div>
 
       {/* Footer */}
-      <div className="bg-slate-800/50 p-3 border-t border-slate-600/50">
-        <div className="flex items-center justify-between text-xs text-slate-400">
-          <span>Build trust through transparency</span>
-          <a 
-            href="#" 
-            className="text-primary-400 hover:text-primary-300 transition-colors"
-            onClick={(e) => e.preventDefault()}
-          >
-            Learn more about our AI →
-          </a>
-        </div>
-      </div>
+      {/* Footer CTA removed per requirements */}
     </div>
   );
 };
