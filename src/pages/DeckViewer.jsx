@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Seo } from '../components/Seo.tsx';
 import { useDeck } from '../context/DeckContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getCardImageUris } from '../utils/scryfallAPI';
@@ -681,6 +682,10 @@ const DeckViewer = () => {
 
   return (
     <div className="min-h-screen bg-slate-900">
+      <Seo
+        title={deckId ? `Your Deck – ${selectedDeck?.name || 'Deck Viewer'}` : 'Your Decks – Deck Viewer'}
+        description={deckId ? 'View and manage your Commander deck.' : 'Browse, view, and manage your saved Commander decks.'}
+      />
       {/* Background effects */}
       <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl animate-pulse"></div>

@@ -3,10 +3,12 @@ import { useLocation } from 'react-router-dom';
 
 export const Seo = ({
   title,
-  description
+  description,
+  robots = 'index,follow'
 }: {
   title: string;
   description?: string;
+  robots?: string;
 }) => {
   const { pathname } = useLocation();
 
@@ -23,7 +25,7 @@ export const Seo = ({
       <link rel="canonical" href={canonical} />
       {/* Keep social URL in sync with canonical */}
       <meta property="og:url" content={canonical} />
-      <meta name="robots" content="index,follow" />
+      <meta name="robots" content={robots} />
     </Helmet>
   );
 };
