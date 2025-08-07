@@ -16,7 +16,10 @@ export const Seo = ({
   const normalizedPath = pathname === '/'
     ? ''
     : pathname.replace(/\/+$/, '').toLowerCase();
-  const canonical = `https://aidecktutor.com${normalizedPath}`;
+  const origin = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : 'https://aidecktutor.com';
+  const canonical = `${origin}${normalizedPath}`;
 
   return (
     <Helmet prioritizeSeoTags>

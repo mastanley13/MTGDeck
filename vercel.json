@@ -7,16 +7,19 @@
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
-  "redirects": [
+  "headers": [
     {
-      "source": "/:path*",
-      "has": [
-        { "type": "host", "value": "www.aidecktutor.com" }
-      ],
-      "destination": "https://aidecktutor.com/:path*",
-      "permanent": true
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
     }
-  ],
+  ]
+  
   "headers": [
     {
       "source": "/(.*)",
