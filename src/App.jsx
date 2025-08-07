@@ -29,6 +29,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
 import { AdSenseHead } from './components/ui/GoogleAdSense.jsx';
 import TutorialSystem from './components/tutorial/TutorialSystem.jsx';
 import TutorialTrigger from './components/tutorial/TutorialTrigger.jsx';
+import { Seo } from './components/Seo.tsx';
 
 function App() {
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -50,6 +51,8 @@ function App() {
               <TutorialProvider>
                 <Router>
                 <div className="app min-h-screen bg-slate-900 flex flex-col">
+                  {/* Global canonical/meta defaults; per-page titles/descriptions can still override */}
+                  <Seo title="AI Deck Tutor" description="Build better Magic: The Gathering Commander decks with AI assistance." />
                   <AdSenseHead />
                 <Navbar />
                 <main className="flex-1 px-4 md:px-6 lg:px-8 pb-12 max-w-7xl mx-auto w-full">
