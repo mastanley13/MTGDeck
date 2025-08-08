@@ -352,6 +352,18 @@ const DeckBuilderAIPage = () => {
               </div>
             </div>
           )}
+          {/* Inline Report Issue CTA */}
+          <div className="text-center mt-2">
+            <button
+              onClick={() => {
+                const params = new URLSearchParams({ type: 'Bug', feature: 'Deck Builder' });
+                navigate(`/feedback?${params.toString()}`);
+              }}
+              className="text-sm text-slate-300 hover:text-primary-300 underline"
+            >
+              Report issue with Deck Builder
+            </button>
+          </div>
           
           {/* Sticky Commander Header - Appears once commander is selected */}
           {commander && <StickyCommanderHeader commander={commander} />}
@@ -449,6 +461,20 @@ const DeckBuilderAIPage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                           </svg>
                           <span>Import</span>
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          const params = new URLSearchParams({ type: 'Bug', feature: 'Deck Builder' });
+                          navigate(`/feedback?${params.toString()}`);
+                        }}
+                        className="btn-modern btn-modern-secondary btn-modern-md"
+                      >
+                        <span className="flex items-center space-x-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-12.728 12.728M6.343 6.343l11.314 11.314" />
+                          </svg>
+                          <span>Report Issue</span>
                         </span>
                       </button>
                       

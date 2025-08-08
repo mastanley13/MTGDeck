@@ -23,6 +23,8 @@ import CardDebugger from './components/debug/CardDebugger.jsx';
 import { DeckProvider } from './context/DeckContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { TutorialProvider } from './context/TutorialContext.jsx';
+import FeedbackPage from './pages/FeedbackPage.jsx';
+import FeedbackWidget from './components/ui/FeedbackWidget.jsx';
 
 import Navbar from './components/ui/Navbar.jsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.jsx';
@@ -68,6 +70,7 @@ function App() {
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/socials" element={<SocialsPage />} />
                   <Route path="/legal" element={<Legal />} />
+                  <Route path="/feedback" element={<FeedbackPage />} />
 
                   <Route path="/commander-ai" element={<CommanderAiPage />} />
                   <Route path="/tutor-ai" element={<TutorAiPage />} />
@@ -82,6 +85,7 @@ function App() {
                   <Route path="*" element={<HomePage />} />
                 </Routes>
               </main>
+              <FeedbackWidget />
               <footer className="bg-slate-800/90 backdrop-blur-xl border-t border-slate-700/50 py-8 mt-auto">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                   <div className="flex flex-col lg:flex-row justify-between items-center space-y-6 lg:space-y-0">

@@ -464,6 +464,17 @@ Requirements:
           <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
             Describe your preferred playstyle, colors, or mechanics, and let our AI suggest the perfect commanders for you!
           </p>
+          <div className="mt-6">
+            <button
+              onClick={() => {
+                const params = new URLSearchParams({ type: 'Bug', feature: 'Commander AI' });
+                navigate(`/feedback?${params.toString()}`);
+              }}
+              className="text-sm text-slate-300 hover:text-primary-300 underline"
+            >
+              Report issue with Commander AI
+            </button>
+          </div>
         </div>
 
         {/* Modals */}

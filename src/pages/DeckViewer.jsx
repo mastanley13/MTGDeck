@@ -693,6 +693,18 @@ const DeckViewer = () => {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 space-y-8">
+        {/* Inline Report Issue CTA */}
+        <div className="text-right">
+          <button
+            onClick={() => {
+              const params = new URLSearchParams({ type: 'Bug', feature: 'Deck Viewer' });
+              navigate(`/feedback?${params.toString()}`);
+            }}
+            className="text-sm text-slate-300 hover:text-primary-300 underline"
+          >
+            Report issue with Deck Viewer
+          </button>
+        </div>
         {loadingAuth || deckLoading || (deckId && (isLoadingSpecificDeck || !hasFetchedDecks)) ? (
           <div className="flex items-center justify-center min-h-screen">
             <div className="glassmorphism-card p-12 text-center">
